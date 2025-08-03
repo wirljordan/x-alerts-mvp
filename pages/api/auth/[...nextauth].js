@@ -1,25 +1,44 @@
 import NextAuth from 'next-auth'
-import TwitterProvider from 'next-auth/providers/twitter'
 
 export default NextAuth({
   providers: [
-    TwitterProvider({
-      clientId: process.env.TWITTER_CLIENT_ID,
-      clientSecret: process.env.TWITTER_CLIENT_SECRET,
-      version: '2.0',
+    {
+      id: 'x',
+      name: 'X',
+      type: 'oauth',
       authorization: {
         url: 'https://x.com/i/oauth2/authorize',
         params: {
-          scope: 'users.read tweet.read offline.access'
+          scope: 'users.read tweet.read offline.access',
+          response_type: 'code'
         }
       },
       token: {
         url: 'https://api.x.com/2/oauth2/token'
       },
       userinfo: {
-        url: 'https://api.x.com/2/users/me'
-      }
-    })
+        url: 'https://api.x.com/2/users/me',
+        async request({ tokens, provider }) {
+          const response = await fetch(provider.userinfo.url, {
+            headers: {
+              Authorization: `Bearer ${tokens.access_token}`,
+            },
+          })
+          return await response.json()
+        },
+      },
+      clientId: process.env.TWITTER_CLIENT_ID,
+      clientSecret: process.env.TWITTER_CLIENT_SECRET,
+      profile(profile) {
+        return {
+          id: profile.data.id,
+          name: profile.data.name,
+          email: profile.data.email,
+          image: profile.data.profile_image_url,
+          username: profile.data.username,
+        }
+      },
+    }
   ],
   pages: {
     signIn: '/login',
@@ -27,7 +46,7 @@ export default NextAuth({
   },
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log('SignIn successful:', { user: user?.name, profile: profile?.username })
+      console.log('SignIn successful:', { user: user?.name, username: user?.username })
       return true
     },
     async redirect({ url, baseUrl }) {
@@ -38,7 +57,7 @@ export default NextAuth({
     async session({ session, token }) {
       if (token.sub) {
         session.user.id = token.sub
-        session.user.handle = token.screen_name || 'user'
+        session.user.handle = token.username || 'user'
         session.user.plan = 'starter'
         session.user.sms_limit = 300
         session.user.sms_used = 0
@@ -48,7 +67,7 @@ export default NextAuth({
     async jwt({ token, account, profile }) {
       if (account && profile) {
         token.sub = profile.id
-        token.screen_name = profile.username
+        token.username = profile.username
       }
       return token
     }

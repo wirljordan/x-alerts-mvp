@@ -5,7 +5,7 @@ export default function Login() {
   const router = useRouter()
 
   const handleSignIn = () => {
-    signIn('twitter', { 
+    signIn('x', { 
       callbackUrl: '/dashboard'
     })
   }
