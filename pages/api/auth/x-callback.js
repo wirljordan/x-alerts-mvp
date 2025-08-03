@@ -24,29 +24,25 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Get code verifier from cookie with better parsing
+      // Get code verifier from cookie
       const cookies = req.headers.cookie?.split(';').reduce((acc, cookie) => {
         const [key, value] = cookie.trim().split('=')
-        if (key && value) {
-          acc[key] = decodeURIComponent(value)
-        }
+        acc[key] = value
         return acc
       }, {}) || {}
       
-      console.log('All cookies:', req.headers.cookie)
-      console.log('Parsed cookies:', cookies)
+      console.log('Cookies:', cookies)
       const codeVerifier = cookies.code_verifier
       const oauthState = cookies.oauth_state
 
       if (!codeVerifier) {
-        console.error('No code verifier found in cookies')
-        console.error('Available cookies:', Object.keys(cookies))
+        console.error('No code verifier found')
         return res.redirect('/?error=no_verifier')
       }
 
       // Verify state parameter
       if (state !== oauthState) {
-        console.error('State mismatch - received:', state, 'expected:', oauthState)
+        console.error('State mismatch')
         return res.redirect('/?error=state_mismatch')
       }
 

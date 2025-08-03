@@ -16,14 +16,11 @@ export default async function handler(req, res) {
     // Generate state parameter
     const state = crypto.randomBytes(16).toString('hex')
     
-    // Store code verifier and state in cookies with proper settings for production
-    const isLocalhost = host.includes('localhost')
-    const cookieOptions = [
-      `code_verifier=${codeVerifier}; Path=/; HttpOnly; SameSite=Lax${isLocalhost ? '' : '; Secure'}`,
-      `oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax${isLocalhost ? '' : '; Secure'}`
-    ]
-    
-    res.setHeader('Set-Cookie', cookieOptions)
+    // Store code verifier and state in cookies
+    res.setHeader('Set-Cookie', [
+      `code_verifier=${codeVerifier}; Path=/; HttpOnly; SameSite=Lax`,
+      `oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax`
+    ])
     
     // OAuth URL with PKCE - using updated scopes for X API v2
     const authUrl = `https://x.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=tweet.read%20users.read%20offline.access&code_challenge_method=S256&code_challenge=${codeChallenge}&state=${state}`
