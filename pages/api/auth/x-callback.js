@@ -56,7 +56,7 @@ export default async function handler(req, res) {
         body: new URLSearchParams({
           grant_type: 'authorization_code',
           code: code,
-          redirect_uri: 'http://localhost:3000/api/auth/x-callback',
+          redirect_uri: `${req.headers.host?.includes('localhost') ? 'http' : 'https'}://${req.headers.host}/api/auth/x-callback`,
           code_verifier: codeVerifier
         })
       })
