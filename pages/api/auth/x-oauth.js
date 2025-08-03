@@ -3,7 +3,11 @@ import crypto from 'crypto'
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     const clientId = process.env.TWITTER_CLIENT_ID
-    const redirectUri = 'http://localhost:3000/api/auth/x-callback'
+    
+    // Determine redirect URI based on environment
+    const host = req.headers.host || 'localhost:3000'
+    const protocol = host.includes('localhost') ? 'http' : 'https'
+    const redirectUri = `${protocol}://${host}/api/auth/x-callback`
     
     // Generate PKCE code verifier and challenge
     const codeVerifier = crypto.randomBytes(32).toString('base64url')
