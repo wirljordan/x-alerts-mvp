@@ -60,6 +60,11 @@ export default function Login() {
     router.push('/dashboard')
   }
 
+  const handleMockOAuth = () => {
+    // Mock OAuth that stays on the website
+    window.location.href = '/api/auth/mock-login'
+  }
+
   if (!isClient) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 bg-gray-50">
@@ -96,8 +101,15 @@ export default function Login() {
                 Signing in...
               </>
             ) : (
-              'Sign in with X'
+              'Sign in with X (Real OAuth)'
             )}
+          </button>
+          
+          <button
+            onClick={handleMockOAuth}
+            className="w-full px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+          >
+            🎭 Mock X Login (No External Auth)
           </button>
           
           <div className="relative">
