@@ -30,44 +30,17 @@ export default async function handler(req, res) {
         acc[key] = value
         return acc
       }, {}) || {}
-      
+
       console.log('Cookies:', cookies)
-      let codeVerifier = cookies.code_verifier
-      const oauthState = cookies.oauth_state
 
+      const codeVerifier = cookies.code_verifier
       if (!codeVerifier) {
-        console.error('No code verifier found')
-        console.error('Available cookies:', Object.keys(cookies))
-        console.error('All cookies:', req.headers.cookie)
-        
-        // For Vercel, try to get code verifier from a different approach
-        if (req.headers.host && !req.headers.host.includes('localhost')) {
-          console.log('Production environment detected, trying alternative approach')
-          // In production, the cookie might be set differently
-          // Let's try to parse it more carefully
-          const allCookies = req.headers.cookie || ''
-          const codeVerifierMatch = allCookies.match(/code_verifier=([^;]+)/)
-          if (codeVerifierMatch) {
-            const extractedVerifier = codeVerifierMatch[1]
-            console.log('Found code verifier in raw cookies:', extractedVerifier)
-            // Use the extracted verifier
-            codeVerifier = extractedVerifier
-          } else {
-            return res.redirect('/?error=no_verifier')
-          }
-        } else {
-          return res.redirect('/?error=no_verifier')
-        }
-      }
-
-      // Verify state parameter
-      if (state !== oauthState) {
-        console.error('State mismatch')
-        return res.redirect('/?error=state_mismatch')
+        console.log('No code verifier found')
+        return res.redirect('/?error=no_verifier')
       }
 
       console.log('Exchanging code for token...')
-      
+
       // Exchange code for access token
       const tokenResponse = await fetch('https://api.x.com/2/oauth2/token', {
         method: 'POST',
@@ -78,7 +51,7 @@ export default async function handler(req, res) {
         body: new URLSearchParams({
           grant_type: 'authorization_code',
           code: code,
-          redirect_uri: `${req.headers.host?.includes('localhost') ? 'http' : 'https'}://${req.headers.host}/api/auth/x-callback`,
+          redirect_uri: 'http://localhost:3000/api/auth/x-callback',
           code_verifier: codeVerifier
         })
       })
@@ -88,65 +61,31 @@ export default async function handler(req, res) {
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text()
         console.error('Token exchange failed:', errorText)
-        return res.redirect('/?error=token_failed')
+        return res.redirect('/?error=token_exchange_failed')
       }
 
       const tokenData = await tokenResponse.json()
       console.log('Token received successfully')
       console.log('Token data:', tokenData)
-      
-      // Try to get user info using the token
-      let userData = null
-      
-      try {
-        // Try the v2 users/me endpoint first
-        const userResponse = await fetch('https://api.x.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
-          headers: {
-            'Authorization': `Bearer ${tokenData.access_token}`,
-            'Content-Type': 'application/json'
-          }
-        })
 
-        console.log('User response status:', userResponse.status)
-
-        if (userResponse.ok) {
-          userData = await userResponse.json()
-          console.log('User data from /me:', userData)
-        } else {
-          console.log('User /me failed, trying alternative approach')
-          
-          // If that fails, try to decode the token to get user info
-          // The token might contain user information
-          const tokenParts = tokenData.access_token.split('.')
-          if (tokenParts.length >= 2) {
-            try {
-              const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString())
-              console.log('Token payload:', payload)
-              
-              // Create a mock user object from token data
-              userData = {
-                data: {
-                  id: payload.sub || 'unknown',
-                  name: payload.name || 'X User',
-                  username: payload.username || 'xuser',
-                  profile_image_url: payload.picture || null,
-                  verified: false
-                }
-              }
-            } catch (e) {
-              console.log('Could not decode token payload')
-            }
-          }
+      // Get user info
+      const userResponse = await fetch('https://api.x.com/2/users/me', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`
         }
-      } catch (error) {
-        console.error('User info error:', error)
+      })
+
+      console.log('User response status:', userResponse.status)
+
+      if (!userResponse.ok) {
+        const errorText = await userResponse.text()
+        console.error('User info failed:', errorText)
+        return res.redirect('/?error=user_info_failed')
       }
 
-      if (!userData) {
-        console.error('Could not get user info')
-        return res.redirect('/?error=user_failed')
-      }
-      
+      const userData = await userResponse.json()
+      console.log('User data from /me:', userData)
+
       // Create session data
       const sessionData = {
         user: {
@@ -168,12 +107,12 @@ export default async function handler(req, res) {
         'oauth_state=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
       ])
       
-      // Redirect to success page instead of home page
+      // Redirect to success page
       res.redirect('/success')
 
     } catch (error) {
-      console.error('Callback error:', error)
-      res.redirect('/?error=callback_failed')
+      console.error('Error in callback:', error)
+      res.redirect('/?error=callback_error')
     }
   } else {
     res.status(405).end('Method not allowed')
