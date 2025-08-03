@@ -51,7 +51,7 @@ export default function DebugOAuth() {
     const scope = 'users.read tweet.read offline.access'
     const state = 'test123'
     
-    const authUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`
+    const authUrl = `https://x.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`
     
     console.log('Auth URL:', authUrl)
     window.open(authUrl, '_blank')
@@ -85,7 +85,7 @@ export default function DebugOAuth() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 bg-gray-50">
       <div className="bg-white p-8 rounded-xl shadow-lg max-w-4xl w-full">
-        <h1 className="text-2xl font-bold mb-6">OAuth Debug & Setup</h1>
+        <h1 className="text-2xl font-bold mb-6">X OAuth Debug & Setup</h1>
         
         {session && (
           <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
@@ -100,7 +100,7 @@ export default function DebugOAuth() {
           <div>
             <h2 className="font-semibold mb-2">Setup Instructions:</h2>
             <ol className="list-decimal list-inside space-y-2 text-sm">
-              <li>Create a Twitter Developer App at <a href="https://developer.twitter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">developer.twitter.com</a></li>
+              <li>Create an X Developer App at <a href="https://developer.x.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">developer.x.com</a></li>
               <li>Get your Client ID and Client Secret</li>
               <li>Set redirect URI to: <code className="bg-gray-100 px-1 rounded">{typeof window !== 'undefined' ? window.location.origin : 'your-domain'}/api/auth/callback/x</code></li>
               <li>Create a <code className="bg-gray-100 px-1 rounded">.env.local</code> file with your credentials</li>
@@ -113,8 +113,8 @@ export default function DebugOAuth() {
             <div className="bg-gray-100 p-3 rounded text-sm">
               <pre>{`NEXTAUTH_URL=${typeof window !== 'undefined' ? window.location.origin : 'your-domain'}
 NEXTAUTH_SECRET=your-secret-key
-TWITTER_CLIENT_ID=your-twitter-client-id
-TWITTER_CLIENT_SECRET=your-twitter-client-secret`}</pre>
+TWITTER_CLIENT_ID=your-x-client-id
+TWITTER_CLIENT_SECRET=your-x-client-secret`}</pre>
             </div>
           </div>
         </div>
@@ -140,7 +140,7 @@ TWITTER_CLIENT_SECRET=your-twitter-client-secret`}</pre>
             onClick={testDirectOAuth}
             className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 mr-2"
           >
-            Test Direct OAuth
+            Test Direct X OAuth
           </button>
 
           <button

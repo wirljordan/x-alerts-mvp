@@ -7,7 +7,7 @@ export default NextAuth({
       name: 'X',
       type: 'oauth',
       authorization: {
-        url: 'https://twitter.com/i/oauth2/authorize',
+        url: 'https://x.com/i/oauth2/authorize',
         params: {
           scope: 'users.read tweet.read offline.access',
           response_type: 'code',
@@ -15,10 +15,10 @@ export default NextAuth({
         }
       },
       token: {
-        url: 'https://api.twitter.com/2/oauth2/token'
+        url: 'https://api.x.com/2/oauth2/token'
       },
       userinfo: {
-        url: 'https://api.twitter.com/2/users/me',
+        url: 'https://api.x.com/2/users/me',
         params: {
           'user.fields': 'id,name,username,profile_image_url,verified'
         }

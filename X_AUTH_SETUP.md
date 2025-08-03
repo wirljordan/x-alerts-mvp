@@ -2,14 +2,14 @@
 
 ## Prerequisites
 
-1. **Twitter Developer Account**: You need a Twitter Developer account at [developer.twitter.com](https://developer.twitter.com)
+1. **X Developer Account**: You need an X Developer account at [developer.x.com](https://developer.x.com)
 2. **Node.js and npm**: Make sure you have Node.js installed
 3. **Next.js project**: This guide assumes you're working with the existing Next.js project
 
-## Step 1: Create a Twitter Developer App
+## Step 1: Create an X Developer App
 
-1. Go to [developer.twitter.com](https://developer.twitter.com)
-2. Sign in with your Twitter account
+1. Go to [developer.x.com](https://developer.x.com)
+2. Sign in with your X account
 3. Apply for a developer account if you haven't already
 4. Create a new app:
    - Click "Create App"
@@ -19,7 +19,7 @@
 
 ## Step 2: Configure OAuth Settings
 
-1. In your Twitter app dashboard, go to "User authentication settings"
+1. In your X app dashboard, go to "User authentication settings"
 2. Enable OAuth 2.0
 3. Set the following:
    - **App permissions**: Read
@@ -30,7 +30,7 @@
 
 ## Step 3: Get Your Credentials
 
-1. In your Twitter app dashboard, go to "Keys and tokens"
+1. In your X app dashboard, go to "Keys and tokens"
 2. Copy your **Client ID** and **Client Secret**
 3. Keep these secure - never commit them to version control
 
@@ -44,9 +44,9 @@
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-super-secret-nextauth-key-change-this-in-production
 
-# X (Twitter) OAuth Credentials
-TWITTER_CLIENT_ID=your-twitter-client-id
-TWITTER_CLIENT_SECRET=your-twitter-client-secret
+# X OAuth Credentials
+TWITTER_CLIENT_ID=your-x-client-id
+TWITTER_CLIENT_SECRET=your-x-client-secret
 
 # Other environment variables (if needed)
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
@@ -64,7 +64,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 
 3. Click "Sign in with X"
 
-4. You should be redirected to Twitter's authorization page
+4. You should be redirected to X's authorization page
 
 5. After authorizing, you'll be redirected back to your dashboard
 
@@ -73,7 +73,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 ### Common Issues
 
 1. **"Invalid redirect URI" error**:
-   - Make sure the callback URL in your Twitter app matches exactly: `http://localhost:3000/api/auth/callback/x`
+   - Make sure the callback URL in your X app matches exactly: `http://localhost:3000/api/auth/callback/x`
    - Check that there are no trailing slashes
 
 2. **"Client ID not found" error**:
@@ -98,7 +98,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 
 When deploying to production:
 
-1. Update your Twitter app's callback URL to your production domain
+1. Update your X app's callback URL to your production domain
 2. Update `NEXTAUTH_URL` to your production URL
 3. Generate a new `NEXTAUTH_SECRET` for production
 4. Set all environment variables in your hosting platform
@@ -106,9 +106,9 @@ When deploying to production:
 ## Security Notes
 
 - Never commit your `.env.local` file to version control
-- Use different Twitter app credentials for development and production
+- Use different X app credentials for development and production
 - Regularly rotate your `NEXTAUTH_SECRET`
-- Keep your Twitter app credentials secure
+- Keep your X app credentials secure
 
 ## Next Steps
 
