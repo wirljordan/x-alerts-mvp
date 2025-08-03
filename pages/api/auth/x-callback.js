@@ -24,21 +24,26 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Get code verifier from cookie
+      // Get code verifier from cookie with better parsing
       const cookies = req.headers.cookie?.split(';').reduce((acc, cookie) => {
         const [key, value] = cookie.trim().split('=')
-        acc[key] = value
+        if (key && value) {
+          acc[key] = decodeURIComponent(value)
+        }
         return acc
       }, {}) || {}
 
+      console.log('All cookies found:', Object.keys(cookies))
       console.log('Cookies:', cookies)
 
       const codeVerifier = cookies.code_verifier
       if (!codeVerifier) {
-        console.log('No code verifier found')
+        console.log('No code verifier found in cookies')
+        console.log('Available cookies:', Object.keys(cookies))
         return res.redirect('/?error=no_verifier')
       }
 
+      console.log('Code verifier found:', codeVerifier.substring(0, 10) + '...')
       console.log('Exchanging code for token...')
 
       // Exchange code for access token
