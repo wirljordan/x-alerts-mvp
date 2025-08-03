@@ -26,6 +26,7 @@ export default async function handler(req, res) {
     const authUrl = `https://x.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=users.read&code_challenge_method=S256&code_challenge=${codeChallenge}&state=${state}`
     
     console.log('Redirecting to X OAuth:', authUrl)
+    console.log('Using redirect URI:', redirectUri)
     res.redirect(authUrl)
   } else {
     res.status(405).end('Method not allowed')
