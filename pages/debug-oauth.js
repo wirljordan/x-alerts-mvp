@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSession } from 'next-auth/react'
 
+// Debug OAuth page - Force redeploy
 export default function DebugOAuth() {
   const router = useRouter()
   const [debugInfo, setDebugInfo] = useState({})
