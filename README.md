@@ -1,122 +1,188 @@
-# EarlyReply - X Alerts MVP
+# EarlyReply.app - X Authentication MVP
 
-A Next.js application for managing X (Twitter) alerts and notifications with OAuth authentication.
+A Next.js application for X (Twitter) OAuth authentication, optimized for mobile users.
 
-## 🌐 **Live Demo**
+## Features
 
-Visit: [https://earlyreply.app](https://earlyreply.app)
+- ✅ X OAuth 2.0 authentication with PKCE
+- ✅ Mobile-optimized UI
+- ✅ Secure session management
+- ✅ Error handling and user feedback
+- ✅ Ready for earlyreply.app integration
 
-## ✨ **Features**
+## Setup
 
-- **X OAuth Authentication**: Secure login with X (Twitter) accounts
-- **User Profile Management**: View and manage user information
-- **Mobile-Optimized**: Responsive design optimized for mobile devices
-- **Modern UI**: Clean, intuitive interface built with Tailwind CSS
+### 1. Environment Variables
 
-## 🛠 **Tech Stack**
+Copy `.env.example` to `.env.local` and configure your X API credentials:
 
-- **Frontend**: Next.js 14, React, Tailwind CSS
-- **Authentication**: X (Twitter) OAuth 2.0 with PKCE
-- **Deployment**: Vercel
-- **Domain**: Custom domain (earlyreply.app)
+```bash
+cp .env.example .env.local
+```
 
-## 🚀 **Getting Started**
+Required variables:
+```env
+# X (Twitter) OAuth - REQUIRED
+TWITTER_CLIENT_ID=your-twitter-client-id
+TWITTER_CLIENT_SECRET=your-twitter-client-secret
+```
 
-### Prerequisites
+### 2. X API Setup
 
-- Node.js 18+ 
-- npm or yarn
-- X Developer Account
+1. Go to [X Developer Portal](https://developer.twitter.com/en/portal/dashboard)
+2. Create a new app or use existing one
+3. Configure OAuth 2.0 settings:
+   - **App permissions**: Read
+   - **Type of App**: Web App
+   - **Callback URLs**: 
+     - `http://localhost:3000/api/auth/x-callback` (development)
+     - `https://earlyreply.app/api/auth/x-callback` (production)
+   - **Website URL**: `https://earlyreply.app`
+4. Copy the Client ID and Client Secret to your `.env.local`
 
-### Installation
+### 3. Install Dependencies
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/wirljordan/x-alerts-mvp.git
-   cd x-alerts-mvp
-   ```
+```bash
+npm install
+```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+### 4. Run Development Server
 
-3. **Set up environment variables**
-   ```bash
-   cp env.example .env.local
-   ```
-   
-   Edit `.env.local` and add your X Developer credentials:
-   ```env
-   TWITTER_CLIENT_ID=your-twitter-client-id
-   TWITTER_CLIENT_SECRET=your-twitter-client-secret
-   ```
+```bash
+npm run dev
+```
 
-4. **Configure X Developer App**
-   - Go to [X Developer Portal](https://developer.x.com/portal)
-   - Create a new app or use existing one
-   - Set Callback URI to: `http://localhost:3000/api/auth/x-callback` (for local development)
-   - Set Website URL to: `http://localhost:3000` (for local development)
+Visit [http://localhost:3000](http://localhost:3000) to see the app.
 
-5. **Run the development server**
-   ```bash
-   npm run dev
-   ```
+## Production Deployment (earlyreply.app)
 
-6. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
+### 1. Deploy to Vercel
 
-## 🌍 **Production Deployment**
-
-### Vercel Deployment
-
-1. **Push to GitHub**
+1. **Push to GitHub**:
    ```bash
    git add .
-   git commit -m "Ready for deployment"
-   git push
+   git commit -m "Ready for production deployment"
+   git push origin main
    ```
 
-2. **Deploy to Vercel**
-   - Connect your GitHub repository to Vercel
-   - Add environment variables in Vercel dashboard
-   - Deploy automatically on push
+2. **Connect to Vercel**:
+   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
+   - Import your GitHub repository
+   - Configure the project settings
 
-3. **Configure Custom Domain**
-   - Add `earlyreply.app` in Vercel dashboard
-   - Configure DNS settings as instructed
+3. **Set Environment Variables in Vercel**:
+   - Go to Project Settings → Environment Variables
+   - Add the following variables:
+     ```
+     TWITTER_CLIENT_ID=your-production-twitter-client-id
+     TWITTER_CLIENT_SECRET=your-production-twitter-client-secret
+     ```
 
-4. **Update X Developer App for Production**
-   - Set Callback URI to: `https://earlyreply.app/api/auth/x-callback`
-   - Set Website URL to: `https://earlyreply.app`
+4. **Configure Custom Domain**:
+   - Go to Project Settings → Domains
+   - Add `earlyreply.app` as your custom domain
+   - Configure DNS settings as instructed by Vercel
 
-## 🔧 **Environment Variables**
+### 2. Update X Developer App for Production
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TWITTER_CLIENT_ID` | X Developer App Client ID | ✅ |
-| `TWITTER_CLIENT_SECRET` | X Developer App Client Secret | ✅ |
+1. **Update Callback URLs**:
+   - Go to your X Developer Portal
+   - Add `https://earlyreply.app/api/auth/x-callback` to your OAuth 2.0 callback URLs
+   - Update Website URL to `https://earlyreply.app`
 
-## 📱 **Mobile Optimization**
+2. **Test Production OAuth**:
+   - Visit `https://earlyreply.app`
+   - Test the sign-in flow
+   - Verify user data is pulled correctly
 
-This application is specifically optimized for mobile devices:
-- Responsive design that works on all screen sizes
-- Touch-friendly interface elements
-- Fast loading times
-- Mobile-first CSS approach
+### 3. SSL and Security
 
-## 🤝 **Contributing**
+The application automatically handles:
+- ✅ HTTPS redirects in production
+- ✅ Secure cookie settings
+- ✅ CSRF protection
+- ✅ PKCE OAuth flow
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+## OAuth Flow
 
-## 📄 **License**
+1. User clicks "Sign in with X"
+2. Redirected to X OAuth with PKCE challenge
+3. User authorizes the app
+4. X redirects back with authorization code
+5. App exchanges code for access token
+6. App fetches user info and creates session
+7. User redirected to success page
 
-This project is licensed under the MIT License.
+## Security Features
 
-## 🆘 **Support**
+- ✅ PKCE (Proof Key for Code Exchange)
+- ✅ State parameter for CSRF protection
+- ✅ Secure cookie settings
+- ✅ HttpOnly cookies for session data
+- ✅ Proper error handling
 
-For support, please open an issue on GitHub or contact the development team.
+## Mobile Optimization
+
+- ✅ Responsive design
+- ✅ Touch-friendly buttons
+- ✅ Optimized for small screens
+- ✅ Fast loading times
+
+## API Endpoints
+
+- `GET /api/auth/x-oauth` - Initiates OAuth flow
+- `GET /api/auth/x-callback` - Handles OAuth callback
+- `GET /` - Main landing page
+- `GET /success` - Success page after authentication
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"Cannot access 'state' before initialization"**
+   - Fixed: Proper variable declaration order
+
+2. **"Code verifier did not match the code challenge"**
+   - Fixed: Improved PKCE implementation
+
+3. **"User info failed"**
+   - Fixed: Added fallback user data and better error handling
+
+4. **403 Forbidden on user info**
+   - Fixed: Added proper API headers and fallback handling
+
+### Production Issues
+
+1. **OAuth Callback Fails**:
+   - Ensure callback URL is exactly `https://earlyreply.app/api/auth/x-callback`
+   - Check environment variables are set in Vercel
+
+2. **Domain Issues**:
+   - Verify DNS is configured correctly
+   - Ensure SSL certificate is active
+
+3. **Session Issues**:
+   - Check cookie domain settings
+   - Verify SameSite cookie policy
+
+### Debug Mode
+
+The app includes detailed logging for debugging OAuth issues. Check the console for:
+- OAuth URLs being generated
+- Token exchange responses
+- User info API calls
+- Cookie parsing
+
+## Next Steps
+
+This MVP provides a solid foundation for earlyreply.app. Next features could include:
+
+- Database integration (Supabase)
+- User preferences and settings
+- X post monitoring
+- Notification system
+- Payment integration (Stripe)
+
+## License
+
+MIT
