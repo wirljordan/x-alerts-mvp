@@ -32,12 +32,32 @@ export default async function handler(req, res) {
       }, {}) || {}
       
       console.log('Cookies:', cookies)
-      const codeVerifier = cookies.code_verifier
+      let codeVerifier = cookies.code_verifier
       const oauthState = cookies.oauth_state
 
       if (!codeVerifier) {
         console.error('No code verifier found')
-        return res.redirect('/?error=no_verifier')
+        console.error('Available cookies:', Object.keys(cookies))
+        console.error('All cookies:', req.headers.cookie)
+        
+        // For Vercel, try to get code verifier from a different approach
+        if (req.headers.host && !req.headers.host.includes('localhost')) {
+          console.log('Production environment detected, trying alternative approach')
+          // In production, the cookie might be set differently
+          // Let's try to parse it more carefully
+          const allCookies = req.headers.cookie || ''
+          const codeVerifierMatch = allCookies.match(/code_verifier=([^;]+)/)
+          if (codeVerifierMatch) {
+            const extractedVerifier = codeVerifierMatch[1]
+            console.log('Found code verifier in raw cookies:', extractedVerifier)
+            // Use the extracted verifier
+            codeVerifier = extractedVerifier
+          } else {
+            return res.redirect('/?error=no_verifier')
+          }
+        } else {
+          return res.redirect('/?error=no_verifier')
+        }
       }
 
       // Verify state parameter
