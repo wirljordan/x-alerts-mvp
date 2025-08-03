@@ -46,6 +46,11 @@ export default async function handler(req, res) {
       console.log('Code verifier found:', codeVerifier.substring(0, 10) + '...')
       console.log('Exchanging code for token...')
 
+      // Determine redirect URI for token exchange
+      const host = req.headers.host || 'localhost:3000'
+      const protocol = host.includes('localhost') ? 'http' : 'https'
+      const redirectUri = `${protocol}://${host}/api/auth/x-callback`
+
       // Exchange code for access token
       const tokenResponse = await fetch('https://api.x.com/2/oauth2/token', {
         method: 'POST',
@@ -56,7 +61,7 @@ export default async function handler(req, res) {
         body: new URLSearchParams({
           grant_type: 'authorization_code',
           code: code,
-          redirect_uri: `${req.headers.host?.includes('localhost') ? 'http' : 'https'}://${req.headers.host}/api/auth/x-callback`,
+          redirect_uri: redirectUri,
           code_verifier: codeVerifier
         })
       })

@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     
     console.log('Redirecting to X OAuth:', authUrl)
     console.log('Code verifier stored:', codeVerifier.substring(0, 10) + '...')
-    console.log('Using redirect URI:', redirectUri)
+    console.log('Redirect URI:', redirectUri)
     res.redirect(authUrl)
   } else {
     res.status(405).end('Method not allowed')
