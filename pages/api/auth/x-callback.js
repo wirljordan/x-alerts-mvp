@@ -69,6 +69,16 @@ export default async function handler(req, res) {
       const protocol = host.includes('localhost') ? 'http' : 'https'
       const redirectUri = `${protocol}://${host}/api/auth/x-callback`
 
+      // Debug environment variables
+      console.log('Environment check:', {
+        hasClientId: !!process.env.TWITTER_CLIENT_ID,
+        hasClientSecret: !!process.env.TWITTER_CLIENT_SECRET,
+        clientIdLength: process.env.TWITTER_CLIENT_ID?.length,
+        clientSecretLength: process.env.TWITTER_CLIENT_SECRET?.length,
+        clientIdStart: process.env.TWITTER_CLIENT_ID?.substring(0, 10),
+        clientSecretStart: process.env.TWITTER_CLIENT_SECRET?.substring(0, 10)
+      })
+
       // Exchange code for access token
       const tokenResponse = await fetch('https://api.x.com/2/oauth2/token', {
         method: 'POST',
