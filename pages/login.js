@@ -3,7 +3,7 @@ import { signIn } from 'next-auth/react'
 export default function Login() {
   const handleSignIn = () => {
     signIn('twitter', { 
-      callbackUrl: 'https://x-alerts-pw4mijo1v-wirljordan-gmailcoms-projects.vercel.app/dashboard'
+      callbackUrl: '/dashboard'
     })
   }
 
