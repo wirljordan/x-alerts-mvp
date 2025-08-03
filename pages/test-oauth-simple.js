@@ -11,10 +11,17 @@ export default function TestOAuthSimple() {
       setStatus('success')
       console.log('✅ OAuth code received:', router.query.code)
       
-      // Simulate successful login
+      // Store the OAuth data
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('oauth_code', router.query.code)
+        localStorage.setItem('oauth_state', router.query.state || '')
+        localStorage.setItem('oauth_success', 'true')
+      }
+      
+      // Redirect to dashboard
       setTimeout(() => {
-        router.push('/dashboard')
-      }, 2000)
+        router.push('/dashboard?oauth=success')
+      }, 1000)
     }
     
     if (router.query.error) {
@@ -27,7 +34,7 @@ export default function TestOAuthSimple() {
     setStatus('loading')
     
     const clientId = 'bbX8NbaeW0bQjc6WMCBW79xzd'
-    const redirectUri = encodeURIComponent('https://x-alerts-fa8qlucz6-wirljordan-gmailcoms-projects.vercel.app/test-oauth-simple')
+    const redirectUri = encodeURIComponent('https://x-alerts-fa8qlucz6-wirljordan-gmailcoms-projects.vercel.app/api/auth/callback/x')
     const scope = 'users.read tweet.read'
     const state = 'test123'
     

@@ -6,6 +6,15 @@ import Link from 'next/link'
 export default function Dashboard() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const [oauthSuccess, setOauthSuccess] = useState(false)
+
+  useEffect(() => {
+    // Check if OAuth was successful
+    if (router.query.oauth === 'success' || localStorage.getItem('oauth_success')) {
+      setOauthSuccess(true)
+      localStorage.removeItem('oauth_success')
+    }
+  }, [router.query])
 
   // Mock user data for testing
   const mockUser = {
@@ -26,6 +35,18 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+        {/* OAuth Success Message */}
+        {oauthSuccess && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+            <div className="flex items-center">
+              <div className="text-green-600 mr-2">✅</div>
+              <div>
+                <strong>Success!</strong> You've successfully signed in with X.
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex justify-between items-start">
@@ -34,6 +55,9 @@ export default function Dashboard() {
               <p className="text-gray-600">Welcome back, @{user.handle}</p>
               {!session && (
                 <p className="text-sm text-orange-600 mt-1">⚠️ Mock user - OAuth not connected</p>
+              )}
+              {oauthSuccess && (
+                <p className="text-sm text-green-600 mt-1">✅ OAuth connected successfully!</p>
               )}
             </div>
             <div className="flex space-x-2">
