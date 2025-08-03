@@ -12,8 +12,10 @@ export default async function handler(req, res) {
     // Generate state parameter
     const state = crypto.randomBytes(16).toString('hex')
     
-    // Store code verifier and state in cookies with better settings
+    // Clear existing session cookies and set new OAuth cookies
     res.setHeader('Set-Cookie', [
+      'x_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;',
+      'x_user_id=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;',
       `code_verifier=${codeVerifier}; Path=/; HttpOnly; SameSite=Lax; Max-Age=300`,
       `oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=300`
     ])
