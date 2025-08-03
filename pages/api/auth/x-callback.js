@@ -67,7 +67,14 @@ export default async function handler(req, res) {
       // Determine redirect URI for token exchange
       const host = req.headers.host || 'localhost:3000'
       const protocol = host.includes('localhost') ? 'http' : 'https'
-      const redirectUri = `${protocol}://${host}/api/auth/x-callback`
+      
+      // For production, always use the non-www version to match X Developer Portal
+      let redirectUri
+      if (host.includes('earlyreply.app')) {
+        redirectUri = 'https://earlyreply.app/api/auth/x-callback'
+      } else {
+        redirectUri = `${protocol}://${host}/api/auth/x-callback`
+      }
 
       // Debug environment variables
       console.log('Environment check:', {
