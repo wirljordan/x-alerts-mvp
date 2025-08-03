@@ -24,32 +24,22 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Get code verifier from cookie with better parsing
+      // Get code verifier from cookie
       const cookies = req.headers.cookie?.split(';').reduce((acc, cookie) => {
         const [key, value] = cookie.trim().split('=')
-        if (key && value) {
-          acc[key] = decodeURIComponent(value)
-        }
+        acc[key] = value
         return acc
       }, {}) || {}
 
-      console.log('All cookies found:', Object.keys(cookies))
       console.log('Cookies:', cookies)
 
       const codeVerifier = cookies.code_verifier
       if (!codeVerifier) {
-        console.log('No code verifier found in cookies')
-        console.log('Available cookies:', Object.keys(cookies))
+        console.log('No code verifier found')
         return res.redirect('/?error=no_verifier')
       }
 
-      console.log('Code verifier found:', codeVerifier.substring(0, 10) + '...')
       console.log('Exchanging code for token...')
-
-      // Determine redirect URI for token exchange
-      const host = req.headers.host || 'localhost:3000'
-      const protocol = host.includes('localhost') ? 'http' : 'https'
-      const redirectUri = `${protocol}://${host}/api/auth/x-callback`
 
       // Exchange code for access token
       const tokenResponse = await fetch('https://api.x.com/2/oauth2/token', {
@@ -61,7 +51,7 @@ export default async function handler(req, res) {
         body: new URLSearchParams({
           grant_type: 'authorization_code',
           code: code,
-          redirect_uri: redirectUri,
+          redirect_uri: 'http://localhost:3000/api/auth/x-callback',
           code_verifier: codeVerifier
         })
       })
