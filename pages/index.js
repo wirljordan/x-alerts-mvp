@@ -40,7 +40,7 @@ export default function Home() {
         'token_failed': 'Failed to exchange authorization code.',
         'user_failed': 'Failed to get user information.',
         'callback_failed': 'OAuth callback failed.',
-        'no_verifier': 'Missing code verifier.',
+        'no_verifier': 'Missing code verifier. This usually means cookies aren\'t working properly. Please try again or clear your browser cookies.',
         'state_mismatch': 'OAuth state mismatch.'
       }
       setError(errorMessages[router.query.error] || 'Authentication failed. Please try again.')

@@ -3,7 +3,11 @@ import crypto from 'crypto'
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     const clientId = process.env.TWITTER_CLIENT_ID
-    const redirectUri = 'http://localhost:3000/api/auth/x-callback'
+    
+    // Determine redirect URI based on environment
+    const host = req.headers.host || 'localhost:3000'
+    const protocol = host.includes('localhost') ? 'http' : 'https'
+    const redirectUri = `${protocol}://${host}/api/auth/x-callback`
     
     // Generate PKCE code verifier and challenge
     const codeVerifier = crypto.randomBytes(32).toString('base64url')
@@ -12,11 +16,14 @@ export default async function handler(req, res) {
     // Generate state parameter
     const state = crypto.randomBytes(16).toString('hex')
     
-    // Store code verifier and state in cookies
-    res.setHeader('Set-Cookie', [
-      `code_verifier=${codeVerifier}; Path=/; HttpOnly; SameSite=Lax`,
-      `oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax`
-    ])
+    // Store code verifier and state in cookies with proper settings for production
+    const isLocalhost = host.includes('localhost')
+    const cookieOptions = [
+      `code_verifier=${codeVerifier}; Path=/; HttpOnly; SameSite=Lax${isLocalhost ? '' : '; Secure'}`,
+      `oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax${isLocalhost ? '' : '; Secure'}`
+    ]
+    
+    res.setHeader('Set-Cookie', cookieOptions)
     
     // OAuth URL with PKCE - using updated scopes for X API v2
     const authUrl = `https://x.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=tweet.read%20users.read%20offline.access&code_challenge_method=S256&code_challenge=${codeChallenge}&state=${state}`

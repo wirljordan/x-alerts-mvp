@@ -24,25 +24,29 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Get code verifier from cookie
+      // Get code verifier from cookie with better parsing
       const cookies = req.headers.cookie?.split(';').reduce((acc, cookie) => {
         const [key, value] = cookie.trim().split('=')
-        acc[key] = value
+        if (key && value) {
+          acc[key] = decodeURIComponent(value)
+        }
         return acc
       }, {}) || {}
       
-      console.log('Cookies:', cookies)
+      console.log('All cookies:', req.headers.cookie)
+      console.log('Parsed cookies:', cookies)
       const codeVerifier = cookies.code_verifier
       const oauthState = cookies.oauth_state
 
       if (!codeVerifier) {
-        console.error('No code verifier found')
+        console.error('No code verifier found in cookies')
+        console.error('Available cookies:', Object.keys(cookies))
         return res.redirect('/?error=no_verifier')
       }
 
       // Verify state parameter
       if (state !== oauthState) {
-        console.error('State mismatch')
+        console.error('State mismatch - received:', state, 'expected:', oauthState)
         return res.redirect('/?error=state_mismatch')
       }
 
@@ -58,7 +62,7 @@ export default async function handler(req, res) {
         body: new URLSearchParams({
           grant_type: 'authorization_code',
           code: code,
-          redirect_uri: 'http://localhost:3000/api/auth/x-callback',
+          redirect_uri: `${req.headers.host?.includes('localhost') ? 'http' : 'https'}://${req.headers.host}/api/auth/x-callback`,
           code_verifier: codeVerifier
         })
       })
