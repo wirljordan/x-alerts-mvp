@@ -1,12 +1,12 @@
-import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 export default function Dashboard() {
-  const { data: session, status } = useSession()
   const router = useRouter()
   const [oauthSuccess, setOauthSuccess] = useState(false)
+  const [user, setUser] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     // Check if OAuth was successful
@@ -14,7 +14,37 @@ export default function Dashboard() {
       setOauthSuccess(true)
       localStorage.removeItem('oauth_success')
     }
+
+    // Get user from session cookie
+    const getUserFromSession = () => {
+      if (typeof document !== 'undefined') {
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=')
+          acc[key] = value
+          return acc
+        }, {})
+        
+        if (cookies.x_session) {
+          try {
+            const sessionData = JSON.parse(decodeURIComponent(cookies.x_session))
+            setUser(sessionData.user)
+          } catch (error) {
+            console.error('Error parsing session:', error)
+          }
+        }
+      }
+      setIsLoading(false)
+    }
+
+    getUserFromSession()
   }, [router.query])
+
+  const handleSignOut = () => {
+    // Clear session cookies
+    document.cookie = 'x_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+    document.cookie = 'x_user_id=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+    router.push('/login')
+  }
 
   // Mock user data for testing
   const mockUser = {
@@ -24,13 +54,24 @@ export default function Dashboard() {
     sms_used: 45
   }
 
-  const user = session?.user || mockUser
+  const currentUser = user || mockUser
 
   const usage = { 
-    used: user.sms_used || 0, 
-    limit: user.sms_limit || 300 
+    used: currentUser.sms_used || 0, 
+    limit: currentUser.sms_limit || 300 
   }
   const percent = Math.min(100, Math.round((usage.used / usage.limit) * 100))
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -52,8 +93,8 @@ export default function Dashboard() {
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-2xl font-bold">Dashboard</h1>
-              <p className="text-gray-600">Welcome back, @{user.handle}</p>
-              {!session && (
+              <p className="text-gray-600">Welcome back, @{currentUser.handle}</p>
+              {!user && (
                 <p className="text-sm text-orange-600 mt-1">⚠️ Mock user - OAuth not connected</p>
               )}
               {oauthSuccess && (
@@ -67,9 +108,9 @@ export default function Dashboard() {
               >
                 Complete Setup
               </Link>
-              {session && (
+              {user && (
                 <button 
-                  onClick={() => signOut()}
+                  onClick={handleSignOut}
                   className="px-4 py-2 text-gray-500 hover:text-gray-700"
                 >
                   Sign out
@@ -84,7 +125,7 @@ export default function Dashboard() {
           <h2 className="text-lg font-semibold mb-4">SMS Usage</h2>
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span>Current Plan: {user.plan?.charAt(0).toUpperCase() + user.plan?.slice(1)}</span>
+              <span>Current Plan: {currentUser.plan?.charAt(0).toUpperCase() + currentUser.plan?.slice(1)}</span>
               <span>{usage.used} / {usage.limit} texts used</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
@@ -102,51 +143,26 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold mb-4">Create Alert</h3>
+            <p className="text-gray-600 mb-4">Set up a new X alert to monitor keywords or mentions.</p>
             <Link 
               href="/alert/create"
-              className="p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
+              className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              <div className="font-medium">Create Alert</div>
-              <div className="text-sm text-gray-600">Set up a new X alert</div>
-            </Link>
-            <Link 
-              href="/onboarding"
-              className="p-4 border border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors"
-            >
-              <div className="font-medium">Complete Setup</div>
-              <div className="text-sm text-gray-600">Add phone & choose plan</div>
-            </Link>
-            <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-              <div className="font-medium">View History</div>
-              <div className="text-sm text-gray-600">Coming soon</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Alerts Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold">Your Alerts</h2>
-            <Link 
-              href="/alert/create"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Add Alert
+              Create Alert
             </Link>
           </div>
 
-          <div className="text-center py-8">
-            <div className="text-gray-400 text-4xl mb-4">🔔</div>
-            <h3 className="text-lg font-medium mb-2">No alerts yet</h3>
-            <p className="text-gray-600 mb-4">Create your first alert to start getting notified about relevant tweets.</p>
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold mb-4">View Alerts</h3>
+            <p className="text-gray-600 mb-4">Manage your existing alerts and notifications.</p>
             <Link 
-              href="/alert/create"
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              href="/alerts"
+              className="inline-block px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             >
-              Create First Alert
+              View Alerts
             </Link>
           </div>
         </div>

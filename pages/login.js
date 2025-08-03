@@ -1,4 +1,3 @@
-import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -13,15 +12,32 @@ export default function Login() {
     setIsClient(true)
     
     // Check if user is already logged in
-    getSession().then((session) => {
-      if (session) {
-        router.push('/dashboard')
+    const checkSession = () => {
+      if (typeof document !== 'undefined') {
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=')
+          acc[key] = value
+          return acc
+        }, {})
+        
+        if (cookies.x_user_id) {
+          router.push('/dashboard')
+        }
       }
-    })
+    }
+    
+    checkSession()
 
     // Handle OAuth errors
     if (router.query.error) {
-      setError('Authentication failed. Please try again.')
+      const errorMessages = {
+        'oauth_failed': 'X authentication failed. Please try again.',
+        'no_code': 'No authorization code received.',
+        'token_failed': 'Failed to exchange authorization code.',
+        'user_failed': 'Failed to get user information.',
+        'callback_failed': 'OAuth callback failed.'
+      }
+      setError(errorMessages[router.query.error] || 'Authentication failed. Please try again.')
     }
   }, [router.query.error, router])
 
@@ -30,18 +46,11 @@ export default function Login() {
     setError('')
     
     try {
-      const result = await signIn('x', { 
-        callbackUrl: '/dashboard',
-        redirect: false
-      })
-      
-      if (result?.error) {
-        setError('Authentication failed. Please check your credentials and try again.')
-      }
+      // Redirect to our custom OAuth handler
+      window.location.href = '/api/auth/x-oauth'
     } catch (err) {
       setError('An unexpected error occurred. Please try again.')
       console.error('Sign in error:', err)
-    } finally {
       setIsLoading(false)
     }
   }
