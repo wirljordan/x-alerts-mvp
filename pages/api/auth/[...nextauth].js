@@ -4,36 +4,25 @@ import TwitterProvider from 'next-auth/providers/twitter'
 export default NextAuth({
   providers: [
     TwitterProvider({
-      clientId: process.env.TWITTER_CLIENT_ID || '',
-      clientSecret: process.env.TWITTER_CLIENT_SECRET || '',
-      version: '2.0' // OAuth 2.0 with PKCE
+      clientId: process.env.TWITTER_CLIENT_ID,
+      clientSecret: process.env.TWITTER_CLIENT_SECRET,
+      version: '2.0'
     })
   ],
-  pages: {
-    signIn: '/login',
-    error: '/login'
-  },
+  debug: true,
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (account.provider === 'twitter') {
-        try {
-          console.log('Sign in successful:', { user, profile })
-          return true
-        } catch (error) {
-          console.error('Error in signIn callback:', error)
-          return false
-        }
-      }
+      console.log('SignIn callback:', { user, account, profile })
       return true
     },
     async redirect({ url, baseUrl }) {
-      // Allows relative callback URLs
+      console.log('Redirect callback:', { url, baseUrl })
       if (url.startsWith("/")) return `${baseUrl}${url}`
-      // Allows callback URLs on the same origin
       else if (new URL(url).origin === baseUrl) return url
       return baseUrl + '/dashboard'
     },
     async session({ session, token }) {
+      console.log('Session callback:', { session, token })
       if (token.sub) {
         session.user.id = token.sub
         session.user.handle = token.screen_name || 'user'
@@ -44,6 +33,7 @@ export default NextAuth({
       return session
     },
     async jwt({ token, account, profile }) {
+      console.log('JWT callback:', { token, account, profile })
       if (account && profile) {
         token.sub = profile.id
         token.screen_name = profile.username
@@ -52,5 +42,4 @@ export default NextAuth({
     }
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development',
 })
