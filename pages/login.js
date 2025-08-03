@@ -34,6 +34,10 @@ export default function Login() {
           Mock Login (Skip OAuth)
         </button>
       </div>
+
+      <div className="text-sm text-gray-500 mt-4">
+        <p>Current URL: {typeof window !== 'undefined' ? window.location.host : 'Loading...'}</p>
+      </div>
     </main>
   )
 }
