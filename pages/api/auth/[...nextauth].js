@@ -9,12 +9,15 @@ export default NextAuth({
       version: '2.0' // OAuth 2.0 with PKCE
     })
   ],
+  pages: {
+    signIn: '/login',
+    error: '/login'
+  },
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account.provider === 'twitter') {
         try {
-          // For now, just return true to allow sign in
-          // We'll add Supabase integration later
+          console.log('Sign in successful:', { user, profile })
           return true
         } catch (error) {
           console.error('Error in signIn callback:', error)
@@ -23,9 +26,15 @@ export default NextAuth({
       }
       return true
     },
+    async redirect({ url, baseUrl }) {
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url
+      return baseUrl + '/dashboard'
+    },
     async session({ session, token }) {
       if (token.sub) {
-        // Add basic user info to session
         session.user.id = token.sub
         session.user.handle = token.screen_name || 'user'
         session.user.plan = 'starter'
