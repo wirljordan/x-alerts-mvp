@@ -1,29 +1,10 @@
-import { signIn, getSession } from 'next-auth/react'
-import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { signIn } from 'next-auth/react'
 
 export default function Login() {
-  const router = useRouter()
-
-  useEffect(() => {
-    // Check if user is already signed in
-    getSession().then((session) => {
-      if (session) {
-        router.push('/dashboard')
-      }
+  const handleSignIn = () => {
+    signIn('twitter', { 
+      callbackUrl: 'https://x-alerts-pw4mijo1v-wirljordan-gmailcoms-projects.vercel.app/dashboard'
     })
-  }, [router])
-
-  const handleSignIn = async () => {
-    try {
-      const result = await signIn('twitter', { 
-        callbackUrl: '/dashboard',
-        redirect: true 
-      })
-      console.log('Sign in result:', result)
-    } catch (error) {
-      console.error('Sign in error:', error)
-    }
   }
 
   return (
