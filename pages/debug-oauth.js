@@ -6,37 +6,44 @@ export default function DebugOAuth() {
   const router = useRouter()
   const [debugInfo, setDebugInfo] = useState({})
   const [session, setSession] = useState(null)
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
+    
     // Get current session
     getSession().then((session) => {
       setSession(session)
     })
 
     // Log all URL parameters
-    console.log('URL:', window.location.href)
-    console.log('Query params:', router.query)
-    
-    setDebugInfo({
-      url: window.location.href,
-      query: router.query,
-      pathname: router.pathname,
-      asPath: router.asPath,
-      host: window.location.host,
-      protocol: window.location.protocol
-    })
+    if (typeof window !== 'undefined') {
+      console.log('URL:', window.location.href)
+      console.log('Query params:', router.query)
+      
+      setDebugInfo({
+        url: window.location.href,
+        query: router.query,
+        pathname: router.pathname,
+        asPath: router.asPath,
+        host: window.location.host,
+        protocol: window.location.protocol
+      })
 
-    // Check if we're in a callback
-    if (router.query.code) {
-      console.log('✅ OAuth code received:', router.query.code)
-    }
-    
-    if (router.query.error) {
-      console.log('❌ OAuth error:', router.query.error)
+      // Check if we're in a callback
+      if (router.query.code) {
+        console.log('✅ OAuth code received:', router.query.code)
+      }
+      
+      if (router.query.error) {
+        console.log('❌ OAuth error:', router.query.error)
+      }
     }
   }, [router.query])
 
   const testDirectOAuth = () => {
+    if (typeof window === 'undefined') return
+    
     // This is for testing only - use NextAuth in production
     const clientId = process.env.NEXT_PUBLIC_TWITTER_CLIENT_ID || 'your-client-id'
     const redirectUri = encodeURIComponent(`${window.location.origin}/api/auth/callback/x`)
@@ -61,6 +68,19 @@ export default function DebugOAuth() {
     setDebugInfo(prev => ({ ...prev, envVars }))
   }
 
+  if (!isClient) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 bg-gray-50">
+        <div className="bg-white p-8 rounded-xl shadow-lg max-w-4xl w-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p>Loading debug information...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 bg-gray-50">
       <div className="bg-white p-8 rounded-xl shadow-lg max-w-4xl w-full">
@@ -81,7 +101,7 @@ export default function DebugOAuth() {
             <ol className="list-decimal list-inside space-y-2 text-sm">
               <li>Create a Twitter Developer App at <a href="https://developer.twitter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">developer.twitter.com</a></li>
               <li>Get your Client ID and Client Secret</li>
-              <li>Set redirect URI to: <code className="bg-gray-100 px-1 rounded">{window.location.origin}/api/auth/callback/x</code></li>
+              <li>Set redirect URI to: <code className="bg-gray-100 px-1 rounded">{typeof window !== 'undefined' ? window.location.origin : 'your-domain'}/api/auth/callback/x</code></li>
               <li>Create a <code className="bg-gray-100 px-1 rounded">.env.local</code> file with your credentials</li>
               <li>Restart your development server</li>
             </ol>
@@ -90,7 +110,7 @@ export default function DebugOAuth() {
           <div>
             <h2 className="font-semibold mb-2">Environment Variables Needed:</h2>
             <div className="bg-gray-100 p-3 rounded text-sm">
-              <pre>{`NEXTAUTH_URL=${window.location.origin}
+              <pre>{`NEXTAUTH_URL=${typeof window !== 'undefined' ? window.location.origin : 'your-domain'}
 NEXTAUTH_SECRET=your-secret-key
 TWITTER_CLIENT_ID=your-twitter-client-id
 TWITTER_CLIENT_SECRET=your-twitter-client-secret`}</pre>

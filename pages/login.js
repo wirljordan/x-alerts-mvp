@@ -7,8 +7,11 @@ export default function Login() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
+    
     // Check if user is already logged in
     getSession().then((session) => {
       if (session) {
@@ -46,6 +49,19 @@ export default function Login() {
   const handleMockLogin = () => {
     // Mock login - go directly to dashboard
     router.push('/dashboard')
+  }
+
+  if (!isClient) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 bg-gray-50">
+        <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p>Loading...</p>
+          </div>
+        </div>
+      </main>
+    )
   }
 
   return (
