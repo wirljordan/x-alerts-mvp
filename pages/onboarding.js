@@ -505,7 +505,7 @@ export default function Onboarding() {
                 
                 <div className="pt-2">
                   <p className="text-xs text-white/60 text-center">
-                    Didn't receive the code? <button 
+                    Didn't receive the code or need a new one? <button 
                       onClick={async () => {
                         const sent = await sendVerificationCode()
                         if (sent) {
