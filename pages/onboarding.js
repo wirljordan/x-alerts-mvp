@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
+import Head from 'next/head'
+
+// Add Stripe script to head
+const loadStripe = () => {
+  if (typeof window !== 'undefined' && !window.Stripe) {
+    const script = document.createElement('script')
+    script.src = 'https://js.stripe.com/v3/'
+    script.async = true
+    document.head.appendChild(script)
+  }
+}
 
 export default function Onboarding() {
   const [user, setUser] = useState(null)
@@ -7,6 +18,7 @@ export default function Onboarding() {
   const [verificationCode, setVerificationCode] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
   const [isCompleting, setIsCompleting] = useState(false)
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const [formData, setFormData] = useState({
     goal: 'leads', // Pre-select first option
     phone: '',
@@ -149,18 +161,78 @@ export default function Onboarding() {
   }
 
   const handleComplete = async () => {
-    setIsCompleting(true)
+    // If free plan, complete onboarding directly
+    if (formData.plan === 'free') {
+      setIsCompleting(true)
+      
+      // TODO: Save user data to database
+      console.log('Onboarding completed:', formData)
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Set onboarding completion cookie
+      document.cookie = 'onboarding_completed=true; Path=/; Secure; SameSite=Strict; Max-Age=31536000'
+      
+      router.push('/dashboard')
+    } else {
+      // For paid plans, redirect to Stripe checkout
+      await handleStripeCheckout()
+    }
+  }
+
+  const handleStripeCheckout = async () => {
+    setIsProcessingPayment(true)
     
-    // TODO: Save user data to database
-    console.log('Onboarding completed:', formData)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    // Set onboarding completion cookie
-    document.cookie = 'onboarding_completed=true; Path=/; Secure; SameSite=Strict; Max-Age=31536000'
-    
-    router.push('/dashboard')
+    try {
+      // Create checkout session
+      const response = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan: formData.plan,
+          userId: user?.id || 'unknown',
+          userEmail: formData.email
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session')
+      }
+
+      // Load Stripe
+      loadStripe()
+      
+      // Wait for Stripe to load
+      await new Promise(resolve => {
+        const checkStripe = () => {
+          if (window.Stripe) {
+            resolve()
+          } else {
+            setTimeout(checkStripe, 100)
+          }
+        }
+        checkStripe()
+      })
+
+      // Redirect to Stripe checkout
+      const stripe = window.Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+      const { error } = await stripe.redirectToCheckout({
+        sessionId: data.sessionId
+      })
+
+      if (error) {
+        throw new Error(error.message)
+      }
+    } catch (error) {
+      console.error('Stripe checkout error:', error)
+      alert('Payment setup failed. Please try again.')
+      setIsProcessingPayment(false)
+    }
   }
 
   const updateFormData = (field, value) => {
@@ -250,7 +322,11 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0F1C2E]">
+    <>
+      <Head>
+        <script src="https://js.stripe.com/v3/" async></script>
+      </Head>
+      <div className="min-h-screen bg-[#0F1C2E]">
       {/* Header */}
       <div className="bg-[#0F1C2E]/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-2xl mx-auto px-4 py-4">
@@ -543,9 +619,9 @@ export default function Onboarding() {
             <div className="flex flex-col items-end space-y-2">
               <button
                 onClick={handleNext}
-                disabled={!isStepValid() || isCompleting}
+                disabled={!isStepValid() || isCompleting || isProcessingPayment}
                 className={`px-8 py-3 font-semibold rounded-lg transition-all duration-200 flex items-center space-x-2 ${
-                  isStepValid() && !isCompleting
+                  isStepValid() && !isCompleting && !isProcessingPayment
                     ? 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] hover:scale-105' 
                     : 'bg-white/20 text-white/40 cursor-not-allowed'
                 }`}
@@ -555,9 +631,19 @@ export default function Onboarding() {
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0F1C2E]"></div>
                     <span>Creating your account...</span>
                   </>
+                ) : isProcessingPayment ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0F1C2E]"></div>
+                    <span>Setting up payment...</span>
+                  </>
                 ) : (
                   <>
-                    <span>{currentStep === 4 ? 'Complete Setup' : 'Continue'}</span>
+                    <span>
+                      {currentStep === 4 
+                        ? (formData.plan === 'free' ? 'Complete Setup' : `Start ${formData.plan.charAt(0).toUpperCase() + formData.plan.slice(1)} Plan`)
+                        : 'Continue'
+                      }
+                    </span>
                     {isStepValid() && <span>→</span>}
                   </>
                 )}
@@ -575,5 +661,6 @@ export default function Onboarding() {
         </div>
       </div>
     </div>
+    </>
   )
 } 
