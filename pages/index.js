@@ -236,7 +236,12 @@ export default function Home() {
                   <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">25</span> SMS / mo</div>
                 </div>
               </div>
-              <button className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 hover:scale-105 transition-all duration-200">Get Started</button>
+              <button 
+                onClick={handleSignIn}
+                className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 hover:scale-105 transition-all duration-200"
+              >
+                Get Started
+              </button>
             </div>
             {/* Starter Plan */}
             <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg hover:scale-[1.02] transition-all duration-300">
@@ -251,7 +256,12 @@ export default function Home() {
                   <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">300</span> SMS / mo</div>
                 </div>
               </div>
-              <button className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 hover:scale-105 transition-all duration-200">Choose Starter</button>
+              <button 
+                onClick={handleSignIn}
+                className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 hover:scale-105 transition-all duration-200"
+              >
+                Choose Starter
+              </button>
             </div>
             {/* Growth Plan - Most Popular */}
             <div className="bg-[#0F1C2E] border-2 border-[#16D9E3] rounded-2xl p-8 flex flex-col items-center shadow-2xl relative hover:scale-[1.02] transition-all duration-300">
@@ -267,7 +277,12 @@ export default function Home() {
                   <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">1,000</span> SMS / mo</div>
                 </div>
               </div>
-              <button className="w-full py-3 rounded-lg bg-[#16D9E3] text-[#0F1C2E] font-semibold border border-[#16D9E3] hover:bg-[#16D9E3]/90 hover:scale-105 transition-all duration-200">Choose Growth</button>
+              <button 
+                onClick={handleSignIn}
+                className="w-full py-3 rounded-lg bg-[#16D9E3] text-[#0F1C2E] font-semibold border border-[#16D9E3] hover:bg-[#16D9E3]/90 hover:scale-105 transition-all duration-200"
+              >
+                Choose Growth
+              </button>
             </div>
             {/* Pro Plan */}
             <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg hover:scale-[1.02] transition-all duration-300">
@@ -282,7 +297,12 @@ export default function Home() {
                   <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">3,000</span> SMS / mo</div>
                 </div>
               </div>
-              <button className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 hover:scale-105 transition-all duration-200">Choose Pro</button>
+              <button 
+                onClick={handleSignIn}
+                className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 hover:scale-105 transition-all duration-200"
+              >
+                Choose Pro
+              </button>
             </div>
           </div>
 
