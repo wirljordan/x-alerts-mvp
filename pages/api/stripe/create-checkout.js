@@ -72,6 +72,15 @@ export default async function handler(req, res) {
     res.status(200).json({ sessionId: session.id })
   } catch (error) {
     console.error('Stripe checkout error:', error)
-    res.status(500).json({ error: 'Failed to create checkout session' })
+    console.error('Error details:', {
+      message: error.message,
+      type: error.type,
+      code: error.code,
+      statusCode: error.statusCode
+    })
+    res.status(500).json({ 
+      error: 'Failed to create checkout session',
+      details: error.message 
+    })
   }
 } 
