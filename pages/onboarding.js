@@ -4,6 +4,8 @@ import { useRouter } from 'next/router'
 export default function Onboarding() {
   const [user, setUser] = useState(null)
   const [currentStep, setCurrentStep] = useState(1)
+  const [verificationCode, setVerificationCode] = useState('')
+  const [isVerifying, setIsVerifying] = useState(false)
   const [formData, setFormData] = useState({
     goal: 'leads', // Pre-select first option
     phone: '',
@@ -50,13 +52,38 @@ export default function Onboarding() {
       if (!validateStep2()) {
         return
       }
+      // Send verification code when moving to step 3
+      sendVerificationCode()
+    } else if (currentStep === 3) {
+      if (!validateVerificationCode()) {
+        return
+      }
     }
     
-    if (currentStep < 3) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1)
     } else {
       handleComplete()
     }
+  }
+
+  const sendVerificationCode = async () => {
+    // TODO: Implement actual SMS/email verification
+    console.log('Sending verification code to:', formData.phone || formData.email)
+    // For now, just simulate sending
+  }
+
+  const validateVerificationCode = () => {
+    if (!verificationCode.trim()) {
+      setValidationErrors(prev => ({ ...prev, verificationCode: 'Please enter the verification code' }))
+      return false
+    }
+    if (verificationCode.length !== 6) {
+      setValidationErrors(prev => ({ ...prev, verificationCode: 'Verification code must be 6 digits' }))
+      return false
+    }
+    setValidationErrors(prev => ({ ...prev, verificationCode: null }))
+    return true
   }
 
   const handleBack = () => {
@@ -142,6 +169,8 @@ export default function Onboarding() {
         const noErrors = !validationErrors.phone && !validationErrors.email
         return hasContact && noErrors
       case 3:
+        return verificationCode.length === 6 && !validationErrors.verificationCode
+      case 4:
         return formData.plan !== ''
       default:
         return false
@@ -196,17 +225,17 @@ export default function Onboarding() {
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-white/60">Step {currentStep} of 3</span>
-            <span className="text-sm text-white/60">{Math.round((currentStep / 3) * 100)}%</span>
+            <span className="text-sm text-white/60">Step {currentStep} of 4</span>
+            <span className="text-sm text-white/60">{Math.round((currentStep / 4) * 100)}%</span>
           </div>
           <div className="w-full bg-white/10 rounded-full h-2">
             <div 
               className="bg-gradient-to-r from-[#16D9E3] to-[#16D9E3]/80 h-2 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${(currentStep / 3) * 100}%` }}
+              style={{ width: `${(currentStep / 4) * 100}%` }}
             ></div>
           </div>
           <div className="text-xs text-white/40 mt-2 text-center">
-            Goal → Contact → Plan
+            Goal → Contact → Verify → Plan
           </div>
         </div>
 
@@ -307,6 +336,47 @@ export default function Onboarding() {
 
           {currentStep === 3 && (
             <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Verify your contact</h2>
+              <p className="text-white/70 mb-8">We've sent a verification code to your contact method</p>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-white font-medium mb-2">Verification Code</label>
+                  <input
+                    type="text"
+                    value={verificationCode}
+                    onChange={(e) => {
+                      setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                      if (validationErrors.verificationCode) {
+                        setValidationErrors(prev => ({ ...prev, verificationCode: null }))
+                      }
+                    }}
+                    placeholder="123456"
+                    maxLength={6}
+                    className={`w-full px-4 py-3 bg-white/10 border rounded-lg text-white placeholder-white/40 focus:outline-none transition-colors text-center text-2xl tracking-widest ${
+                      validationErrors.verificationCode
+                        ? 'border-red-400 focus:border-red-400'
+                        : 'border-white/20 focus:border-[#16D9E3]'
+                    }`}
+                  />
+                  {validationErrors.verificationCode ? (
+                    <p className="text-xs text-red-400 mt-1 text-center">{validationErrors.verificationCode}</p>
+                  ) : (
+                    <p className="text-xs text-white/70 mt-1 text-center">Enter the 6-digit code we sent you</p>
+                  )}
+                </div>
+                
+                <div className="pt-2">
+                  <p className="text-xs text-white/60 text-center">
+                    Didn't receive the code? <button className="text-[#16D9E3] hover:underline">Resend</button>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 4 && (
+            <div>
               <h2 className="text-2xl font-bold text-white mb-2">Choose your plan</h2>
               <p className="text-white/70 mb-8">Start free, upgrade when you need more</p>
               
@@ -395,7 +465,7 @@ export default function Onboarding() {
                     : 'bg-white/20 text-white/40 cursor-not-allowed'
                 }`}
               >
-                <span>{currentStep === 3 ? 'Complete Setup' : 'Continue'}</span>
+                <span>{currentStep === 4 ? 'Complete Setup' : 'Continue'}</span>
                 {isStepValid() && <span>→</span>}
               </button>
               <button
