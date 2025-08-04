@@ -153,9 +153,11 @@ export default function CreateAlert() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <div className="w-8 h-8 bg-[#16D9E3] rounded-lg flex items-center justify-center">
-                <span className="text-[#0F1C2E] font-bold text-sm">ER</span>
-              </div>
+              <img 
+                src="https://lfvokdiatflpxnohmofo.supabase.co/storage/v1/object/sign/earlyreply/Untitled%20design-21.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85OGNkMmM5Zi1jNDJlLTQ2NTgtYTMxNi1hM2ZkNTU2MjFhMjUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlYXJseXJlcGx5L1VudGl0bGVkIGRlc2lnbi0yMS5wbmciLCJpYXQiOjE3NTQzMjQyODEsImV4cCI6MTc4NTg2MDI4MX0.0u_q6EYDmSciW3Fr8Ty3f-0PuUEY_e5Ea-zvIMJJiV4"
+                alt="EarlyReply Logo"
+                className="h-8 w-auto"
+              />
               <h1 className="text-xl font-bold text-white">Create Alert</h1>
             </div>
             {user && (

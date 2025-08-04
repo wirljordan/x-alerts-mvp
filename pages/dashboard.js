@@ -78,9 +78,11 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4 lg:py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 lg:space-x-4">
-              <div className="w-8 h-8 lg:w-10 lg:h-10 bg-[#16D9E3] rounded-lg flex items-center justify-center">
-                <span className="text-[#0F1C2E] font-bold text-sm lg:text-base">ER</span>
-              </div>
+              <img 
+                src="https://lfvokdiatflpxnohmofo.supabase.co/storage/v1/object/sign/earlyreply/Untitled%20design-21.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85OGNkMmM5Zi1jNDJlLTQ2NTgtYTMxNi1hM2ZkNTU2MjFhMjUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlYXJseXJlcGx5L1VudGl0bGVkIGRlc2lnbi0yMS5wbmciLCJpYXQiOjE3NTQzMjQyODEsImV4cCI6MTc4NTg2MDI4MX0.0u_q6EYDmSciW3Fr8Ty3f-0PuUEY_e5Ea-zvIMJJiV4"
+                alt="EarlyReply Logo"
+                className="h-8 w-auto lg:h-10"
+              />
               <h1 className="text-xl lg:text-2xl font-bold text-white">EarlyReply</h1>
             </div>
             {user && (
