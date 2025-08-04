@@ -554,12 +554,14 @@ export default function Onboarding() {
                   </>
                 )}
               </button>
-              <button
-                onClick={handleNext}
-                className="text-xs text-white/50 hover:text-white/70 transition-colors underline"
-              >
-                Skip for now
-              </button>
+              {currentStep !== 2 && (
+                <button
+                  onClick={handleNext}
+                  className="text-xs text-white/50 hover:text-white/70 transition-colors underline"
+                >
+                  Skip for now
+                </button>
+              )}
             </div>
           </div>
         </div>
