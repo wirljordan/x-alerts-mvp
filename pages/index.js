@@ -221,49 +221,65 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
             {/* Free Plan */}
-            <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg">
+            <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg hover:scale-[1.02] transition-all duration-300">
               <h3 className="text-2xl font-bold text-white mb-2">Free</h3>
               <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$0</div>
               <div className="text-white mb-4 font-medium">Testing the waters</div>
-              <ul className="text-white/90 text-base space-y-2 mb-6">
-                <li><span className="font-semibold">1</span> Keyword Tracked</li>
-                <li><span className="font-semibold">25</span> SMS / mo*</li>
-              </ul>
-              <button className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 transition">Get Started</button>
+              <div className="space-y-4 mb-6 w-full">
+                <div className="border-b border-white/10 pb-2">
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">1</span> keyword tracked</div>
+                </div>
+                <div>
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">25</span> SMS / mo</div>
+                </div>
+              </div>
+              <button className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 hover:scale-105 transition-all duration-200">Get Started</button>
             </div>
             {/* Starter Plan */}
-            <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg">
+            <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg hover:scale-[1.02] transition-all duration-300">
               <h3 className="text-2xl font-bold text-white mb-2">Starter</h3>
               <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$9</div>
               <div className="text-white mb-4 font-medium">Solo creators</div>
-              <ul className="text-white/90 text-base space-y-2 mb-6">
-                <li><span className="font-semibold">2</span> Keywords Tracked</li>
-                <li><span className="font-semibold">300</span> SMS / mo*</li>
-              </ul>
-              <button className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 transition">Choose Starter</button>
+              <div className="space-y-4 mb-6 w-full">
+                <div className="border-b border-white/10 pb-2">
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">2</span> keywords tracked</div>
+                </div>
+                <div>
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">300</span> SMS / mo</div>
+                </div>
+              </div>
+              <button className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 hover:scale-105 transition-all duration-200">Choose Starter</button>
             </div>
             {/* Growth Plan - Most Popular */}
-            <div className="bg-[#0F1C2E] border-2 border-[#16D9E3] rounded-2xl p-8 flex flex-col items-center shadow-2xl relative">
-              <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-[#16D9E3] text-[#0F1C2E] text-xs font-bold px-4 py-1 rounded-full shadow">★ Most Popular</div>
+            <div className="bg-[#0F1C2E] border-2 border-[#16D9E3] rounded-2xl p-8 flex flex-col items-center shadow-2xl relative hover:scale-[1.02] transition-all duration-300">
+              <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-[#16D9E3] text-[#0F1C2E] text-xs font-bold px-4 py-1 rounded-full shadow-lg drop-shadow-md">★ Most Popular</div>
               <h3 className="text-2xl font-bold text-white mb-2">Growth</h3>
               <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$19</div>
               <div className="text-white mb-4 font-medium">Indie hackers & small shops</div>
-              <ul className="text-white/90 text-base space-y-2 mb-6">
-                <li><span className="font-semibold">10</span> Keywords Tracked</li>
-                <li><span className="font-semibold">1,000</span> SMS / mo*</li>
-              </ul>
-              <button className="w-full py-3 rounded-lg bg-[#16D9E3] text-[#0F1C2E] font-semibold border border-[#16D9E3] hover:bg-[#0F1C2E] hover:text-[#16D9E3] transition">Choose Growth</button>
+              <div className="space-y-4 mb-6 w-full">
+                <div className="border-b border-white/10 pb-2">
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">10</span> keywords tracked</div>
+                </div>
+                <div>
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">1,000</span> SMS / mo</div>
+                </div>
+              </div>
+              <button className="w-full py-3 rounded-lg bg-[#16D9E3] text-[#0F1C2E] font-semibold border border-[#16D9E3] hover:bg-[#16D9E3]/90 hover:scale-105 transition-all duration-200">Choose Growth</button>
             </div>
             {/* Pro Plan */}
-            <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg">
+            <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg hover:scale-[1.02] transition-all duration-300">
               <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
               <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$49</div>
               <div className="text-white mb-4 font-medium">Small teams & agencies</div>
-              <ul className="text-white/90 text-base space-y-2 mb-6">
-                <li><span className="font-semibold">30</span> Keywords Tracked</li>
-                <li><span className="font-semibold">3,000</span> SMS / mo*</li>
-              </ul>
-              <button className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 transition">Choose Pro</button>
+              <div className="space-y-4 mb-6 w-full">
+                <div className="border-b border-white/10 pb-2">
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">30</span> keywords tracked</div>
+                </div>
+                <div>
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">3,000</span> SMS / mo</div>
+                </div>
+              </div>
+              <button className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 hover:scale-105 transition-all duration-200">Choose Pro</button>
             </div>
           </div>
 
