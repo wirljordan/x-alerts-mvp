@@ -153,52 +153,12 @@ export default function Home() {
             {/* Right Column - Phone Mockup */}
             <div className="flex justify-center lg:justify-end">
               <div className="relative">
-                {/* Phone Frame */}
-                <div className="w-72 h-96 lg:w-96 lg:h-[28rem] xl:w-[28rem] xl:h-[32rem] bg-[#0F1C2E] rounded-[3rem] lg:rounded-[4rem] p-3 lg:p-4 shadow-2xl lg:shadow-3xl">
-                  <div className="w-full h-full bg-[#0F1C2E] rounded-[2.5rem] lg:rounded-[3.5rem] overflow-hidden relative">
-                    {/* Phone Screen Content */}
-                    <div className="w-full h-full bg-gradient-to-b from-[#0F1C2E] to-[#1a2a3e] p-4 lg:p-6">
-                      {/* Mock X Post */}
-                      <div className="bg-[#0F1C2E] rounded-lg lg:rounded-xl p-4 lg:p-6 border border-white/10">
-                        <div className="flex items-start space-x-3 lg:space-x-4">
-                          <div className="w-10 h-10 lg:w-12 lg:h-12 bg-[#16D9E3] rounded-full flex items-center justify-center">
-                            <span className="text-[#0F1C2E] font-bold text-sm lg:text-base">JD</span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2 lg:mb-3">
-                              <span className="text-white font-semibold text-sm lg:text-base">Jordan Desjardins</span>
-                              <span className="text-white/60 text-xs lg:text-sm">@Jordan_Desj</span>
-                            </div>
-                            <p className="text-white/90 text-sm lg:text-base leading-relaxed">
-                              Just launched our new product! 🚀 Early access available now. DM for details.
-                            </p>
-                            <div className="flex items-center justify-between mt-3 lg:mt-4 pt-3 lg:pt-4 border-t border-white/10">
-                              <div className="flex items-center space-x-4 text-white/60 text-xs lg:text-sm">
-                                <span>💬 12</span>
-                                <span>🔄 45</span>
-                                <span>❤️ 128</span>
-                              </div>
-                              <span className="text-white/40 text-xs lg:text-sm">2m</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* EarlyReply Notification */}
-                      <div className="mt-4 lg:mt-6 bg-[#16D9E3]/20 border border-[#16D9E3]/30 rounded-lg lg:rounded-xl p-3 lg:p-4">
-                        <div className="flex items-center space-x-2 lg:space-x-3">
-                          <div className="w-6 h-6 lg:w-8 lg:h-8 bg-[#16D9E3] rounded-full flex items-center justify-center">
-                            <span className="text-[#0F1C2E] text-xs lg:text-sm font-bold">ER</span>
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-[#16D9E3] text-sm lg:text-base font-medium">EarlyReply Alert</p>
-                            <p className="text-white/80 text-xs lg:text-sm">New post from @Jordan_Desj</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {/* Custom Phone Mockup Image */}
+                <img 
+                  src="https://lfvokdiatflpxnohmofo.supabase.co/storage/v1/object/sign/earlyreply/1111.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85OGNkMmM5Zi1jNDJlLTQ2NTgtYTMxNi1hM2ZkNTU2MjFhMjUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlYXJseXJlcGx5LzExMTEucG5nIiwiaWF0IjoxNzU0MzIzNDUyLCJleHAiOjE3ODU4NTk0NTJ9.cHgjDlvNPriPKxXA2TH-c_Mm3X_UpOiTy5E_qYPbYIU"
+                  alt="EarlyReply phone mockup showing X post and notification"
+                  className="w-72 h-96 lg:w-96 lg:h-[28rem] xl:w-[28rem] xl:h-[32rem] object-contain drop-shadow-2xl lg:drop-shadow-3xl"
+                />
                 
                 {/* Decorative Elements */}
                 <div className="absolute -top-4 -right-4 lg:-top-6 lg:-right-6 w-8 h-8 lg:w-12 lg:h-12 bg-[#16D9E3] rounded-full opacity-60 animate-pulse"></div>

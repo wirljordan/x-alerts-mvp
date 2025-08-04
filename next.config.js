@@ -36,7 +36,7 @@ const nextConfig = {
   
   // Image optimization
   images: {
-    domains: ['pbs.twimg.com', 'abs.twimg.com'],
+    domains: ['pbs.twimg.com', 'abs.twimg.com', 'lfvokdiatflpxnohmofo.supabase.co'],
   },
 }
 
