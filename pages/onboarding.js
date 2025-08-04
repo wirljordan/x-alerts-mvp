@@ -562,7 +562,7 @@ export default function Onboarding() {
                   </>
                 )}
               </button>
-              {currentStep !== 2 && (
+              {currentStep === 1 && (
                 <button
                   onClick={handleNext}
                   className="text-xs text-white/50 hover:text-white/70 transition-colors underline"
