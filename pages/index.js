@@ -209,6 +209,66 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Pricing Section */}
+      <div id="pricing" className="py-20 lg:py-32 bg-white/5 backdrop-blur-sm border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 lg:mb-24">
+            <h2 className="text-4xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 lg:mb-6">Pricing</h2>
+            <p className="text-xl lg:text-2xl xl:text-3xl text-white/80 max-w-3xl mx-auto">
+              Simple, transparent pricing for every stage of your journey
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
+            {/* Free Plan */}
+            <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg">
+              <h3 className="text-2xl font-bold text-white mb-2">Free</h3>
+              <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$0</div>
+              <div className="text-white/70 mb-4">Testing the waters</div>
+              <ul className="text-white/90 text-base space-y-2 mb-6">
+                <li><span className="font-semibold">1</span> Keyword Tracked</li>
+                <li><span className="font-semibold">25</span> SMS / mo*</li>
+              </ul>
+              <button className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 transition">Get Started</button>
+            </div>
+            {/* Starter Plan */}
+            <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg">
+              <h3 className="text-2xl font-bold text-white mb-2">Starter</h3>
+              <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$9</div>
+              <div className="text-white/70 mb-4">Solo creators</div>
+              <ul className="text-white/90 text-base space-y-2 mb-6">
+                <li><span className="font-semibold">2</span> Keywords Tracked</li>
+                <li><span className="font-semibold">300</span> SMS / mo*</li>
+              </ul>
+              <button className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 transition">Choose Starter</button>
+            </div>
+            {/* Growth Plan - Most Popular */}
+            <div className="bg-[#0F1C2E] border-2 border-[#16D9E3] rounded-2xl p-8 flex flex-col items-center shadow-2xl relative">
+              <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-[#16D9E3] text-[#0F1C2E] text-xs font-bold px-4 py-1 rounded-full shadow">★ Most Popular</div>
+              <h3 className="text-2xl font-bold text-white mb-2">Growth</h3>
+              <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$19</div>
+              <div className="text-white/70 mb-4">Indie hackers & small shops</div>
+              <ul className="text-white/90 text-base space-y-2 mb-6">
+                <li><span className="font-semibold">10</span> Keywords Tracked</li>
+                <li><span className="font-semibold">1,000</span> SMS / mo*</li>
+              </ul>
+              <button className="w-full py-3 rounded-lg bg-[#16D9E3] text-[#0F1C2E] font-semibold border border-[#16D9E3] hover:bg-[#0F1C2E] hover:text-[#16D9E3] transition">Choose Growth</button>
+            </div>
+            {/* Pro Plan */}
+            <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg">
+              <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
+              <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$49</div>
+              <div className="text-white/70 mb-4">Small teams & agencies</div>
+              <ul className="text-white/90 text-base space-y-2 mb-6">
+                <li><span className="font-semibold">30</span> Keywords Tracked</li>
+                <li><span className="font-semibold">3,000</span> SMS / mo*</li>
+              </ul>
+              <button className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 transition">Choose Pro</button>
+            </div>
+          </div>
+          <div className="text-xs text-white/60 mt-8 text-center">*Included SMS are pooled across all alerts. Additional usage may incur extra charges.</div>
+        </div>
+      </div>
     </div>
   )
 }
