@@ -31,7 +31,7 @@ export default async function handler(req, res) {
 
     // Send SMS via Twilio
     const message = await client.messages.create({
-      body: `EarlyReply: Your verification code is ${verificationCode}. This code expires in 10 minutes. Reply STOP to unsubscribe.`,
+      body: `Your EarlyReply verification code is ${verificationCode}. Never share this code with anyone. Reply STOP to unsubscribe.`,
       from: process.env.TWILIO_PHONE_NUMBER,
       to: phone
     })
