@@ -102,9 +102,6 @@ export default function Home() {
                 <a href="#pricing" className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm lg:text-base font-medium transition-colors duration-200 hover:bg-white/10">
                   Pricing
                 </a>
-                <a href="#about" className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm lg:text-base font-medium transition-colors duration-200 hover:bg-white/10">
-                  About
-                </a>
               </div>
             </div>
           </div>

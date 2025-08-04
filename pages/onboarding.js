@@ -5,7 +5,7 @@ export default function Onboarding() {
   const [user, setUser] = useState(null)
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState({
-    goal: '',
+    goal: 'leads', // Pre-select first option
     phone: '',
     email: '',
     plan: 'starter'
@@ -112,8 +112,8 @@ export default function Onboarding() {
             {user && (
               <div className="flex items-center space-x-3">
                 <div className="text-right">
-                  <p className="text-sm font-medium text-white">{user.name}</p>
-                  <p className="text-xs text-white/60">@{user.username}</p>
+                  <p className="text-sm font-medium text-white truncate max-w-32">{user.name}</p>
+                  <p className="text-xs text-white/60 truncate max-w-32">@{user.username}</p>
                 </div>
                 {user.image && (
                   <img 
@@ -141,6 +141,9 @@ export default function Onboarding() {
               style={{ width: `${(currentStep / 3) * 100}%` }}
             ></div>
           </div>
+          <div className="text-xs text-white/40 mt-2 text-center">
+            Goal → Contact → Plan
+          </div>
         </div>
 
         {/* Step Content */}
@@ -160,10 +163,10 @@ export default function Onboarding() {
                   <button
                     key={option.value}
                     onClick={() => updateFormData('goal', option.value)}
-                    className={`w-full p-4 rounded-lg border transition-all duration-200 text-left ${
+                    className={`w-full p-4 rounded-lg border transition-all duration-200 text-left cursor-pointer ${
                       formData.goal === option.value
-                        ? 'border-[#16D9E3] bg-[#16D9E3]/10'
-                        : 'border-white/20 bg-white/5 hover:bg-white/10'
+                        ? 'border-[#16D9E3] bg-[#16D9E3]/10 shadow-lg shadow-[#16D9E3]/20'
+                        : 'border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30'
                     }`}
                   >
                     <div className="flex items-center space-x-4">
@@ -175,6 +178,15 @@ export default function Onboarding() {
                     </div>
                   </button>
                 ))}
+              </div>
+              
+              <div className="mt-4 text-center">
+                <button 
+                  onClick={() => updateFormData('goal', 'other')}
+                  className="text-sm text-white/50 hover:text-white/70 transition-colors underline"
+                >
+                  Other / Not sure
+                </button>
               </div>
             </div>
           )}
@@ -194,7 +206,7 @@ export default function Onboarding() {
                     placeholder="+1 (555) 123-4567"
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
                   />
-                  <p className="text-xs text-white/60 mt-1">We'll send SMS notifications for instant alerts</p>
+                  <p className="text-xs text-white/70 mt-1">We'll send SMS notifications for instant alerts</p>
                 </div>
                 
                 <div>
@@ -206,7 +218,7 @@ export default function Onboarding() {
                     placeholder="your@email.com"
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
                   />
-                  <p className="text-xs text-white/60 mt-1">Optional: Receive email summaries</p>
+                  <p className="text-xs text-white/70 mt-1">Optional: Receive email summaries</p>
                 </div>
               </div>
             </div>
@@ -292,13 +304,26 @@ export default function Onboarding() {
               Back
             </button>
             
-            <button
-              onClick={handleNext}
-              disabled={!isStepValid()}
-              className="px-8 py-3 bg-[#16D9E3] hover:bg-[#16D9E3]/90 disabled:bg-white/20 disabled:cursor-not-allowed text-[#0F1C2E] font-semibold rounded-lg transition-colors"
-            >
-              {currentStep === 3 ? 'Complete Setup' : 'Continue'}
-            </button>
+            <div className="flex flex-col items-end space-y-2">
+              <button
+                onClick={handleNext}
+                disabled={!isStepValid()}
+                className={`px-8 py-3 font-semibold rounded-lg transition-all duration-200 flex items-center space-x-2 ${
+                  isStepValid() 
+                    ? 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] hover:scale-105' 
+                    : 'bg-white/20 text-white/40 cursor-not-allowed'
+                }`}
+              >
+                <span>{currentStep === 3 ? 'Complete Setup' : 'Continue'}</span>
+                {isStepValid() && <span>→</span>}
+              </button>
+              <button
+                onClick={handleComplete}
+                className="text-xs text-white/50 hover:text-white/70 transition-colors underline"
+              >
+                Skip for now
+              </button>
+            </div>
           </div>
         </div>
       </div>
