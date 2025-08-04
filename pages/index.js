@@ -94,8 +94,8 @@ export default function Home() {
                 <span className="text-2xl lg:text-3xl font-bold text-white">EarlyReply</span>
               </div>
             </div>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-6 lg:space-x-8">
+            <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
+              <div className="flex items-baseline space-x-6 lg:space-x-8">
                 <a href="#features" className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm lg:text-base font-medium transition-colors duration-200 hover:bg-white/10">
                   Features
                 </a>
@@ -103,6 +103,12 @@ export default function Home() {
                   Pricing
                 </a>
               </div>
+              <button
+                onClick={handleSignIn}
+                className="bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:scale-105"
+              >
+                Log In with X
+              </button>
             </div>
           </div>
         </div>
