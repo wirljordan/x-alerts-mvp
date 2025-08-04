@@ -47,15 +47,20 @@ export default function Onboarding() {
     getUserFromSession()
   }, [router])
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep === 2) {
       if (!validateStep2()) {
         return
       }
       // Send verification code when moving to step 3
-      sendVerificationCode()
+      const sent = await sendVerificationCode()
+      if (!sent) {
+        // Could show an error message here
+        return
+      }
     } else if (currentStep === 3) {
-      if (!validateVerificationCode()) {
+      const isValid = await validateVerificationCode()
+      if (!isValid) {
         return
       }
     }
@@ -68,12 +73,34 @@ export default function Onboarding() {
   }
 
   const sendVerificationCode = async () => {
-    // TODO: Implement actual SMS/email verification
-    console.log('Sending verification code to:', formData.phone || formData.email)
-    // For now, just simulate sending
+    try {
+      const response = await fetch('/api/verify/send-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: formData.phone
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error('Failed to send verification code:', data.error)
+        // You could show an error message to the user here
+        return false
+      }
+
+      console.log('Verification code sent successfully:', data)
+      return true
+    } catch (error) {
+      console.error('Error sending verification code:', error)
+      return false
+    }
   }
 
-  const validateVerificationCode = () => {
+  const validateVerificationCode = async () => {
     if (!verificationCode.trim()) {
       setValidationErrors(prev => ({ ...prev, verificationCode: 'Please enter the verification code' }))
       return false
@@ -82,8 +109,36 @@ export default function Onboarding() {
       setValidationErrors(prev => ({ ...prev, verificationCode: 'Verification code must be 6 digits' }))
       return false
     }
-    setValidationErrors(prev => ({ ...prev, verificationCode: null }))
-    return true
+
+    try {
+      setIsVerifying(true)
+      const response = await fetch('/api/verify/check-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: formData.phone,
+          code: verificationCode
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setValidationErrors(prev => ({ ...prev, verificationCode: data.error }))
+        return false
+      }
+
+      setValidationErrors(prev => ({ ...prev, verificationCode: null }))
+      return true
+    } catch (error) {
+      console.error('Error verifying code:', error)
+      setValidationErrors(prev => ({ ...prev, verificationCode: 'Failed to verify code. Please try again.' }))
+      return false
+    } finally {
+      setIsVerifying(false)
+    }
   }
 
   const handleBack = () => {
@@ -368,7 +423,19 @@ export default function Onboarding() {
                 
                 <div className="pt-2">
                   <p className="text-xs text-white/60 text-center">
-                    Didn't receive the code? <button className="text-[#16D9E3] hover:underline">Resend</button>
+                    Didn't receive the code? <button 
+                      onClick={async () => {
+                        const sent = await sendVerificationCode()
+                        if (sent) {
+                          alert('Verification code resent!')
+                        } else {
+                          alert('Failed to resend code. Please try again.')
+                        }
+                      }}
+                      className="text-[#16D9E3] hover:underline"
+                    >
+                      Resend
+                    </button>
                   </p>
                 </div>
               </div>
