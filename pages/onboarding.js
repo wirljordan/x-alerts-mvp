@@ -180,14 +180,7 @@ export default function Onboarding() {
                 ))}
               </div>
               
-              <div className="mt-4 text-center">
-                <button 
-                  onClick={() => updateFormData('goal', 'other')}
-                  className="text-sm text-white/50 hover:text-white/70 transition-colors underline"
-                >
-                  Other / Not sure
-                </button>
-              </div>
+
             </div>
           )}
 
@@ -318,7 +311,7 @@ export default function Onboarding() {
                 {isStepValid() && <span>→</span>}
               </button>
               <button
-                onClick={handleComplete}
+                onClick={handleNext}
                 className="text-xs text-white/50 hover:text-white/70 transition-colors underline"
               >
                 Skip for now
