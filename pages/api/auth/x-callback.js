@@ -198,10 +198,10 @@ export default async function handler(req, res) {
         'oauth_state=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
       ])
       
-      console.log('Authentication successful, redirecting to success page')
+      console.log('Authentication successful, redirecting to dashboard')
       console.log('Session data set:', { userId: userData.data.id, username: userData.data.username })
-      // Redirect to success page
-      res.redirect('/success')
+      // Redirect to dashboard
+      res.redirect('/dashboard')
 
     } catch (error) {
       console.error('Error in callback:', error)
