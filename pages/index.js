@@ -105,7 +105,7 @@ export default function Home() {
               </div>
               <button
                 onClick={handleSignIn}
-                className="bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:scale-105"
+                className="bg-[#FF6B4A] hover:bg-[#FF6B4A]/90 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:scale-105"
               >
                 Log In with X
               </button>
