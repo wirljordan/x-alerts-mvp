@@ -7,7 +7,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  // Debug: Check if environment variables are loaded
+  console.log('Environment check:', {
+    hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
+    stripeKeyLength: process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.length : 0,
+    baseUrl: process.env.NEXT_PUBLIC_BASE_URL
+  })
+
   try {
+    // Check if Stripe key is available
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('STRIPE_SECRET_KEY is not set')
+      return res.status(500).json({ 
+        error: 'Stripe configuration error',
+        details: 'API key not configured'
+      })
+    }
+
     const { plan, userId, userEmail } = req.body
 
     // Define plan configurations
