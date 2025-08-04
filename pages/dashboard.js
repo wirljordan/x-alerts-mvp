@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 export default function Dashboard() {
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const [usage, setUsage] = useState({ used: 185, limit: 300 })
   const [alerts, setAlerts] = useState([
     { id: 1, name: 'Sneaker Leads', status: 'active', lastMatch: '2m ago' },
@@ -12,6 +13,24 @@ export default function Dashboard() {
   const router = useRouter()
 
   useEffect(() => {
+    // Handle Stripe success redirect
+    const handleStripeSuccess = () => {
+      if (router.query.success === 'true' && router.query.session_id) {
+        // Set onboarding completion cookie for successful payments
+        document.cookie = 'onboarding_completed=true; Path=/; Secure; SameSite=Strict; Max-Age=31536000'
+        
+        // Show success message
+        console.log('Payment successful! Session ID:', router.query.session_id)
+        setShowSuccessMessage(true)
+        
+        // Hide success message after 5 seconds
+        setTimeout(() => setShowSuccessMessage(false), 5000)
+        
+        // Clean up URL
+        router.replace('/dashboard', undefined, { shallow: true })
+      }
+    }
+
     // Get user from session cookie
     const getUserFromSession = () => {
       if (typeof document !== 'undefined') {
@@ -45,6 +64,7 @@ export default function Dashboard() {
       }
     }
 
+    handleStripeSuccess()
     getUserFromSession()
   }, [router])
 
@@ -73,6 +93,13 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#0F1C2E]">
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <div className="bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-3 text-center">
+          <p className="font-medium">🎉 Payment successful! Your account has been activated.</p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-[#0F1C2E]/95 backdrop-blur-sm border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4 lg:py-6">
