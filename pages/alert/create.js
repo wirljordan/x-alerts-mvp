@@ -158,6 +158,8 @@ export default function CreateAlert() {
                 alt="EarlyReply Logo"
                 className="h-8 w-auto"
               />
+              <span className="text-xl font-bold text-white">EarlyReply</span>
+              <span className="text-xl font-bold text-white/60">•</span>
               <h1 className="text-xl font-bold text-white">Create Alert</h1>
             </div>
             {user && (

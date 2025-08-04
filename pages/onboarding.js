@@ -107,7 +107,7 @@ export default function Onboarding() {
                 alt="EarlyReply Logo"
                 className="h-8 w-auto"
               />
-              <h1 className="text-xl font-bold text-white">EarlyReply</h1>
+              <span className="text-xl font-bold text-white">EarlyReply</span>
             </div>
             {user && (
               <div className="flex items-center space-x-3">

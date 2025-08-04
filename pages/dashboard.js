@@ -83,7 +83,7 @@ export default function Dashboard() {
                 alt="EarlyReply Logo"
                 className="h-8 w-auto lg:h-10"
               />
-              <h1 className="text-xl lg:text-2xl font-bold text-white">EarlyReply</h1>
+              <span className="text-xl lg:text-2xl font-bold text-white">EarlyReply</span>
             </div>
             {user && (
               <div className="flex items-center space-x-3 lg:space-x-6">
