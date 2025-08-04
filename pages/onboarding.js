@@ -95,10 +95,11 @@ export default function Onboarding() {
       if (!value.trim()) {
         error = 'Phone number is required'
       } else {
-        // Basic phone validation - allows various formats
-        const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
+        // More strict phone validation - requires at least 10 digits
         const cleanPhone = value.replace(/[\s\-\(\)]/g, '')
-        if (!phoneRegex.test(cleanPhone)) {
+        if (cleanPhone.length < 10) {
+          error = 'Phone number must be at least 10 digits'
+        } else if (!/^[\+]?[1-9][\d]{9,15}$/.test(cleanPhone)) {
           error = 'Please enter a valid phone number'
         }
       }
