@@ -183,28 +183,28 @@ export default function Home() {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-            <div className="text-center p-6 lg:p-8 rounded-lg lg:rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105">
+            <div className="text-center p-6 lg:p-8 rounded-lg lg:rounded-xl bg-[#0F1C2E]/80 backdrop-blur-sm border border-white/20 hover:bg-[#0F1C2E] transition-all duration-300 hover:scale-105 shadow-lg">
               <div className="w-16 h-16 lg:w-20 lg:h-20 bg-[#16D9E3]/20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
                 <span className="text-[#16D9E3] text-2xl lg:text-3xl">⚡</span>
               </div>
               <h3 className="text-xl lg:text-2xl font-semibold text-white mb-3 lg:mb-4">Instant Alerts</h3>
-              <p className="text-white/70 text-sm lg:text-base lg:text-lg">Get SMS notifications within 5 minutes of important posts</p>
+              <p className="text-white text-sm lg:text-base lg:text-lg font-medium">Get SMS notifications within 5 minutes of important posts</p>
             </div>
             
-            <div className="text-center p-6 lg:p-8 rounded-lg lg:rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105">
+            <div className="text-center p-6 lg:p-8 rounded-lg lg:rounded-xl bg-[#0F1C2E]/80 backdrop-blur-sm border border-white/20 hover:bg-[#0F1C2E] transition-all duration-300 hover:scale-105 shadow-lg">
               <div className="w-16 h-16 lg:w-20 lg:h-20 bg-[#FF6B4A]/20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
                 <span className="text-[#FF6B4A] text-2xl lg:text-3xl">🎯</span>
               </div>
               <h3 className="text-xl lg:text-2xl font-semibold text-white mb-3 lg:mb-4">Smart Monitoring</h3>
-              <p className="text-white/70 text-sm lg:text-base lg:text-lg">Monitor specific accounts and keywords that matter to you</p>
+              <p className="text-white text-sm lg:text-base lg:text-lg font-medium">Monitor specific accounts and keywords that matter to you</p>
             </div>
             
-            <div className="text-center p-6 lg:p-8 rounded-lg lg:rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105">
+            <div className="text-center p-6 lg:p-8 rounded-lg lg:rounded-xl bg-[#0F1C2E]/80 backdrop-blur-sm border border-white/20 hover:bg-[#0F1C2E] transition-all duration-300 hover:scale-105 shadow-lg">
               <div className="w-16 h-16 lg:w-20 lg:h-20 bg-[#16D9E3]/20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
                 <span className="text-[#16D9E3] text-2xl lg:text-3xl">📱</span>
               </div>
               <h3 className="text-xl lg:text-2xl font-semibold text-white mb-3 lg:mb-4">Mobile First</h3>
-              <p className="text-white/70 text-sm lg:text-base lg:text-lg">Optimized for mobile engagement and quick replies</p>
+              <p className="text-white text-sm lg:text-base lg:text-lg font-medium">Optimized for mobile engagement and quick replies</p>
             </div>
           </div>
         </div>
@@ -224,7 +224,7 @@ export default function Home() {
             <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg">
               <h3 className="text-2xl font-bold text-white mb-2">Free</h3>
               <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$0</div>
-              <div className="text-white/70 mb-4">Testing the waters</div>
+              <div className="text-white mb-4 font-medium">Testing the waters</div>
               <ul className="text-white/90 text-base space-y-2 mb-6">
                 <li><span className="font-semibold">1</span> Keyword Tracked</li>
                 <li><span className="font-semibold">25</span> SMS / mo*</li>
@@ -235,7 +235,7 @@ export default function Home() {
             <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg">
               <h3 className="text-2xl font-bold text-white mb-2">Starter</h3>
               <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$9</div>
-              <div className="text-white/70 mb-4">Solo creators</div>
+              <div className="text-white mb-4 font-medium">Solo creators</div>
               <ul className="text-white/90 text-base space-y-2 mb-6">
                 <li><span className="font-semibold">2</span> Keywords Tracked</li>
                 <li><span className="font-semibold">300</span> SMS / mo*</li>
@@ -247,7 +247,7 @@ export default function Home() {
               <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-[#16D9E3] text-[#0F1C2E] text-xs font-bold px-4 py-1 rounded-full shadow">★ Most Popular</div>
               <h3 className="text-2xl font-bold text-white mb-2">Growth</h3>
               <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$19</div>
-              <div className="text-white/70 mb-4">Indie hackers & small shops</div>
+              <div className="text-white mb-4 font-medium">Indie hackers & small shops</div>
               <ul className="text-white/90 text-base space-y-2 mb-6">
                 <li><span className="font-semibold">10</span> Keywords Tracked</li>
                 <li><span className="font-semibold">1,000</span> SMS / mo*</li>
@@ -258,7 +258,7 @@ export default function Home() {
             <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg">
               <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
               <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$49</div>
-              <div className="text-white/70 mb-4">Small teams & agencies</div>
+              <div className="text-white mb-4 font-medium">Small teams & agencies</div>
               <ul className="text-white/90 text-base space-y-2 mb-6">
                 <li><span className="font-semibold">30</span> Keywords Tracked</li>
                 <li><span className="font-semibold">3,000</span> SMS / mo*</li>
