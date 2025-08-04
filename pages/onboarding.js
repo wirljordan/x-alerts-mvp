@@ -11,7 +11,7 @@ export default function Onboarding() {
     goal: 'leads', // Pre-select first option
     phone: '',
     email: '',
-    plan: 'starter'
+    plan: 'free'
   })
   const [validationErrors, setValidationErrors] = useState({})
   const [touchedFields, setTouchedFields] = useState({})
@@ -452,21 +452,29 @@ export default function Onboarding() {
             <div>
               <h2 className="text-2xl font-bold text-white mb-2">Choose your plan</h2>
               <p className="text-white/70 mb-8">Start free, upgrade when you need more</p>
-              <p className="text-xs text-white/60 mb-6 text-center">Change or cancel anytime</p>
+              <p className="text-xs text-white/60 mb-6 text-center">Change or cancel anytime. You'll only be charged after your 7-day trial.</p>
               
               <div className="space-y-4">
                 {[
                   { 
-                    value: 'starter', 
-                    label: 'Starter', 
+                    value: 'free', 
+                    label: 'Free', 
                     price: 'Free',
                     texts: '25 SMS/month',
-                    keywords: '3 keywords tracked',
+                    keywords: '1 keyword tracked',
                     features: ['Basic monitoring', 'SMS notifications', 'Email support']
                   },
                   { 
-                    value: 'pro', 
-                    label: 'Pro', 
+                    value: 'starter', 
+                    label: 'Starter', 
+                    price: '$9/month',
+                    texts: '300 SMS/month',
+                    keywords: '2 keywords tracked',
+                    features: ['Basic monitoring', 'SMS notifications', 'Email support']
+                  },
+                  { 
+                    value: 'growth', 
+                    label: 'Growth', 
                     price: '$19/month',
                     texts: '1,000 SMS/month',
                     keywords: '10 keywords tracked',
@@ -474,23 +482,23 @@ export default function Onboarding() {
                     popular: true
                   },
                   { 
-                    value: 'scale', 
-                    label: 'Scale', 
+                    value: 'pro', 
+                    label: 'Pro', 
                     price: '$49/month',
                     texts: '3,000 SMS/month',
-                    keywords: 'Unlimited keywords',
+                    keywords: '30 keywords tracked',
                     features: ['Team collaboration', 'Custom integrations', 'Dedicated support']
                   }
                 ].map((plan) => (
                   <button
                     key={plan.value}
                     onClick={() => updateFormData('plan', plan.value)}
-                    className={`w-full p-6 rounded-lg border transition-all duration-200 text-left hover:scale-[1.01] ${
+                    className={`w-full p-6 rounded-lg border transition-all duration-200 text-left hover:scale-[1.02] ${
                       formData.plan === plan.value
                         ? 'border-[#16D9E3] bg-[#16D9E3]/10'
                         : plan.popular
-                        ? 'border-[#FF6B4A]/30 bg-white/5 hover:bg-white/10 shadow-lg shadow-[#FF6B4A]/10'
-                        : 'border-white/20 bg-white/5 hover:bg-white/10'
+                        ? 'border-[#FF6B4A]/30 bg-white/5 hover:bg-white/10 hover:ring-1 hover:ring-[#FF6B4A]/50 shadow-lg shadow-[#FF6B4A]/10'
+                        : 'border-white/20 bg-white/5 hover:bg-white/10 hover:ring-1 hover:ring-[#16D9E3]/50'
                     }`}
                   >
                     <div className="flex items-start justify-between mb-4">
@@ -545,7 +553,7 @@ export default function Onboarding() {
                 {isCompleting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0F1C2E]"></div>
-                    <span>Creating your workspace...</span>
+                    <span>Creating your account...</span>
                   </>
                 ) : (
                   <>
