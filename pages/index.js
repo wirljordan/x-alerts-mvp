@@ -164,9 +164,7 @@ export default function Home() {
                   className="w-72 h-96 lg:w-96 lg:h-[28rem] xl:w-[28rem] xl:h-[32rem] object-contain drop-shadow-2xl lg:drop-shadow-3xl"
                 />
                 
-                {/* Decorative Elements */}
-                <div className="absolute -top-4 -right-4 lg:-top-6 lg:-right-6 w-8 h-8 lg:w-12 lg:h-12 bg-[#16D9E3] rounded-full opacity-60 animate-pulse"></div>
-                <div className="absolute -bottom-4 -left-4 lg:-bottom-6 lg:-left-6 w-6 h-6 lg:w-10 lg:h-10 bg-[#FF6B4A] rounded-full opacity-60 animate-pulse delay-1000"></div>
+
               </div>
             </div>
           </div>
