@@ -10,6 +10,8 @@ export default function Onboarding() {
     email: '',
     plan: 'starter'
   })
+  const [validationErrors, setValidationErrors] = useState({})
+  const [touchedFields, setTouchedFields] = useState({})
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
@@ -44,6 +46,12 @@ export default function Onboarding() {
   }, [router])
 
   const handleNext = () => {
+    if (currentStep === 2) {
+      if (!validateStep2()) {
+        return
+      }
+    }
+    
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1)
     } else {
@@ -69,6 +77,59 @@ export default function Onboarding() {
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+    // Clear validation error when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors(prev => ({ ...prev, [field]: null }))
+    }
+  }
+
+  const handleFieldBlur = (field) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }))
+    validateField(field, formData[field])
+  }
+
+  const validateField = (field, value) => {
+    let error = null
+    
+    if (field === 'phone') {
+      if (!value.trim()) {
+        error = 'Phone number is required'
+      } else {
+        // Basic phone validation - allows various formats
+        const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
+        const cleanPhone = value.replace(/[\s\-\(\)]/g, '')
+        if (!phoneRegex.test(cleanPhone)) {
+          error = 'Please enter a valid phone number'
+        }
+      }
+    } else if (field === 'email') {
+      if (value.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(value)) {
+          error = 'Please enter a valid email address'
+        }
+      }
+    }
+    
+    setValidationErrors(prev => ({ ...prev, [field]: error }))
+    return !error
+  }
+
+  const validateStep2 = () => {
+    const phoneValid = validateField('phone', formData.phone)
+    const emailValid = validateField('email', formData.email)
+    
+    // At least one contact method is required
+    if (!formData.phone.trim() && !formData.email.trim()) {
+      setValidationErrors(prev => ({ 
+        ...prev, 
+        phone: 'Please provide either a phone number or email address',
+        email: 'Please provide either a phone number or email address'
+      }))
+      return false
+    }
+    
+    return phoneValid && emailValid
   }
 
   const isStepValid = () => {
@@ -76,7 +137,9 @@ export default function Onboarding() {
       case 1:
         return formData.goal !== ''
       case 2:
-        return formData.phone !== '' || formData.email !== ''
+        const hasContact = formData.phone.trim() !== '' || formData.email.trim() !== ''
+        const noErrors = !validationErrors.phone && !validationErrors.email
+        return hasContact && noErrors
       case 3:
         return formData.plan !== ''
       default:
@@ -137,7 +200,7 @@ export default function Onboarding() {
           </div>
           <div className="w-full bg-white/10 rounded-full h-2">
             <div 
-              className="bg-gradient-to-r from-[#16D9E3] to-[#16D9E3]/80 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-[#16D9E3] to-[#16D9E3]/80 h-2 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${(currentStep / 3) * 100}%` }}
             ></div>
           </div>
@@ -191,15 +254,24 @@ export default function Onboarding() {
               
               <div className="space-y-6">
                 <div>
-                  <label className="block text-white font-medium mb-2">Phone Number (SMS)</label>
+                  <label className="block text-white font-medium mb-2">Phone Number (SMS) *</label>
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => updateFormData('phone', e.target.value)}
+                    onBlur={() => handleFieldBlur('phone')}
                     placeholder="+1 (555) 123-4567"
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
+                    className={`w-full px-4 py-3 bg-white/10 border rounded-lg text-white placeholder-white/40 focus:outline-none transition-colors ${
+                      validationErrors.phone && touchedFields.phone
+                        ? 'border-red-400 focus:border-red-400'
+                        : 'border-white/20 focus:border-[#16D9E3]'
+                    }`}
                   />
-                  <p className="text-xs text-white/70 mt-1">We'll send SMS notifications for instant alerts</p>
+                  {validationErrors.phone && touchedFields.phone ? (
+                    <p className="text-xs text-red-400 mt-1">{validationErrors.phone}</p>
+                  ) : (
+                    <p className="text-xs text-white/70 mt-1">We'll send a one-time verification code</p>
+                  )}
                 </div>
                 
                 <div>
@@ -208,10 +280,25 @@ export default function Onboarding() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => updateFormData('email', e.target.value)}
+                    onBlur={() => handleFieldBlur('email')}
                     placeholder="your@email.com"
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
+                    className={`w-full px-4 py-3 bg-white/10 border rounded-lg text-white placeholder-white/40 focus:outline-none transition-colors ${
+                      validationErrors.email && touchedFields.email
+                        ? 'border-red-400 focus:border-red-400'
+                        : 'border-white/20 focus:border-[#16D9E3]'
+                    }`}
                   />
-                  <p className="text-xs text-white/70 mt-1">Optional: Receive email summaries</p>
+                  {validationErrors.email && touchedFields.email ? (
+                    <p className="text-xs text-red-400 mt-1">{validationErrors.email}</p>
+                  ) : (
+                    <p className="text-xs text-white/70 mt-1">Optional: Receive email summaries</p>
+                  )}
+                </div>
+                
+                <div className="pt-2">
+                  <p className="text-xs text-white/60 text-center">
+                    We'll never share your contact info. Unsubscribe anytime.
+                  </p>
                 </div>
               </div>
             </div>
