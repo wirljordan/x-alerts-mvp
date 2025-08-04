@@ -6,6 +6,7 @@ export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1)
   const [verificationCode, setVerificationCode] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
+  const [isCompleting, setIsCompleting] = useState(false)
   const [formData, setFormData] = useState({
     goal: 'leads', // Pre-select first option
     phone: '',
@@ -148,8 +149,13 @@ export default function Onboarding() {
   }
 
   const handleComplete = async () => {
+    setIsCompleting(true)
+    
     // TODO: Save user data to database
     console.log('Onboarding completed:', formData)
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000))
     
     // Set onboarding completion cookie
     document.cookie = 'onboarding_completed=true; Path=/; Secure; SameSite=Strict; Max-Age=31536000'
@@ -446,6 +452,7 @@ export default function Onboarding() {
             <div>
               <h2 className="text-2xl font-bold text-white mb-2">Choose your plan</h2>
               <p className="text-white/70 mb-8">Start free, upgrade when you need more</p>
+              <p className="text-xs text-white/60 mb-6 text-center">Change or cancel anytime</p>
               
               <div className="space-y-4">
                 {[
@@ -453,8 +460,8 @@ export default function Onboarding() {
                     value: 'starter', 
                     label: 'Starter', 
                     price: 'Free',
-                    texts: '100 SMS/month',
-                    alerts: '3 alerts',
+                    texts: '25 SMS/month',
+                    keywords: '3 keywords tracked',
                     features: ['Basic monitoring', 'SMS notifications', 'Email support']
                   },
                   { 
@@ -462,24 +469,27 @@ export default function Onboarding() {
                     label: 'Pro', 
                     price: '$19/month',
                     texts: '1,000 SMS/month',
-                    alerts: '10 alerts',
-                    features: ['Advanced monitoring', 'Priority notifications', 'Priority support', 'Analytics']
+                    keywords: '10 keywords tracked',
+                    features: ['Advanced monitoring', 'Priority notifications', 'Priority support'],
+                    popular: true
                   },
                   { 
-                    value: 'team', 
-                    label: 'Team', 
+                    value: 'scale', 
+                    label: 'Scale', 
                     price: '$49/month',
-                    texts: '5,000 SMS/month',
-                    alerts: 'Unlimited alerts',
-                    features: ['Team collaboration', 'API access', 'Custom integrations', 'Dedicated support']
+                    texts: '3,000 SMS/month',
+                    keywords: 'Unlimited keywords',
+                    features: ['Team collaboration', 'Custom integrations', 'Dedicated support']
                   }
                 ].map((plan) => (
                   <button
                     key={plan.value}
                     onClick={() => updateFormData('plan', plan.value)}
-                    className={`w-full p-6 rounded-lg border transition-all duration-200 text-left ${
+                    className={`w-full p-6 rounded-lg border transition-all duration-200 text-left hover:scale-[1.01] ${
                       formData.plan === plan.value
                         ? 'border-[#16D9E3] bg-[#16D9E3]/10'
+                        : plan.popular
+                        ? 'border-[#FF6B4A]/30 bg-white/5 hover:bg-white/10 shadow-lg shadow-[#FF6B4A]/10'
                         : 'border-white/20 bg-white/5 hover:bg-white/10'
                     }`}
                   >
@@ -488,14 +498,14 @@ export default function Onboarding() {
                         <h3 className="text-xl font-semibold text-white">{plan.label}</h3>
                         <p className="text-2xl font-bold text-[#16D9E3]">{plan.price}</p>
                       </div>
-                      {plan.value === 'pro' && (
+                      {plan.popular && (
                         <span className="px-2 py-1 bg-[#FF6B4A] text-white text-xs rounded-full">Popular</span>
                       )}
                     </div>
                     
                     <div className="space-y-2 mb-4">
                       <p className="text-white/80">{plan.texts}</p>
-                      <p className="text-white/80">{plan.alerts}</p>
+                      <p className="text-white/80">{plan.keywords}</p>
                     </div>
                     
                     <ul className="space-y-1">
@@ -525,15 +535,24 @@ export default function Onboarding() {
             <div className="flex flex-col items-end space-y-2">
               <button
                 onClick={handleNext}
-                disabled={!isStepValid()}
+                disabled={!isStepValid() || isCompleting}
                 className={`px-8 py-3 font-semibold rounded-lg transition-all duration-200 flex items-center space-x-2 ${
-                  isStepValid() 
+                  isStepValid() && !isCompleting
                     ? 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] hover:scale-105' 
                     : 'bg-white/20 text-white/40 cursor-not-allowed'
                 }`}
               >
-                <span>{currentStep === 4 ? 'Complete Setup' : 'Continue'}</span>
-                {isStepValid() && <span>→</span>}
+                {isCompleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0F1C2E]"></div>
+                    <span>Creating your workspace...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{currentStep === 4 ? 'Complete Setup' : 'Continue'}</span>
+                    {isStepValid() && <span>→</span>}
+                  </>
+                )}
               </button>
               <button
                 onClick={handleNext}
