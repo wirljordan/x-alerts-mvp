@@ -266,7 +266,7 @@ export default function Home() {
               <button className="w-full py-3 rounded-lg bg-[#16D9E3]/10 text-[#16D9E3] font-semibold border border-[#16D9E3]/30 hover:bg-[#16D9E3]/20 transition">Choose Pro</button>
             </div>
           </div>
-          <div className="text-xs text-white/60 mt-8 text-center">*Included SMS are pooled across all alerts. Additional usage may incur extra charges.</div>
+
         </div>
       </div>
     </div>
