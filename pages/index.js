@@ -155,7 +155,7 @@ export default function Home() {
               <div className="relative">
                 {/* Custom Phone Mockup Image */}
                 <img 
-                  src="https://lfvokdiatflpxnohmofo.supabase.co/storage/v1/object/sign/earlyreply/1111.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85OGNkMmM5Zi1jNDJlLTQ2NTgtYTMxNi1hM2ZkNTU2MjFhMjUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlYXJseXJlcGx5LzExMTEucG5nIiwiaWF0IjoxNzU0MzIzNDUyLCJleHAiOjE3ODU4NTk0NTJ9.cHgjDlvNPriPKxXA2TH-c_Mm3X_UpOiTy5E_qYPbYIU"
+                  src="https://lfvokdiatflpxnohmofo.supabase.co/storage/v1/object/sign/earlyreply/1111-2.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85OGNkMmM5Zi1jNDJlLTQ2NTgtYTMxNi1hM2ZkNTU2MjFhMjUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlYXJseXJlcGx5LzExMTEtMi5wbmciLCJpYXQiOjE3NTQzMjM3OTMsImV4cCI6MTc4NTg1OTc5M30.m9QXZZIc8zyWBbim4-3HwrMCdZ66Czh8tKSDfFtaXCI"
                   alt="EarlyReply phone mockup showing X post and notification"
                   className="w-72 h-96 lg:w-96 lg:h-[28rem] xl:w-[28rem] xl:h-[32rem] object-contain drop-shadow-2xl lg:drop-shadow-3xl"
                 />
