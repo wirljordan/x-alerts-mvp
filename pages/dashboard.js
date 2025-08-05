@@ -35,8 +35,8 @@ export default function Dashboard() {
       }
     }
 
-    // Get user from session cookie
-    const getUserFromSession = () => {
+    // Get user from session cookie and fetch data from Supabase
+    const getUserFromSession = async () => {
       if (typeof document !== 'undefined') {
         const cookies = document.cookie.split(';').reduce((acc, cookie) => {
           const [key, value] = cookie.trim().split('=')
@@ -51,15 +51,37 @@ export default function Dashboard() {
             const sessionData = JSON.parse(cookies.x_session)
             setUser(sessionData.user)
             
-                    // Check if user has completed onboarding
-        const hasCompletedOnboarding = cookies.onboarding_completed === 'true'
-        console.log('Onboarding completion check:', { hasCompletedOnboarding, cookies })
-        
-        if (!hasCompletedOnboarding) {
-          console.log('No onboarding completion cookie found, redirecting to onboarding')
-          router.push('/onboarding')
-          return
-        }
+            // Check if user has completed onboarding
+            const hasCompletedOnboarding = cookies.onboarding_completed === 'true'
+            console.log('Onboarding completion check:', { hasCompletedOnboarding, cookies })
+            
+            if (!hasCompletedOnboarding) {
+              console.log('No onboarding completion cookie found, redirecting to onboarding')
+              router.push('/onboarding')
+              return
+            }
+            
+            // Fetch user data from Supabase
+            if (sessionData.user?.id) {
+              try {
+                const response = await fetch(`/api/users/get?userId=${sessionData.user.id}`)
+                if (response.ok) {
+                  const data = await response.json()
+                  if (data.success && data.user) {
+                    // Update user with Supabase data
+                    setUser(prevUser => ({
+                      ...prevUser,
+                      ...data.user
+                    }))
+                    
+                    // Set current plan from Supabase
+                    setCurrentPlan(data.user.plan || 'free')
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching user data from Supabase:', error)
+              }
+            }
           } catch (error) {
             console.error('Error parsing session:', error)
             router.push('/?error=invalid_session')
@@ -75,8 +97,8 @@ export default function Dashboard() {
     handleStripeSuccess()
     
     // Small delay to ensure cookie is set if this is a Stripe success
-    setTimeout(() => {
-      getUserFromSession()
+    setTimeout(async () => {
+      await getUserFromSession()
     }, 100)
   }, [router])
 

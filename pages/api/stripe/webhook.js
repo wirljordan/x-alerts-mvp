@@ -1,5 +1,6 @@
 import Stripe from 'stripe'
 import { buffer } from 'micro'
+import { supabaseAdmin } from '../../../lib/supabase'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
@@ -33,10 +34,49 @@ export default async function handler(req, res) {
         const session = event.data.object
         console.log('Checkout session completed:', session.id)
         
-        // Here you would typically:
-        // 1. Update user's subscription status in your database
-        // 2. Send welcome email
-        // 3. Set up user's plan limits
+        // Update user's subscription status in Supabase
+        try {
+          const { userId, plan } = session.metadata
+          
+          // Map plan names to match our schema
+          const planMapping = {
+            'free': 'starter',
+            'starter': 'starter', 
+            'growth': 'pro',
+            'pro': 'team'
+          }
+
+          const mappedPlan = planMapping[plan] || 'starter'
+
+          // Calculate SMS limits based on plan
+          const smsLimits = {
+            'free': 25,
+            'starter': 300,
+            'growth': 1000,
+            'pro': 3000
+          }
+
+          const smsLimit = smsLimits[plan] || 300
+
+          // Update user in Supabase
+          const { data, error } = await supabaseAdmin
+            .from('users')
+            .update({
+              plan: mappedPlan,
+              sms_limit: smsLimit
+            })
+            .eq('x_user_id', userId)
+            .select()
+
+          if (error) {
+            console.error('Failed to update user subscription:', error)
+          } else {
+            console.log('User subscription updated in Supabase:', data)
+          }
+        } catch (error) {
+          console.error('Error updating user subscription:', error)
+        }
+        
         console.log('User subscription activated:', {
           userId: session.metadata.userId,
           plan: session.metadata.plan,

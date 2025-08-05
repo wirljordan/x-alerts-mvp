@@ -161,44 +161,70 @@ export default function Onboarding() {
   }
 
   const handleComplete = async () => {
-    // If free plan, complete onboarding directly
-    if (formData.plan === 'free') {
-      setIsCompleting(true)
+    setIsCompleting(true)
+    
+    try {
+      // Save user data to Supabase
+      const response = await fetch('/api/users/upsert', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.id || 'unknown',
+          username: user?.username || 'unknown',
+          email: formData.email,
+          phone: formData.phone,
+          goal: formData.goal,
+          plan: formData.plan
+        })
+      })
+
+      const data = await response.json()
       
-      // TODO: Save user data to database
-      console.log('Onboarding completed:', formData)
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Set onboarding completion cookie
-      document.cookie = 'onboarding_completed=true; Path=/; Secure; SameSite=Strict; Max-Age=31536000'
-      
-      // Store user email in session for Stripe
-      if (formData.email) {
-        const currentSession = document.cookie.split(';').reduce((acc, cookie) => {
-          const [key, value] = cookie.trim().split('=')
-          if (key && value) {
-            acc[key] = decodeURIComponent(value)
-          }
-          return acc
-        }, {})
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save user data')
+      }
+
+      console.log('User data saved to Supabase:', data)
+
+      if (formData.plan === 'free') {
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 2000))
         
-        if (currentSession.x_session) {
-          try {
-            const sessionData = JSON.parse(currentSession.x_session)
-            sessionData.user.email = formData.email
-            document.cookie = `x_session=${JSON.stringify(sessionData)}; Path=/; Secure; SameSite=Strict; Max-Age=${60 * 60 * 24 * 7}`
-          } catch (error) {
-            console.error('Error updating session with email:', error)
+        // Set onboarding completion cookie
+        document.cookie = 'onboarding_completed=true; Path=/; Secure; SameSite=Strict; Max-Age=31536000'
+        
+        // Store user email in session for Stripe
+        if (formData.email) {
+          const currentSession = document.cookie.split(';').reduce((acc, cookie) => {
+            const [key, value] = cookie.trim().split('=')
+            if (key && value) {
+              acc[key] = decodeURIComponent(value)
+            }
+            return acc
+          }, {})
+          
+          if (currentSession.x_session) {
+            try {
+              const sessionData = JSON.parse(currentSession.x_session)
+              sessionData.user.email = formData.email
+              document.cookie = `x_session=${JSON.stringify(sessionData)}; Path=/; Secure; SameSite=Strict; Max-Age=${60 * 60 * 24 * 7}`
+            } catch (error) {
+              console.error('Error updating session with email:', error)
+            }
           }
         }
+        
+        router.push('/dashboard')
+      } else {
+        // For paid plans, redirect to Stripe checkout
+        await handleStripeCheckout()
       }
-      
-      router.push('/dashboard')
-    } else {
-      // For paid plans, redirect to Stripe checkout
-      await handleStripeCheckout()
+    } catch (error) {
+      console.error('Error saving user data:', error)
+      alert('Failed to save your information. Please try again.')
+      setIsCompleting(false)
     }
   }
 
