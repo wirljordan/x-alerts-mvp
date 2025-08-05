@@ -406,18 +406,10 @@ export default function Dashboard() {
             </div>
 
             <div className="mb-6">
-              <div className="bg-[#16D9E3]/10 border border-[#16D9E3]/30 rounded-lg p-4">
-                <p className="text-[#16D9E3] font-medium">Current Plan: {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}</p>
-                <p className="text-white/60 text-sm mt-1">
-                  {currentPlan === 'free' && '1 keyword tracked • 25 SMS / mo'}
-                  {currentPlan === 'starter' && '2 keywords tracked • 300 SMS / mo'}
-                  {currentPlan === 'growth' && '10 keywords tracked • 1,000 SMS / mo'}
-                  {currentPlan === 'pro' && '30 keywords tracked • 3,000 SMS / mo'}
-                </p>
-              </div>
+              <p className="text-white/60 text-center">Current: {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}</p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4 lg:gap-6">
+            <div className="grid md:grid-cols-4 gap-4 lg:gap-6">
               {/* Free Plan */}
               <div className={`p-4 lg:p-6 rounded-xl border transition-all duration-200 ${
                 currentPlan === 'free' 
@@ -427,12 +419,10 @@ export default function Dashboard() {
                 <div className="text-center">
                   <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">Free</h3>
                   <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$0</p>
-                  <ul className="text-sm lg:text-base text-white/80 space-y-2 mb-6">
-                    <li>• 1 keyword tracked</li>
-                    <li>• 25 SMS / mo</li>
-                    <li>• Basic monitoring</li>
-                    <li>• Email support</li>
-                  </ul>
+                  <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
+                    <p>1 keyword tracked</p>
+                    <p>25 SMS / mo</p>
+                  </div>
                   <button
                     disabled={currentPlan === 'free'}
                     className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 ${
@@ -455,12 +445,10 @@ export default function Dashboard() {
                 <div className="text-center">
                   <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">Starter</h3>
                   <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$9<span className="text-sm font-normal text-white/60">/mo</span></p>
-                  <ul className="text-sm lg:text-base text-white/80 space-y-2 mb-6">
-                    <li>• 2 keywords tracked</li>
-                    <li>• 300 SMS / mo</li>
-                    <li>• Basic monitoring</li>
-                    <li>• Email support</li>
-                  </ul>
+                  <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
+                    <p>2 keywords tracked</p>
+                    <p>300 SMS / mo</p>
+                  </div>
                   <button
                     onClick={() => handleUpgrade('starter')}
                     disabled={currentPlan === 'starter'}
@@ -485,12 +473,10 @@ export default function Dashboard() {
                   <div className="bg-[#FF6B4A] text-white text-xs font-medium px-2 py-1 rounded-full inline-block mb-2">Popular</div>
                   <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">Growth</h3>
                   <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$19<span className="text-sm font-normal text-white/60">/mo</span></p>
-                  <ul className="text-sm lg:text-base text-white/80 space-y-2 mb-6">
-                    <li>• 10 keywords tracked</li>
-                    <li>• 1,000 SMS / mo</li>
-                    <li>• Advanced monitoring</li>
-                    <li>• Priority support</li>
-                  </ul>
+                  <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
+                    <p>10 keywords tracked</p>
+                    <p>1,000 SMS / mo</p>
+                  </div>
                   <button
                     onClick={() => handleUpgrade('growth')}
                     disabled={currentPlan === 'growth'}
@@ -514,12 +500,10 @@ export default function Dashboard() {
                 <div className="text-center">
                   <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">Pro</h3>
                   <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$49<span className="text-sm font-normal text-white/60">/mo</span></p>
-                  <ul className="text-sm lg:text-base text-white/80 space-y-2 mb-6">
-                    <li>• 30 keywords tracked</li>
-                    <li>• 3,000 SMS / mo</li>
-                    <li>• Team collaboration</li>
-                    <li>• Dedicated support</li>
-                  </ul>
+                  <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
+                    <p>30 keywords tracked</p>
+                    <p>3,000 SMS / mo</p>
+                  </div>
                   <button
                     onClick={() => handleUpgrade('pro')}
                     disabled={currentPlan === 'pro'}
@@ -536,7 +520,7 @@ export default function Dashboard() {
             </div>
 
             <div className="mt-6 text-center">
-              <p className="text-white/60 text-sm">Change or cancel anytime. You'll only be charged after your 7-day trial.</p>
+              <p className="text-white/60 text-sm">Change or cancel anytime.</p>
             </div>
           </div>
         </div>
