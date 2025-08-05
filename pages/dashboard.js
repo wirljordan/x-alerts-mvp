@@ -113,6 +113,9 @@ export default function Dashboard() {
     
     // For paid plans, redirect to Stripe checkout
     try {
+      // Use a default email if user email is not available
+      const userEmail = user?.email || `${user?.username || 'user'}@example.com`
+      
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: {
@@ -121,7 +124,7 @@ export default function Dashboard() {
         body: JSON.stringify({
           plan: plan,
           userId: user?.id || 'unknown',
-          userEmail: user?.email || 'unknown'
+          userEmail: userEmail
         })
       })
 
@@ -129,6 +132,20 @@ export default function Dashboard() {
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create checkout session')
+      }
+
+      // Wait for Stripe to load if not already loaded
+      if (typeof window !== 'undefined' && !window.Stripe) {
+        await new Promise(resolve => {
+          const checkStripe = () => {
+            if (window.Stripe) {
+              resolve()
+            } else {
+              setTimeout(checkStripe, 100)
+            }
+          }
+          checkStripe()
+        })
       }
 
       // Redirect to Stripe checkout
@@ -142,7 +159,13 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('Upgrade error:', error)
-      alert('Upgrade failed. Please try again.')
+      console.error('Error details:', {
+        message: error.message,
+        plan: plan,
+        userId: user?.id,
+        userEmail: user?.email
+      })
+      alert(`Upgrade failed: ${error.message}`)
     }
   }
 
