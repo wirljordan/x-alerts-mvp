@@ -26,6 +26,16 @@ export default async function handler(req, res) {
 
     const { plan, userId, userEmail } = req.body
 
+    // Validate and fix email
+    let validEmail = userEmail
+    if (!validEmail || validEmail === 'unknown' || !validEmail.includes('@')) {
+      // Extract username from userId or use a default
+      const username = userId && userId !== 'unknown' ? userId : 'user'
+      validEmail = `${username}@earlyreply.app`
+    }
+
+    console.log('Email validation:', { original: userEmail, valid: validEmail })
+
     // Define plan configurations
     const plans = {
       starter: {
@@ -72,7 +82,7 @@ export default async function handler(req, res) {
       mode: 'subscription',
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/onboarding?canceled=true`,
-      customer_email: userEmail,
+      customer_email: validEmail,
       metadata: {
         userId: userId,
         plan: plan
