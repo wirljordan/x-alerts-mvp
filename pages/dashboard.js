@@ -158,26 +158,44 @@ export default function Dashboard() {
             <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
               <div className="flex items-center justify-between mb-4 lg:mb-6">
                 <h2 className="text-lg lg:text-2xl font-semibold text-white">Usage</h2>
-                <span className="text-sm lg:text-base text-white/60">sent {usage.used}</span>
+                <span className="text-sm lg:text-base text-white/60">{usage.used} sent</span>
               </div>
               
               {/* Progress Bar */}
               <div className="mb-4 lg:mb-6">
-                <div className="w-full bg-white/10 rounded-full h-3 lg:h-4 overflow-hidden">
+                <div className={`w-full bg-white/10 rounded-full h-3 lg:h-4 overflow-hidden ${
+                  (usage.used / usage.limit) >= 0.8 ? 'ring-2 ring-orange-500/30' : ''
+                }`}>
                   <div 
-                    className="bg-gradient-to-r from-[#16D9E3] to-[#16D9E3]/80 h-full rounded-full transition-all duration-300"
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      (usage.used / usage.limit) >= 0.8 
+                        ? 'bg-gradient-to-r from-orange-400 to-orange-500' 
+                        : 'bg-gradient-to-r from-[#16D9E3] to-[#16D9E3]/80'
+                    }`}
                     style={{ width: `${(usage.used / usage.limit) * 100}%` }}
                   ></div>
                 </div>
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="text-sm lg:text-base text-white/80">
-                  {usage.used} / {usage.limit} texts sent
-                </span>
+                <div className="flex-1">
+                  <span className="text-sm lg:text-base text-white/80">
+                    {usage.used} / {usage.limit} texts sent
+                  </span>
+                  {(usage.used / usage.limit) >= 0.8 && (
+                    <div className="mt-2">
+                      <p className="text-orange-400 text-xs lg:text-sm font-medium">Upgrade for more SMS</p>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={handleAddAlert}
-                  className="px-4 py-2 lg:px-6 lg:py-3 bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base"
+                  disabled={alerts.length >= 2} // Assuming 2 is the limit for demo
+                  className={`px-4 py-2 lg:px-6 lg:py-3 font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base ${
+                    alerts.length >= 2 
+                      ? 'bg-white/20 text-white/40 cursor-not-allowed' 
+                      : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
+                  }`}
                 >
                   Add Alert
                 </button>
@@ -193,7 +211,7 @@ export default function Dashboard() {
                   <div className="w-16 h-16 lg:w-20 lg:h-20 bg-[#16D9E3]/20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
                     <span className="text-[#16D9E3] text-2xl lg:text-3xl">🔔</span>
                   </div>
-                  <p className="text-white/60 mb-4 lg:mb-6 text-sm lg:text-base">No alerts set up yet</p>
+                  <p className="text-white/60 mb-4 lg:mb-6 text-sm lg:text-base">Create your first keyword alert</p>
                   <button
                     onClick={handleAddAlert}
                     className="px-6 py-3 lg:px-8 lg:py-4 bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base"
@@ -204,7 +222,7 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-3 lg:space-y-4">
                   {alerts.map((alert) => (
-                    <div key={alert.id} className="flex items-center justify-between p-4 lg:p-6 bg-white/5 rounded-lg lg:rounded-xl border border-white/10 hover:bg-white/10 transition-colors duration-200">
+                    <div key={alert.id} className="flex items-center justify-between p-4 lg:p-6 bg-white/5 rounded-lg lg:rounded-xl border border-white/10 hover:bg-white/10 transition-colors duration-200 cursor-pointer">
                       <div className="flex items-center space-x-3 lg:space-x-4">
                         <div className="w-3 h-3 lg:w-4 lg:h-4 bg-[#16D9E3] rounded-full"></div>
                         <div>
@@ -220,11 +238,14 @@ export default function Dashboard() {
                         }`}>
                           {alert.status}
                         </span>
-                        <button className="p-1 lg:p-2 text-white/60 hover:text-white transition-colors duration-200">
-                          <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                          </svg>
-                        </button>
+                        <div className="relative">
+                          <button className="p-1 lg:p-2 text-white/60 hover:text-white transition-colors duration-200">
+                            <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                            </svg>
+                          </button>
+                          {/* Dropdown menu would go here */}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -234,7 +255,12 @@ export default function Dashboard() {
 
             {/* Recent Activity */}
             <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
-              <h2 className="text-lg lg:text-2xl font-semibold text-white mb-4 lg:mb-6">Recent Activity</h2>
+              <div className="flex items-center justify-between mb-4 lg:mb-6">
+                <h2 className="text-lg lg:text-2xl font-semibold text-white">Recent Activity</h2>
+                <button className="text-sm text-[#16D9E3] hover:text-[#16D9E3]/80 transition-colors duration-200">
+                  View all
+                </button>
+              </div>
               <div className="space-y-3 lg:space-y-4">
                 <div className="flex items-center space-x-3 lg:space-x-4 p-3 lg:p-4 bg-white/5 rounded-lg lg:rounded-xl hover:bg-white/10 transition-colors duration-200">
                   <div className="w-8 h-8 lg:w-10 lg:h-10 bg-[#16D9E3]/20 rounded-full flex items-center justify-center">
@@ -274,12 +300,15 @@ export default function Dashboard() {
                   </div>
                 </button>
                 
-                <button className="p-4 lg:p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 shadow-lg hover:bg-white/10 transition-all duration-300 hover:scale-105">
+                <button 
+                  onClick={() => router.push('/pricing')}
+                  className="p-4 lg:p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 shadow-lg hover:bg-white/10 transition-all duration-300 hover:scale-105"
+                >
                   <div className="text-center">
                     <div className="w-12 h-12 lg:w-16 lg:h-16 bg-[#FF6B4A]/20 rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4">
-                      <span className="text-[#FF6B4A] text-xl lg:text-2xl">📊</span>
+                      <span className="text-[#FF6B4A] text-xl lg:text-2xl">⬆️</span>
                     </div>
-                    <p className="text-white font-medium text-sm lg:text-base">Analytics</p>
+                    <p className="text-white font-medium text-sm lg:text-base">Upgrade</p>
                   </div>
                 </button>
               </div>
@@ -291,7 +320,7 @@ export default function Dashboard() {
               <div className="space-y-4 lg:space-y-6">
                 <div className="flex items-center justify-between p-3 lg:p-4 bg-white/5 rounded-lg">
                   <div>
-                    <p className="text-white/60 text-sm lg:text-base">Total Alerts</p>
+                    <p className="text-white/60 text-sm lg:text-base">Keywords</p>
                     <p className="text-white font-semibold text-lg lg:text-xl">{alerts.length}</p>
                   </div>
                   <div className="w-12 h-12 lg:w-14 lg:h-14 bg-[#16D9E3]/20 rounded-full flex items-center justify-center">
