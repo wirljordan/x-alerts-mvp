@@ -235,6 +235,8 @@ export default function Dashboard() {
     
     if (plan === 'free') {
       // Handle downgrade to free - should cancel subscription at end of period
+      console.log('Attempting downgrade for user:', user)
+      console.log('User ID being sent:', user?.x_user_id || 'unknown')
       try {
         const response = await fetch('/api/stripe/cancel-subscription', {
           method: 'POST',
@@ -242,7 +244,7 @@ export default function Dashboard() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            userId: user?.x_user_id || user?.id || 'unknown'
+            userId: user?.x_user_id || 'unknown'
           })
         })
 
