@@ -126,33 +126,33 @@ export default function Home() {
               <p className="text-xl lg:text-2xl xl:text-3xl text-white/90 mb-8 lg:mb-12 max-w-2xl lg:max-w-none">
                 Get SMS notifications within 5 minutes of important posts. Never miss an opportunity to engage early.
               </p>
-              
-              {error && (
+
+        {error && (
                 <div className="mb-6 lg:mb-8 p-4 lg:p-6 bg-red-500/20 border border-red-400/30 text-red-100 rounded-lg text-sm lg:text-base">
-                  {error}
-                </div>
-              )}
+            {error}
+          </div>
+        )}
 
-              <button
-                onClick={handleSignIn}
-                disabled={isLoading}
+        <button
+          onClick={handleSignIn}
+          disabled={isLoading}
                 className="inline-flex items-center px-8 lg:px-12 py-4 lg:py-6 bg-[#FF6B4A] hover:bg-[#FF6B4A]/90 text-white font-semibold rounded-lg lg:rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:transform-none text-lg lg:text-xl"
-              >
-                {isLoading ? (
-                  <>
+        >
+          {isLoading ? (
+            <>
                     <div className="animate-spin rounded-full h-5 w-5 lg:h-6 lg:w-6 border-b-2 border-white mr-3"></div>
-                    Signing in...
-                  </>
-                ) : (
-                  <>
+              Signing in...
+            </>
+          ) : (
+            <>
                     <svg className="w-6 h-6 lg:w-8 lg:h-8 mr-3" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                    </svg>
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
                     Log In with X
-                  </>
-                )}
-              </button>
-
+            </>
+          )}
+        </button>
+        
               <p className="text-white/70 text-sm lg:text-base mt-6 lg:mt-8">
                 Secure OAuth 2.0 authentication • No password required
               </p>
