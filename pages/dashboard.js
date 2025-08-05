@@ -603,6 +603,7 @@ export default function Dashboard() {
                     <p>25 SMS / mo</p>
                   </div>
                   <button
+                    onClick={() => handleUpgrade('free')}
                     disabled={currentPlan === 'free'}
                     className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 ${
                       currentPlan === 'free'
