@@ -234,9 +234,33 @@ export default function Dashboard() {
     setShowUpgradeModal(false)
     
     if (plan === 'free') {
-      // Handle downgrade to free
-      setCurrentPlan('free')
-      setUsage({ used: 0, limit: 25 })
+      // Handle downgrade to free - should cancel subscription at end of period
+      try {
+        const response = await fetch('/api/stripe/cancel-subscription', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user?.id || 'unknown'
+          })
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to cancel subscription')
+        }
+
+        // Show success message
+        alert('Your subscription will be canceled at the end of your current billing period. You can continue using your current plan until then.')
+        
+        // Refresh user data to get updated subscription status
+        await refreshUserData()
+      } catch (error) {
+        console.error('Downgrade error:', error)
+        alert(`Downgrade failed: ${error.message}`)
+      }
       return
     }
     

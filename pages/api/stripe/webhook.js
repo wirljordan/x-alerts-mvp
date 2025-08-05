@@ -115,11 +115,62 @@ export default async function handler(req, res) {
       case 'customer.subscription.updated':
         const updatedSubscription = event.data.object
         console.log('Subscription updated:', updatedSubscription.id)
+        
+        // Handle subscription cancellation
+        if (updatedSubscription.cancel_at_period_end) {
+          try {
+            const { userId } = updatedSubscription.metadata
+            
+            if (userId) {
+              const { data, error } = await supabaseAdmin
+                .from('users')
+                .update({
+                  subscription_status: 'canceling',
+                  subscription_cancel_at: new Date(updatedSubscription.current_period_end * 1000).toISOString()
+                })
+                .eq('x_user_id', userId)
+                .select()
+
+              if (error) {
+                console.error('Failed to update subscription status:', error)
+              } else {
+                console.log('User subscription marked as canceling:', data)
+              }
+            }
+          } catch (error) {
+            console.error('Error updating subscription status:', error)
+          }
+        }
         break
 
       case 'customer.subscription.deleted':
         const deletedSubscription = event.data.object
         console.log('Subscription deleted:', deletedSubscription.id)
+        
+        // Update user to free plan when subscription is deleted
+        try {
+          const { userId } = deletedSubscription.metadata
+          
+          if (userId) {
+            const { data, error } = await supabaseAdmin
+              .from('users')
+              .update({
+                plan: 'free',
+                sms_limit: 25,
+                subscription_status: 'canceled'
+              })
+              .eq('x_user_id', userId)
+              .select()
+
+            if (error) {
+              console.error('Failed to update user to free plan:', error)
+            } else {
+              console.log('User updated to free plan after subscription deletion:', data)
+            }
+          }
+        } catch (error) {
+          console.error('Error updating user after subscription deletion:', error)
+        }
         break
 
       case 'invoice.payment_succeeded':
