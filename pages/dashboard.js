@@ -51,24 +51,14 @@ export default function Dashboard() {
             const sessionData = JSON.parse(cookies.x_session)
             setUser(sessionData.user)
             
-            // Check if user has completed onboarding
-            const hasCompletedOnboarding = cookies.onboarding_completed === 'true'
-            console.log('Onboarding completion check:', { hasCompletedOnboarding, cookies })
-            
-            if (!hasCompletedOnboarding) {
-              console.log('No onboarding completion cookie found, redirecting to onboarding')
-              router.push('/onboarding')
-              return
-            }
-            
-            // Fetch user data from Supabase
+            // Fetch user data from Supabase to check if they exist
             if (sessionData.user?.id) {
               try {
                 const response = await fetch(`/api/users/get?userId=${sessionData.user.id}`)
                 if (response.ok) {
                   const data = await response.json()
                   if (data.success && data.user) {
-                    // Update user with Supabase data
+                    // User exists in database, they have completed onboarding
                     setUser(prevUser => ({
                       ...prevUser,
                       ...data.user
@@ -76,11 +66,29 @@ export default function Dashboard() {
                     
                     // Set current plan from Supabase
                     setCurrentPlan(data.user.plan || 'free')
+                  } else {
+                    // User doesn't exist in database, redirect to onboarding
+                    console.log('User not found in database, redirecting to onboarding')
+                    router.push('/onboarding')
+                    return
                   }
+                } else {
+                  // User doesn't exist in database, redirect to onboarding
+                  console.log('User not found in database, redirecting to onboarding')
+                  router.push('/onboarding')
+                  return
                 }
               } catch (error) {
                 console.error('Error fetching user data from Supabase:', error)
+                // On error, redirect to onboarding to be safe
+                router.push('/onboarding')
+                return
               }
+            } else {
+              // No user ID, redirect to onboarding
+              console.log('No user ID in session, redirecting to onboarding')
+              router.push('/onboarding')
+              return
             }
           } catch (error) {
             console.error('Error parsing session:', error)

@@ -81,7 +81,7 @@ export default async function handler(req, res) {
       ],
       mode: 'subscription',
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/onboarding?canceled=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?canceled=true`,
       customer_email: validEmail,
       metadata: {
         userId: userId,
