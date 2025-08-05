@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
   phone TEXT,
   email TEXT,
   goal TEXT,
-  plan TEXT DEFAULT 'starter' CHECK (plan IN ('starter', 'pro', 'team')),
-  sms_limit INTEGER DEFAULT 300,
+  plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'starter', 'pro', 'team')),
+  sms_limit INTEGER DEFAULT 25,
   sms_used INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

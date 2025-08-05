@@ -8,8 +8,8 @@ CREATE TABLE users (
   handle TEXT NOT NULL,
   phone TEXT,
   email TEXT,
-  plan TEXT DEFAULT 'starter' CHECK (plan IN ('starter', 'pro', 'team')),
-  sms_limit INTEGER DEFAULT 300,
+  plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'starter', 'pro', 'team')),
+  sms_limit INTEGER DEFAULT 25,
   sms_used INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

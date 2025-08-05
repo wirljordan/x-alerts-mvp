@@ -14,13 +14,13 @@ export default async function handler(req, res) {
 
     // Map plan names to match our schema
     const planMapping = {
-      'free': 'starter',
+      'free': 'free',
       'starter': 'starter', 
       'growth': 'pro',
       'pro': 'team'
     }
 
-    const mappedPlan = planMapping[plan] || 'starter'
+    const mappedPlan = planMapping[plan] || 'free'
 
     // Calculate SMS limits based on plan
     const smsLimits = {
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       'pro': 3000
     }
 
-    const smsLimit = smsLimits[plan] || 300
+    const smsLimit = smsLimits[plan] || 25
 
     // Upsert user data
     const { data, error } = await supabaseAdmin
