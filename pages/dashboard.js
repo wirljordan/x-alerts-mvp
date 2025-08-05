@@ -14,7 +14,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Handle Stripe success redirect
-    const handleStripeSuccess = () => {
+    const handleStripeSuccess = async () => {
       console.log('Dashboard loaded with query:', router.query)
       
       if (router.query.success === 'true' && router.query.session_id) {
@@ -29,6 +29,40 @@ export default function Dashboard() {
         
         // Hide success message after 5 seconds
         setTimeout(() => setShowSuccessMessage(false), 5000)
+        
+        // Refresh user data from Supabase to get updated plan
+        try {
+          const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+            const [key, value] = cookie.trim().split('=')
+            if (key && value) {
+              acc[key] = decodeURIComponent(value)
+            }
+            return acc
+          }, {})
+          
+          if (cookies.x_session) {
+            const sessionData = JSON.parse(cookies.x_session)
+            if (sessionData.user?.id) {
+              const response = await fetch(`/api/users/get?userId=${sessionData.user.id}`)
+              if (response.ok) {
+                const data = await response.json()
+                if (data.success && data.user) {
+                  // Update user data with new plan
+                  setUser(prevUser => ({
+                    ...prevUser,
+                    ...data.user
+                  }))
+                  
+                  // Update current plan
+                  setCurrentPlan(data.user.plan || 'free')
+                  console.log('User plan updated to:', data.user.plan)
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error refreshing user data after payment:', error)
+        }
         
         // Clean up URL
         router.replace('/dashboard', undefined, { shallow: true })
@@ -108,7 +142,7 @@ export default function Dashboard() {
     setTimeout(async () => {
       await getUserFromSession()
     }, 100)
-  }, [router])
+  }, [router.query.success, router.query.session_id])
 
   const handleSignOut = () => {
     // Clear session cookies
@@ -127,6 +161,41 @@ export default function Dashboard() {
       lastMatch: 'Never'
     }
     setAlerts([...alerts, newKeyword])
+  }
+
+  const refreshUserData = async () => {
+    try {
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=')
+        if (key && value) {
+          acc[key] = decodeURIComponent(value)
+        }
+        return acc
+      }, {})
+      
+      if (cookies.x_session) {
+        const sessionData = JSON.parse(cookies.x_session)
+        if (sessionData.user?.id) {
+          const response = await fetch(`/api/users/get?userId=${sessionData.user.id}`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success && data.user) {
+              // Update user data with fresh data from Supabase
+              setUser(prevUser => ({
+                ...prevUser,
+                ...data.user
+              }))
+              
+              // Update current plan
+              setCurrentPlan(data.user.plan || 'free')
+              console.log('User data refreshed, plan updated to:', data.user.plan)
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error)
+    }
   }
 
   const handleUpgrade = async (plan) => {
@@ -400,7 +469,10 @@ export default function Dashboard() {
                 </button>
                 
                 <button 
-                  onClick={() => setShowUpgradeModal(true)}
+                  onClick={async () => {
+                    await refreshUserData()
+                    setShowUpgradeModal(true)
+                  }}
                   className="p-4 lg:p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 shadow-lg hover:bg-white/10 transition-all duration-300 hover:scale-105"
                 >
                   <div className="text-center">
