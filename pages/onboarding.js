@@ -174,6 +174,27 @@ export default function Onboarding() {
       // Set onboarding completion cookie
       document.cookie = 'onboarding_completed=true; Path=/; Secure; SameSite=Strict; Max-Age=31536000'
       
+      // Store user email in session for Stripe
+      if (formData.email) {
+        const currentSession = document.cookie.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=')
+          if (key && value) {
+            acc[key] = decodeURIComponent(value)
+          }
+          return acc
+        }, {})
+        
+        if (currentSession.x_session) {
+          try {
+            const sessionData = JSON.parse(currentSession.x_session)
+            sessionData.user.email = formData.email
+            document.cookie = `x_session=${JSON.stringify(sessionData)}; Path=/; Secure; SameSite=Strict; Max-Age=${60 * 60 * 24 * 7}`
+          } catch (error) {
+            console.error('Error updating session with email:', error)
+          }
+        }
+      }
+      
       router.push('/dashboard')
     } else {
       // For paid plans, redirect to Stripe checkout

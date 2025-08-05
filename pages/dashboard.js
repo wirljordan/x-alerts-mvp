@@ -113,8 +113,8 @@ export default function Dashboard() {
     
     // For paid plans, redirect to Stripe checkout
     try {
-      // Use username for email since X OAuth doesn't provide email
-      const userEmail = user?.username ? `${user.username}@earlyreply.app` : 'user@earlyreply.app'
+      // Use real email from session, fallback to username-based email
+      const userEmail = user?.email || (user?.username ? `${user.username}@earlyreply.app` : 'user@earlyreply.app')
       
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
