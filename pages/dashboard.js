@@ -242,7 +242,7 @@ export default function Dashboard() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            userId: user?.id || 'unknown'
+            userId: user?.x_user_id || user?.id || 'unknown'
           })
         })
 

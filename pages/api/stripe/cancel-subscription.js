@@ -15,6 +15,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing userId' })
     }
 
+    console.log('Attempting to cancel subscription for user:', userId)
+
     // Get user from Supabase to find their subscription
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
@@ -23,7 +25,44 @@ export default async function handler(req, res) {
       .single()
 
     if (userError || !user) {
-      return res.status(404).json({ error: 'User not found' })
+      console.error('User not found in database:', userId, userError)
+      return res.status(404).json({ error: 'User not found in database' })
+    }
+
+    console.log('User found:', user.x_user_id, 'Plan:', user.plan, 'Stripe customer ID:', user.stripe_customer_id)
+
+    // If user doesn't have a stripe_customer_id, they might not have a subscription
+    if (!user.stripe_customer_id) {
+      console.log('User has no Stripe customer ID, checking if they have a paid plan')
+      
+      // If they're on a free plan, just update them to free (in case they were on a paid plan)
+      if (user.plan === 'free') {
+        return res.status(200).json({ 
+          success: true, 
+          message: 'You are already on the free plan'
+        })
+      }
+      
+      // If they're on a paid plan but no Stripe customer ID, just update them to free
+      console.log('User on paid plan without Stripe customer ID, updating to free')
+      const { error: updateError } = await supabaseAdmin
+        .from('users')
+        .update({
+          plan: 'free',
+          sms_limit: 25,
+          subscription_status: 'canceled'
+        })
+        .eq('x_user_id', userId)
+
+      if (updateError) {
+        console.error('Error updating user to free plan:', updateError)
+        return res.status(500).json({ error: 'Failed to update user plan' })
+      }
+
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Successfully downgraded to free plan'
+      })
     }
 
     // Find the user's active subscription in Stripe
@@ -34,10 +73,31 @@ export default async function handler(req, res) {
     })
 
     if (subscriptions.data.length === 0) {
-      return res.status(404).json({ error: 'No active subscription found' })
+      console.log('No active Stripe subscription found, updating user to free plan')
+      
+      // No active subscription found, update user to free plan
+      const { error: updateError } = await supabaseAdmin
+        .from('users')
+        .update({
+          plan: 'free',
+          sms_limit: 25,
+          subscription_status: 'canceled'
+        })
+        .eq('x_user_id', userId)
+
+      if (updateError) {
+        console.error('Error updating user to free plan:', updateError)
+        return res.status(500).json({ error: 'Failed to update user plan' })
+      }
+
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Successfully downgraded to free plan'
+      })
     }
 
     const subscription = subscriptions.data[0]
+    console.log('Found active subscription:', subscription.id)
 
     // Cancel the subscription at the end of the current period
     const canceledSubscription = await stripe.subscriptions.update(subscription.id, {
