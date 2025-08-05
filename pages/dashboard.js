@@ -5,11 +5,8 @@ export default function Dashboard() {
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
-  const [usage, setUsage] = useState({ used: 185, limit: 300 })
-  const [alerts, setAlerts] = useState([
-    { id: 1, name: 'Sneaker Leads', status: 'active', lastMatch: '2m ago' },
-    { id: 2, name: 'Crypto Alpha', status: 'active', lastMatch: '15m ago' }
-  ])
+  const [usage, setUsage] = useState({ used: 0, limit: 300 })
+  const [alerts, setAlerts] = useState([])
   const router = useRouter()
 
   useEffect(() => {
@@ -89,7 +86,14 @@ export default function Dashboard() {
   }
 
   const handleAddAlert = () => {
-    router.push('/alert/create')
+    // For now, add a simple keyword (in a real app, this would open a form)
+    const newKeyword = {
+      id: Date.now(),
+      name: `Keyword ${alerts.length + 1}`,
+      status: 'active',
+      lastMatch: 'Never'
+    }
+    setAlerts([...alerts, newKeyword])
   }
 
   if (isLoading) {
@@ -202,22 +206,22 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Alerts Section */}
+            {/* Keywords Section */}
             <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
-              <h2 className="text-lg lg:text-2xl font-semibold text-white mb-4 lg:mb-6">Alerts</h2>
+              <h2 className="text-lg lg:text-2xl font-semibold text-white mb-4 lg:mb-6">Keywords</h2>
               
               {alerts.length === 0 ? (
                 <div className="text-center py-8 lg:py-12">
                   <div className="w-16 h-16 lg:w-20 lg:h-20 bg-[#16D9E3]/20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
                     <span className="text-[#16D9E3] text-2xl lg:text-3xl">🔔</span>
                   </div>
-                  <p className="text-white/60 mb-4 lg:mb-6 text-sm lg:text-base">Create your first keyword alert</p>
-                  <button
-                    onClick={handleAddAlert}
-                    className="px-6 py-3 lg:px-8 lg:py-4 bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base"
-                  >
-                    Create Your First Alert
-                  </button>
+                  <p className="text-white/60 mb-4 lg:mb-6 text-sm lg:text-base">Create your first keyword</p>
+                                      <button
+                      onClick={handleAddAlert}
+                      className="px-6 py-3 lg:px-8 lg:py-4 bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base"
+                    >
+                      Create Your First Keyword
+                    </button>
                 </div>
               ) : (
                 <div className="space-y-3 lg:space-y-4">
@@ -261,25 +265,13 @@ export default function Dashboard() {
                   View all
                 </button>
               </div>
-              <div className="space-y-3 lg:space-y-4">
-                <div className="flex items-center space-x-3 lg:space-x-4 p-3 lg:p-4 bg-white/5 rounded-lg lg:rounded-xl hover:bg-white/10 transition-colors duration-200">
-                  <div className="w-8 h-8 lg:w-10 lg:h-10 bg-[#16D9E3]/20 rounded-full flex items-center justify-center">
-                    <span className="text-[#16D9E3] text-sm lg:text-base">📱</span>
+                            <div className="space-y-3 lg:space-y-4">
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 bg-[#16D9E3]/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="text-[#16D9E3] text-lg">📊</span>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-white text-sm lg:text-base">SMS sent to +1 (555) 123-4567</p>
-                    <p className="text-white/60 text-xs lg:text-sm">2 minutes ago</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3 lg:space-x-4 p-3 lg:p-4 bg-white/5 rounded-lg lg:rounded-xl hover:bg-white/10 transition-colors duration-200">
-                  <div className="w-8 h-8 lg:w-10 lg:h-10 bg-[#FF6B4A]/20 rounded-full flex items-center justify-center">
-                    <span className="text-[#FF6B4A] text-sm lg:text-base">🔔</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white text-sm lg:text-base">New alert created: "Sneaker Leads"</p>
-                    <p className="text-white/60 text-xs lg:text-sm">1 hour ago</p>
-                  </div>
+                  <p className="text-white/60 text-sm">No activity yet</p>
+                  <p className="text-white/40 text-xs mt-1">Your recent activity will appear here</p>
                 </div>
               </div>
             </div>
