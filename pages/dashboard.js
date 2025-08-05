@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
+import Head from 'next/head'
 
 export default function Dashboard() {
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [usage, setUsage] = useState({ used: 0, limit: 300 })
   const [alerts, setAlerts] = useState([])
+  const [currentPlan, setCurrentPlan] = useState('free') // free, starter, growth, pro
   const router = useRouter()
 
   useEffect(() => {
@@ -96,6 +99,53 @@ export default function Dashboard() {
     setAlerts([...alerts, newKeyword])
   }
 
+  const handleUpgrade = async (plan) => {
+    if (plan === currentPlan) return
+    
+    setShowUpgradeModal(false)
+    
+    if (plan === 'free') {
+      // Handle downgrade to free
+      setCurrentPlan('free')
+      setUsage({ used: 0, limit: 25 })
+      return
+    }
+    
+    // For paid plans, redirect to Stripe checkout
+    try {
+      const response = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan: plan,
+          userId: user?.id || 'unknown',
+          userEmail: user?.email || 'unknown'
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session')
+      }
+
+      // Redirect to Stripe checkout
+      const stripe = window.Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+      const { error } = await stripe.redirectToCheckout({
+        sessionId: data.sessionId
+      })
+
+      if (error) {
+        throw new Error(error.message)
+      }
+    } catch (error) {
+      console.error('Upgrade error:', error)
+      alert('Upgrade failed. Please try again.')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0F1C2E]">
@@ -108,7 +158,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0F1C2E]">
+    <>
+      <Head>
+        <script src="https://js.stripe.com/v3/" async></script>
+      </Head>
+      <div className="min-h-screen bg-[#0F1C2E]">
       {/* Success Message */}
       {showSuccessMessage && (
         <div className="bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-3 text-center">
@@ -293,7 +347,7 @@ export default function Dashboard() {
                 </button>
                 
                 <button 
-                  onClick={() => router.push('/pricing')}
+                  onClick={() => setShowUpgradeModal(true)}
                   className="p-4 lg:p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 shadow-lg hover:bg-white/10 transition-all duration-300 hover:scale-105"
                 >
                   <div className="text-center">
@@ -334,6 +388,160 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-6 lg:p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl lg:text-3xl font-bold text-white">Upgrade Your Plan</h2>
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="text-white/60 hover:text-white transition-colors duration-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="bg-[#16D9E3]/10 border border-[#16D9E3]/30 rounded-lg p-4">
+                <p className="text-[#16D9E3] font-medium">Current Plan: {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}</p>
+                <p className="text-white/60 text-sm mt-1">
+                  {currentPlan === 'free' && '1 keyword tracked • 25 SMS / mo'}
+                  {currentPlan === 'starter' && '2 keywords tracked • 300 SMS / mo'}
+                  {currentPlan === 'growth' && '10 keywords tracked • 1,000 SMS / mo'}
+                  {currentPlan === 'pro' && '30 keywords tracked • 3,000 SMS / mo'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4 lg:gap-6">
+              {/* Free Plan */}
+              <div className={`p-4 lg:p-6 rounded-xl border transition-all duration-200 ${
+                currentPlan === 'free' 
+                  ? 'bg-[#16D9E3]/10 border-[#16D9E3]' 
+                  : 'bg-white/5 border-white/10 hover:border-white/20'
+              }`}>
+                <div className="text-center">
+                  <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">Free</h3>
+                  <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$0</p>
+                  <ul className="text-sm lg:text-base text-white/80 space-y-2 mb-6">
+                    <li>• 1 keyword tracked</li>
+                    <li>• 25 SMS / mo</li>
+                    <li>• Basic monitoring</li>
+                    <li>• Email support</li>
+                  </ul>
+                  <button
+                    disabled={currentPlan === 'free'}
+                    className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 ${
+                      currentPlan === 'free'
+                        ? 'bg-white/20 text-white/40 cursor-not-allowed'
+                        : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    {currentPlan === 'free' ? 'Current Plan' : 'Downgrade'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Starter Plan */}
+              <div className={`p-4 lg:p-6 rounded-xl border transition-all duration-200 ${
+                currentPlan === 'starter' 
+                  ? 'bg-[#16D9E3]/10 border-[#16D9E3]' 
+                  : 'bg-white/5 border-white/10 hover:border-white/20'
+              }`}>
+                <div className="text-center">
+                  <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">Starter</h3>
+                  <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$9<span className="text-sm font-normal text-white/60">/mo</span></p>
+                  <ul className="text-sm lg:text-base text-white/80 space-y-2 mb-6">
+                    <li>• 2 keywords tracked</li>
+                    <li>• 300 SMS / mo</li>
+                    <li>• Basic monitoring</li>
+                    <li>• Email support</li>
+                  </ul>
+                  <button
+                    onClick={() => handleUpgrade('starter')}
+                    disabled={currentPlan === 'starter'}
+                    className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 ${
+                      currentPlan === 'starter'
+                        ? 'bg-white/20 text-white/40 cursor-not-allowed'
+                        : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
+                    }`}
+                  >
+                    {currentPlan === 'starter' ? 'Current Plan' : currentPlan === 'free' ? 'Upgrade' : 'Downgrade'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Growth Plan */}
+              <div className={`p-4 lg:p-6 rounded-xl border transition-all duration-200 ${
+                currentPlan === 'growth' 
+                  ? 'bg-[#16D9E3]/10 border-[#16D9E3]' 
+                  : 'bg-white/5 border-white/10 hover:border-white/20'
+              }`}>
+                <div className="text-center">
+                  <div className="bg-[#FF6B4A] text-white text-xs font-medium px-2 py-1 rounded-full inline-block mb-2">Popular</div>
+                  <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">Growth</h3>
+                  <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$19<span className="text-sm font-normal text-white/60">/mo</span></p>
+                  <ul className="text-sm lg:text-base text-white/80 space-y-2 mb-6">
+                    <li>• 10 keywords tracked</li>
+                    <li>• 1,000 SMS / mo</li>
+                    <li>• Advanced monitoring</li>
+                    <li>• Priority support</li>
+                  </ul>
+                  <button
+                    onClick={() => handleUpgrade('growth')}
+                    disabled={currentPlan === 'growth'}
+                    className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 ${
+                      currentPlan === 'growth'
+                        ? 'bg-white/20 text-white/40 cursor-not-allowed'
+                        : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
+                    }`}
+                  >
+                    {currentPlan === 'growth' ? 'Current Plan' : 'Upgrade'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Pro Plan */}
+              <div className={`p-4 lg:p-6 rounded-xl border transition-all duration-200 ${
+                currentPlan === 'pro' 
+                  ? 'bg-[#16D9E3]/10 border-[#16D9E3]' 
+                  : 'bg-white/5 border-white/10 hover:border-white/20'
+              }`}>
+                <div className="text-center">
+                  <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">Pro</h3>
+                  <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$49<span className="text-sm font-normal text-white/60">/mo</span></p>
+                  <ul className="text-sm lg:text-base text-white/80 space-y-2 mb-6">
+                    <li>• 30 keywords tracked</li>
+                    <li>• 3,000 SMS / mo</li>
+                    <li>• Team collaboration</li>
+                    <li>• Dedicated support</li>
+                  </ul>
+                  <button
+                    onClick={() => handleUpgrade('pro')}
+                    disabled={currentPlan === 'pro'}
+                    className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 ${
+                      currentPlan === 'pro'
+                        ? 'bg-white/20 text-white/40 cursor-not-allowed'
+                        : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
+                    }`}
+                  >
+                    {currentPlan === 'pro' ? 'Current Plan' : 'Upgrade'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 text-center">
+              <p className="text-white/60 text-sm">Change or cancel anytime. You'll only be charged after your 7-day trial.</p>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+    </>
   )
 } 
