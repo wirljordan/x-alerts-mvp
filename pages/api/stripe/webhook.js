@@ -33,10 +33,17 @@ export default async function handler(req, res) {
       case 'checkout.session.completed':
         const session = event.data.object
         console.log('Checkout session completed:', session.id)
+        console.log('Session metadata:', session.metadata)
         
         // Update user's subscription status in Supabase
         try {
           const { userId, plan } = session.metadata
+          console.log('Processing webhook for user:', userId, 'plan:', plan)
+          
+          if (!userId || !plan) {
+            console.error('Missing userId or plan in session metadata')
+            break
+          }
           
           // Map plan names to match our schema
           const planMapping = {
@@ -47,6 +54,7 @@ export default async function handler(req, res) {
           }
 
           const mappedPlan = planMapping[plan] || 'free'
+          console.log('Plan mapping:', plan, '->', mappedPlan)
 
           // Calculate SMS limits based on plan
           const smsLimits = {
@@ -57,6 +65,7 @@ export default async function handler(req, res) {
           }
 
           const smsLimit = smsLimits[plan] || 25
+          console.log('SMS limit for plan:', plan, '=', smsLimit)
 
           // Update user in Supabase
           const { data, error } = await supabaseAdmin
@@ -70,11 +79,17 @@ export default async function handler(req, res) {
 
           if (error) {
             console.error('Failed to update user subscription:', error)
+            console.error('Error details:', {
+              message: error.message,
+              details: error.details,
+              hint: error.hint
+            })
           } else {
-            console.log('User subscription updated in Supabase:', data)
+            console.log('User subscription updated successfully in Supabase:', data)
           }
         } catch (error) {
           console.error('Error updating user subscription:', error)
+          console.error('Error stack:', error.stack)
         }
         
         console.log('User subscription activated:', {
@@ -82,6 +97,14 @@ export default async function handler(req, res) {
           plan: session.metadata.plan,
           customerId: session.customer
         })
+        break
+
+      case 'checkout.session.async_payment_succeeded':
+        console.log('Async payment succeeded for session:', event.data.object.id)
+        break
+
+      case 'checkout.session.async_payment_failed':
+        console.log('Async payment failed for session:', event.data.object.id)
         break
 
       case 'customer.subscription.created':
