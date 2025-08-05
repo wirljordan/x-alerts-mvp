@@ -7,7 +7,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const [usage, setUsage] = useState({ used: 0, limit: 300 })
+  const [usage, setUsage] = useState({ used: 0, limit: 25 }) // Default to free plan limits
   const [alerts, setAlerts] = useState([])
   const [currentPlan, setCurrentPlan] = useState('free') // free, starter, growth, pro
   const router = useRouter()
@@ -56,6 +56,16 @@ export default function Dashboard() {
                   // Update current plan
                   setCurrentPlan(data.user.plan || 'free')
                   console.log('User plan updated to:', data.user.plan)
+                  
+                  // Update usage limits based on plan
+                  const planLimits = {
+                    'free': 25,
+                    'starter': 300,
+                    'pro': 3000,
+                    'team': 10000
+                  }
+                  const smsLimit = planLimits[data.user.plan] || 25
+                  setUsage({ used: data.user.sms_used || 0, limit: smsLimit })
                 }
               }
             }
@@ -100,6 +110,16 @@ export default function Dashboard() {
                     
                     // Set current plan from Supabase
                     setCurrentPlan(data.user.plan || 'free')
+                    
+                    // Update usage limits based on plan
+                    const planLimits = {
+                      'free': 25,
+                      'starter': 300,
+                      'pro': 3000,
+                      'team': 10000
+                    }
+                    const smsLimit = planLimits[data.user.plan] || 25
+                    setUsage({ used: data.user.sms_used || 0, limit: smsLimit })
                   } else {
                     // User doesn't exist in database, redirect to onboarding
                     console.log('User not found in database, redirecting to onboarding')
@@ -189,6 +209,16 @@ export default function Dashboard() {
               // Update current plan
               setCurrentPlan(data.user.plan || 'free')
               console.log('User data refreshed, plan updated to:', data.user.plan)
+              
+              // Update usage limits based on plan
+              const planLimits = {
+                'free': 25,
+                'starter': 300,
+                'pro': 3000,
+                'team': 10000
+              }
+              const smsLimit = planLimits[data.user.plan] || 25
+              setUsage({ used: data.user.sms_used || 0, limit: smsLimit })
             }
           }
         }
