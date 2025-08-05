@@ -15,7 +15,11 @@ export default function Dashboard() {
   useEffect(() => {
     // Handle Stripe success redirect
     const handleStripeSuccess = () => {
+      console.log('Dashboard loaded with query:', router.query)
+      
       if (router.query.success === 'true' && router.query.session_id) {
+        console.log('Stripe success detected! Setting onboarding cookie...')
+        
         // Set onboarding completion cookie for successful payments
         document.cookie = 'onboarding_completed=true; Path=/; Secure; SameSite=Strict; Max-Age=31536000'
         
@@ -47,12 +51,15 @@ export default function Dashboard() {
             const sessionData = JSON.parse(cookies.x_session)
             setUser(sessionData.user)
             
-            // Check if user has completed onboarding
-            const hasCompletedOnboarding = cookies.onboarding_completed === 'true'
-            if (!hasCompletedOnboarding) {
-              router.push('/onboarding')
-              return
-            }
+                    // Check if user has completed onboarding
+        const hasCompletedOnboarding = cookies.onboarding_completed === 'true'
+        console.log('Onboarding completion check:', { hasCompletedOnboarding, cookies })
+        
+        if (!hasCompletedOnboarding) {
+          console.log('No onboarding completion cookie found, redirecting to onboarding')
+          router.push('/onboarding')
+          return
+        }
           } catch (error) {
             console.error('Error parsing session:', error)
             router.push('/?error=invalid_session')
@@ -64,8 +71,13 @@ export default function Dashboard() {
       }
     }
 
+    // Handle Stripe success first, then check session
     handleStripeSuccess()
-    getUserFromSession()
+    
+    // Small delay to ensure cookie is set if this is a Stripe success
+    setTimeout(() => {
+      getUserFromSession()
+    }, 100)
   }, [router])
 
   const handleSignOut = () => {
