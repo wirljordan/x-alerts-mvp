@@ -10,14 +10,20 @@
 3. Copy and paste the contents of `supabase/setup.sql`
 4. Click **Run** to execute the SQL
 
-## Step 3: Verify Tables Created
+## Step 3: Enable Security (IMPORTANT!)
+1. Create another **New Query**
+2. Copy and paste the contents of `supabase/rls-policies.sql`
+3. Click **Run** to enable Row Level Security
+4. This will fix the "Unrestricted" warning and secure your data
+
+## Step 4: Verify Tables Created
 1. Go to **Table Editor** in your Supabase dashboard
 2. You should see these tables:
    - `users` - Stores user profiles and onboarding data
    - `alerts` - Stores keyword alerts
    - `messages` - Stores sent notifications
 
-## Step 4: Test the Setup
+## Step 5: Test the Setup
 1. Try the onboarding flow
 2. Check that user data is saved to the `users` table
 3. Verify the dashboard loads real data from Supabase
