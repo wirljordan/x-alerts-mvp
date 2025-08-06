@@ -100,7 +100,7 @@ export default function Dashboard() {
   const [usage, setUsage] = useState({ used: 0, limit: 25 }) // Default to free plan limits
   const [alerts, setAlerts] = useState([])
   const [currentPlan, setCurrentPlan] = useState('free') // free, starter, growth, pro
-  const [keywordForm, setKeywordForm] = useState({ name: '', query: '' })
+  const [keywordForm, setKeywordForm] = useState({ keyword: '' })
   const [isCreatingKeyword, setIsCreatingKeyword] = useState(false)
   const router = useRouter()
 
@@ -282,8 +282,8 @@ export default function Dashboard() {
   }
 
   const handleCreateKeyword = async () => {
-    if (!keywordForm.name.trim() || !keywordForm.query.trim()) {
-      alert('Please fill in both name and query fields')
+    if (!keywordForm.keyword.trim()) {
+      alert('Please enter a keyword to track')
       return
     }
 
@@ -296,8 +296,8 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           userId: user?.id,
-          name: keywordForm.name.trim(),
-          query: keywordForm.query.trim()
+          name: keywordForm.keyword.trim(),
+          query: keywordForm.keyword.trim()
         })
       })
 
@@ -305,7 +305,7 @@ export default function Dashboard() {
 
       if (response.ok && data.success) {
         // Reset form and close modal
-        setKeywordForm({ name: '', query: '' })
+        setKeywordForm({ keyword: '' })
         setShowKeywordModal(false)
         
         // Refresh alerts list
@@ -980,7 +980,7 @@ export default function Dashboard() {
               <button
                 onClick={() => {
                   setShowKeywordModal(false)
-                  setKeywordForm({ name: '', query: '' })
+                  setKeywordForm({ keyword: '' })
                 }}
                 className="text-white/60 hover:text-white transition-colors duration-200"
               >
@@ -992,27 +992,16 @@ export default function Dashboard() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-white font-medium mb-2">Keyword Name</label>
+                <label className="block text-white font-medium mb-2">What do you want to track?</label>
                 <input
                   type="text"
-                  value={keywordForm.name}
-                  onChange={(e) => setKeywordForm(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., Sneaker Leads, Crypto Alpha"
+                  value={keywordForm.keyword}
+                  onChange={(e) => setKeywordForm(prev => ({ ...prev, keyword: e.target.value }))}
+                  placeholder="e.g., sneakers, bitcoin, my brand name"
                   className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
                 />
-              </div>
-              
-              <div>
-                <label className="block text-white font-medium mb-2">Search Query</label>
-                <textarea
-                  value={keywordForm.query}
-                  onChange={(e) => setKeywordForm(prev => ({ ...prev, query: e.target.value }))}
-                  placeholder="Enter your search query (e.g., 'sneakers OR kicks -RT', 'crypto bitcoin')"
-                  rows={3}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors resize-none"
-                />
                 <p className="text-xs text-white/60 mt-1">
-                  Use X search operators: OR, AND, -RT (no retweets), from:username, etc.
+                  Enter any word or phrase you want to get notified about when it's mentioned on X
                 </p>
               </div>
             </div>
@@ -1021,7 +1010,7 @@ export default function Dashboard() {
               <button
                 onClick={() => {
                   setShowKeywordModal(false)
-                  setKeywordForm({ name: '', query: '' })
+                  setKeywordForm({ keyword: '' })
                 }}
                 className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors"
               >
@@ -1029,7 +1018,7 @@ export default function Dashboard() {
               </button>
               <button
                 onClick={handleCreateKeyword}
-                disabled={!keywordForm.name.trim() || !keywordForm.query.trim() || isCreatingKeyword}
+                disabled={!keywordForm.keyword.trim() || isCreatingKeyword}
                 className="flex-1 px-4 py-2 bg-[#16D9E3] hover:bg-[#16D9E3]/90 disabled:bg-white/20 disabled:cursor-not-allowed text-[#0F1C2E] font-semibold rounded-lg transition-colors"
               >
                 {isCreatingKeyword ? (
