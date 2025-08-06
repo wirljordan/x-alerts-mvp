@@ -16,8 +16,8 @@ export default async function handler(req, res) {
     const planMapping = {
       'free': 'free',
       'starter': 'starter', 
-      'growth': 'pro',
-      'pro': 'team'
+      'growth': 'growth',
+      'pro': 'pro'
     }
 
     const mappedPlan = planMapping[plan] || 'free'
