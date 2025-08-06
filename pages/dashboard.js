@@ -75,6 +75,8 @@ export default function Dashboard() {
   const [showSignOutModal, setShowSignOutModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [keywordToDelete, setKeywordToDelete] = useState(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   const [usage, setUsage] = useState({ used: 0, limit: 25 }) // Default to free plan limits
   const [alerts, setAlerts] = useState([])
   const [currentPlan, setCurrentPlan] = useState('free') // free, starter, growth, pro
@@ -294,7 +296,9 @@ export default function Dashboard() {
         // Refresh alerts list
         await fetchUserAlerts(user?.x_user_id || user?.id)
         
-        alert('Keyword created successfully!')
+        // Show success modal
+        setSuccessMessage('Keyword created successfully!')
+        setShowSuccessModal(true)
       } else {
         // Check if this is an onboarding issue
         if (data.code === 'ONBOARDING_REQUIRED') {
@@ -1031,6 +1035,28 @@ export default function Dashboard() {
                   Delete
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-6 lg:p-8 max-w-md w-full">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-green-400 text-2xl">✅</span>
+              </div>
+              <h2 className="text-xl lg:text-2xl font-bold text-white mb-2">Success!</h2>
+              <p className="text-white/60 mb-6">{successMessage}</p>
+              
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full px-4 py-2 bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] font-semibold rounded-lg transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
