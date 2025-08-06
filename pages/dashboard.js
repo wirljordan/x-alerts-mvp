@@ -39,9 +39,7 @@ function AlertItem({ alert, onToggle, onDelete }) {
             <div className="absolute right-0 mt-2 w-48 bg-[#0F1C2E] border border-white/10 rounded-lg shadow-lg z-10">
               <button
                 onClick={() => {
-                  if (confirm('Are you sure you want to delete this keyword?')) {
-                    onDelete(alert.id)
-                  }
+                  onDelete(alert.id)
                   setShowDropdown(false)
                 }}
                 className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
@@ -74,6 +72,9 @@ export default function Dashboard() {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showKeywordModal, setShowKeywordModal] = useState(false)
+  const [showSignOutModal, setShowSignOutModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [keywordToDelete, setKeywordToDelete] = useState(null)
   const [usage, setUsage] = useState({ used: 0, limit: 25 }) // Default to free plan limits
   const [alerts, setAlerts] = useState([])
   const [currentPlan, setCurrentPlan] = useState('free') // free, starter, growth, pro
@@ -234,13 +235,15 @@ export default function Dashboard() {
   }, [router.query.success, router.query.session_id, router.query.alert_created])
 
   const handleSignOut = () => {
-    if (confirm('Are you sure you want to sign out?')) {
-      // Clear session cookies
-      document.cookie = 'x_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
-      document.cookie = 'x_session_secure=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
-      document.cookie = 'x_user_id=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
-      router.push('/')
-    }
+    setShowSignOutModal(true)
+  }
+
+  const confirmSignOut = () => {
+    // Clear session cookies
+    document.cookie = 'x_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+    document.cookie = 'x_session_secure=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+    document.cookie = 'x_user_id=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+    router.push('/')
   }
 
   const fetchUserAlerts = async (userId) => {
@@ -310,7 +313,14 @@ export default function Dashboard() {
     }
   }
 
-  const handleDeleteAlert = async (alertId) => {
+  const showDeleteConfirmation = (alertId) => {
+    setKeywordToDelete(alertId)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteAlert = async () => {
+    if (!keywordToDelete) return
+    
     try {
       const response = await fetch('/api/alerts/delete', {
         method: 'DELETE',
@@ -318,7 +328,7 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          alertId: alertId,
+          alertId: keywordToDelete,
           userId: user?.x_user_id || user?.id
         })
       })
@@ -328,12 +338,15 @@ export default function Dashboard() {
       if (response.ok && data.success) {
         // Refresh alerts list
         await fetchUserAlerts(user?.x_user_id || user?.id)
-        alert('Keyword deleted successfully!')
+        setShowDeleteModal(false)
+        setKeywordToDelete(null)
       } else {
         throw new Error(data.error || 'Failed to delete keyword')
       }
     } catch (error) {
       console.error('Error deleting keyword:', error)
+      setShowDeleteModal(false)
+      setKeywordToDelete(null)
       alert(`Failed to delete keyword: ${error.message}`)
     }
   }
@@ -740,7 +753,7 @@ export default function Dashboard() {
                       key={alert.id} 
                       alert={alert} 
                       onToggle={handleToggleAlert}
-                      onDelete={handleDeleteAlert}
+                      onDelete={showDeleteConfirmation}
                     />
                   ))}
                 </div>
@@ -955,6 +968,69 @@ export default function Dashboard() {
                   'Create Keyword'
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sign Out Confirmation Modal */}
+      {showSignOutModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-6 lg:p-8 max-w-md w-full">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-red-400 text-2xl">⚠️</span>
+              </div>
+              <h2 className="text-xl lg:text-2xl font-bold text-white mb-2">Sign Out?</h2>
+              <p className="text-white/60 mb-6">Are you sure you want to sign out of your account?</p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowSignOutModal(false)}
+                  className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmSignOut}
+                  className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Keyword Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-6 lg:p-8 max-w-md w-full">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-red-400 text-2xl">🗑️</span>
+              </div>
+              <h2 className="text-xl lg:text-2xl font-bold text-white mb-2">Delete Keyword?</h2>
+              <p className="text-white/60 mb-6">Are you sure you want to delete this keyword? This action cannot be undone.</p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false)
+                    setKeywordToDelete(null)
+                  }}
+                  className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAlert}
+                  className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         </div>
