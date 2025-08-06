@@ -77,6 +77,8 @@ export default function Dashboard() {
   const [keywordToDelete, setKeywordToDelete] = useState(null)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [showDowngradeModal, setShowDowngradeModal] = useState(false)
+  const [downgradeInfo, setDowngradeInfo] = useState({ plan: '', message: '' })
   const [usage, setUsage] = useState({ used: 0, limit: 25 }) // Default to free plan limits
   const [alerts, setAlerts] = useState([])
   const [currentPlan, setCurrentPlan] = useState('free') // free, starter, growth, pro
@@ -425,6 +427,55 @@ export default function Dashboard() {
     }
   }
 
+  const handleDowngradeConfirm = async () => {
+    const { plan, currentPlan, targetPlan } = downgradeInfo
+    
+    // Handle downgrade - cancel subscription at end of period
+    console.log('Attempting downgrade for user:', user)
+    console.log('User ID being sent:', user?.x_user_id || 'unknown')
+    console.log('Downgrading from', currentPlan, 'to', plan)
+    
+    try {
+      const response = await fetch('/api/stripe/cancel-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.x_user_id || 'unknown',
+          targetPlan: plan // Include target plan for partial downgrades
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to cancel subscription')
+      }
+
+      // Show success message
+      if (plan === 'free') {
+        setSuccessMessage('Your subscription will be canceled at the end of your current billing period. You can continue using your current plan until then.')
+      } else {
+        setSuccessMessage(`Your subscription will be downgraded to ${plan} at the end of your current billing period. You can continue using your current plan until then.`)
+      }
+      setShowSuccessModal(true)
+      
+      // Close downgrade modal
+      setShowDowngradeModal(false)
+      setDowngradeInfo({ plan: '', message: '' })
+      
+      // Refresh user data to get updated subscription status
+      await refreshUserData()
+    } catch (error) {
+      console.error('Downgrade error:', error)
+      setSuccessMessage(`Downgrade failed: ${error.message}`)
+      setShowSuccessModal(true)
+      setShowDowngradeModal(false)
+      setDowngradeInfo({ plan: '', message: '' })
+    }
+  }
+
   const handleUpgrade = async (plan) => {
     if (plan === currentPlan) return
     
@@ -454,51 +505,19 @@ export default function Dashboard() {
       const currentPlanName = planNames[currentPlan] || currentPlan
       const targetPlanName = planNames[plan] || plan
       
-      const confirmMessage = plan === 'free' 
-        ? `Are you sure you want to cancel your ${currentPlanName} subscription? Your subscription will remain active until the end of your current billing period.`
-        : `Are you sure you want to downgrade from ${currentPlanName} to ${targetPlanName}? Your current plan will remain active until the end of your billing period, then you'll be moved to ${targetPlanName}.`
+      // Set downgrade info for custom modal
+      setDowngradeInfo({
+        plan: plan,
+        currentPlan: currentPlanName,
+        targetPlan: targetPlanName,
+        message: plan === 'free' 
+          ? `Are you sure you want to cancel your ${currentPlanName} subscription? Your subscription will remain active until the end of your current billing period.`
+          : `Are you sure you want to downgrade from ${currentPlanName} to ${targetPlanName}? Your current plan will remain active until the end of your billing period, then you'll be moved to ${targetPlanName}.`
+      })
+      setShowDowngradeModal(true)
+      return // Wait for user confirmation in modal
       
-      if (!confirm(confirmMessage)) {
-        return // User canceled the downgrade
-      }
-      
-      // Handle downgrade - cancel subscription at end of period
-      console.log('Attempting downgrade for user:', user)
-      console.log('User ID being sent:', user?.x_user_id || 'unknown')
-      console.log('Downgrading from', currentPlan, 'to', plan)
-      
-      try {
-        const response = await fetch('/api/stripe/cancel-subscription', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: user?.x_user_id || 'unknown',
-            targetPlan: plan // Include target plan for partial downgrades
-          })
-        })
 
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to cancel subscription')
-        }
-
-        // Show success message
-        if (plan === 'free') {
-          alert('Your subscription will be canceled at the end of your current billing period. You can continue using your current plan until then.')
-        } else {
-          alert(`Your subscription will be downgraded to ${plan} at the end of your current billing period. You can continue using your current plan until then.`)
-        }
-        
-        // Refresh user data to get updated subscription status
-        await refreshUserData()
-      } catch (error) {
-        console.error('Downgrade error:', error)
-        alert(`Downgrade failed: ${error.message}`)
-      }
-      return
     }
     
     // For paid plans, redirect to Stripe checkout
@@ -1062,6 +1081,38 @@ export default function Dashboard() {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Downgrade Confirmation Modal */}
+      {showDowngradeModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-6 lg:p-8 max-w-md w-full">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-orange-400 text-2xl">⚠️</span>
+              </div>
+              <h2 className="text-xl lg:text-2xl font-bold text-white mb-2">
+                {downgradeInfo.plan === 'free' ? 'Cancel Subscription?' : 'Downgrade Plan?'}
+              </h2>
+              <p className="text-white/60 mb-6">{downgradeInfo.message}</p>
+              
+              <div className="flex space-x-3">
+                <button 
+                  onClick={() => { setShowDowngradeModal(false); setDowngradeInfo({ plan: '', message: '' }); }} 
+                  className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleDowngradeConfirm}
+                  className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  {downgradeInfo.plan === 'free' ? 'Cancel Subscription' : 'Downgrade'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
