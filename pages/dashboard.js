@@ -212,10 +212,24 @@ export default function Dashboard() {
     
     setShowUpgradeModal(false)
     
-    if (plan === 'free') {
-      // Handle downgrade to free - should cancel subscription at end of period
+    // Define plan hierarchy for upgrade/downgrade logic
+    const planHierarchy = {
+      'free': 0,
+      'starter': 1,
+      'growth': 2,
+      'pro': 3
+    }
+    
+    const currentPlanLevel = planHierarchy[currentPlan] || 0
+    const targetPlanLevel = planHierarchy[plan] || 0
+    
+    // Check if this is a downgrade
+    if (targetPlanLevel < currentPlanLevel) {
+      // Handle downgrade - cancel subscription at end of period
       console.log('Attempting downgrade for user:', user)
       console.log('User ID being sent:', user?.x_user_id || 'unknown')
+      console.log('Downgrading from', currentPlan, 'to', plan)
+      
       try {
         const response = await fetch('/api/stripe/cancel-subscription', {
           method: 'POST',
@@ -223,7 +237,8 @@ export default function Dashboard() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            userId: user?.x_user_id || 'unknown'
+            userId: user?.x_user_id || 'unknown',
+            targetPlan: plan // Include target plan for partial downgrades
           })
         })
 
@@ -234,7 +249,11 @@ export default function Dashboard() {
         }
 
         // Show success message
-        alert('Your subscription will be canceled at the end of your current billing period. You can continue using your current plan until then.')
+        if (plan === 'free') {
+          alert('Your subscription will be canceled at the end of your current billing period. You can continue using your current plan until then.')
+        } else {
+          alert(`Your subscription will be downgraded to ${plan} at the end of your current billing period. You can continue using your current plan until then.`)
+        }
         
         // Refresh user data to get updated subscription status
         await refreshUserData()

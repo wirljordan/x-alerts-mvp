@@ -9,13 +9,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { userId } = req.body
+    const { userId, targetPlan } = req.body
 
     if (!userId) {
       return res.status(400).json({ error: 'Missing userId' })
     }
 
     console.log('Attempting to cancel subscription for user:', userId)
+    console.log('Target plan for downgrade:', targetPlan || 'free')
 
     // Get user from Supabase to find their subscription
     const { data: user, error: userError } = await supabaseAdmin
