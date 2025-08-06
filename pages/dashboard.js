@@ -190,17 +190,7 @@ export default function Dashboard() {
             const sessionData = JSON.parse(cookies.x_session)
             setUser(sessionData.user)
             
-            // Check if user has completed onboarding
-            const hasCompletedOnboarding = cookies.onboarding_completed === 'true'
-            
-            if (!hasCompletedOnboarding) {
-              // User hasn't completed onboarding, redirect them
-              console.log('User has not completed onboarding, redirecting...')
-              router.push('/onboarding')
-              return
-            }
-            
-            // Fetch user data from Supabase to check if they exist
+            // Fetch user data from Supabase to check if they exist (database is source of truth)
             if (sessionData.user?.id) {
               try {
                 const response = await fetch(`/api/users/get?userId=${sessionData.user.id}`)
@@ -208,6 +198,7 @@ export default function Dashboard() {
                   const data = await response.json()
                   if (data.success && data.user) {
                     // User exists in database, they have completed onboarding
+                    console.log('User found in database:', data.user)
                     setUser(prevUser => ({
                       ...prevUser,
                       ...data.user
