@@ -16,19 +16,31 @@ export default async function handler(req, res) {
     console.log('Request body:', req.body)
     console.log('Creating alert directly for user ID:', userId)
     
-    // For now, create the alert directly using the X user ID
-    // We'll store the X user ID directly in the user_id field temporarily
+    // First, get the user's internal UUID from their X user ID  
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('x_user_id', userId)
+      .single()
+
+    if (userError || !userData) {
+      console.error('User not found in database:', userError)
+      return res.status(404).json({ 
+        error: 'User not found',
+        code: 'USER_NOT_FOUND'
+      })
+    }
+
+    console.log('User found in database:', userData.id)
+
+    // Create the alert using the correct schema
     const { data, error } = await supabaseAdmin
       .from('alerts')
       .insert([
         {
-          user_id: userId, // Using X user ID directly for now
-          name: name.trim(),
-          query: query.trim(),
-          description: description?.trim() || null,
-          status: 'active',
-          created_at: new Date().toISOString(),
-          last_match_at: null
+          user_id: userData.id, // Use the internal UUID
+          query_string: query.trim(), // Map to correct column name
+          status: 'active'
         }
       ])
       .select()
