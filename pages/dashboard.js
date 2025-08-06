@@ -441,9 +441,15 @@ export default function Dashboard() {
                   
                   {/* Billing Cycle Information */}
                   <div className="mt-2 space-y-1">
-                    {/* Next reset date */}
+                    {/* Next reset date - calculate days until next month */}
                     <p className="text-xs lg:text-sm text-white/60">
-                      Resets in {Math.ceil((30 - new Date().getDate()) / 30 * 30)} days
+                      Resets in {(() => {
+                        const now = new Date()
+                        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+                        const diffTime = nextMonth - now
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                        return diffDays
+                      })()} days
                     </p>
                     
                     {/* Pending plan change */}
