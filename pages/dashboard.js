@@ -441,14 +441,23 @@ export default function Dashboard() {
                   
                   {/* Billing Cycle Information */}
                   <div className="mt-2 space-y-1">
-                    {/* Next reset date - calculate days until next month */}
+                    {/* Next reset date - calculate days until next billing cycle */}
                     <p className="text-xs lg:text-sm text-white/60">
                       SMS limit resets in {(() => {
+                        if (!user?.created_at) return 'calculating...'
+                        
                         const now = new Date()
-                        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-                        const diffTime = nextMonth - now
+                        const signupDate = new Date(user.created_at)
+                        
+                        // Calculate next billing cycle (30 days from signup, recurring monthly)
+                        const daysSinceSignup = Math.floor((now - signupDate) / (1000 * 60 * 60 * 24))
+                        const cyclesSinceSignup = Math.floor(daysSinceSignup / 30)
+                        const nextResetDate = new Date(signupDate)
+                        nextResetDate.setDate(nextResetDate.getDate() + ((cyclesSinceSignup + 1) * 30))
+                        
+                        const diffTime = nextResetDate - now
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                        return diffDays
+                        return Math.max(0, diffDays)
                       })()} days
                     </p>
                     
