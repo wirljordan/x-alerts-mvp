@@ -619,7 +619,9 @@ export default function Dashboard() {
                     className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 ${
                       currentPlan === 'starter'
                         ? 'bg-white/20 text-white/40 cursor-not-allowed'
-                        : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
+                        : currentPlan === 'free'
+                        ? 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
+                        : 'bg-white/10 text-white hover:bg-white/20'
                     }`}
                   >
                     {currentPlan === 'starter' ? 'Current Plan' : currentPlan === 'free' ? 'Upgrade' : 'Downgrade'}
@@ -647,10 +649,12 @@ export default function Dashboard() {
                     className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 ${
                       currentPlan === 'growth'
                         ? 'bg-white/20 text-white/40 cursor-not-allowed'
-                        : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
+                        : (currentPlan === 'free' || currentPlan === 'starter')
+                        ? 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
+                        : 'bg-white/10 text-white hover:bg-white/20'
                     }`}
                   >
-                    {currentPlan === 'growth' ? 'Current Plan' : 'Upgrade'}
+                    {currentPlan === 'growth' ? 'Current Plan' : (currentPlan === 'free' || currentPlan === 'starter') ? 'Upgrade' : 'Downgrade'}
                   </button>
                 </div>
               </div>
