@@ -12,6 +12,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing userId parameter' })
     }
 
+    console.log('Looking for user with X user ID:', userId)
+    
     // First, get the user's internal UUID from their X user ID
     const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
@@ -20,9 +22,17 @@ export default async function handler(req, res) {
       .single()
 
     if (userError || !userData) {
-      console.error('User not found:', userError)
-      return res.status(404).json({ error: 'User not found' })
+      console.error('User not found in database:', userError)
+      console.log('User ID searched:', userId)
+      
+      // Return empty array instead of error for list endpoint
+      return res.status(200).json({ 
+        success: true, 
+        alerts: []
+      })
     }
+    
+    console.log('User found in database:', userData.id)
 
     // Get all alerts for this user
     const { data, error } = await supabaseAdmin

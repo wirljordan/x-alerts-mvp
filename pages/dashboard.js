@@ -323,6 +323,13 @@ export default function Dashboard() {
         
         alert('Keyword created successfully!')
       } else {
+        // Check if this is an onboarding issue
+        if (data.code === 'ONBOARDING_REQUIRED') {
+          setShowKeywordModal(false)
+          alert('Please complete your account setup first')
+          router.push('/onboarding')
+          return
+        }
         throw new Error(data.error || 'Failed to create keyword')
       }
     } catch (error) {
