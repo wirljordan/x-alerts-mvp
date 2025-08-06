@@ -749,7 +749,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Right Column - Quick Actions & Stats */}
+          {/* Right Column - Quick Actions */}
           <div className="space-y-6 lg:space-y-8">
             {/* Quick Actions */}
             <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
@@ -781,31 +781,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
-              <h3 className="text-lg lg:text-xl font-semibold text-white mb-4 lg:mb-6">Stats</h3>
-              <div className="space-y-4 lg:space-y-6">
-                <div className="flex items-center justify-between p-3 lg:p-4 bg-white/5 rounded-lg">
-                  <div>
-                    <p className="text-white/60 text-sm lg:text-base">Keywords</p>
-                    <p className="text-white font-semibold text-lg lg:text-xl">{alerts.length}</p>
-                  </div>
-                  <div className="w-12 h-12 lg:w-14 lg:h-14 bg-[#16D9E3]/20 rounded-full flex items-center justify-center">
-                    <span className="text-[#16D9E3] text-lg lg:text-xl">🔔</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 lg:p-4 bg-white/5 rounded-lg">
-                  <div>
-                    <p className="text-white/60 text-sm lg:text-base">SMS Sent</p>
-                    <p className="text-white font-semibold text-lg lg:text-xl">{usage.used}</p>
-                  </div>
-                  <div className="w-12 h-12 lg:w-14 lg:h-14 bg-[#FF6B4A]/20 rounded-full flex items-center justify-center">
-                    <span className="text-[#FF6B4A] text-lg lg:text-xl">📱</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+
           </div>
         </div>
       </div>
