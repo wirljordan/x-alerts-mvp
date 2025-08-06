@@ -597,12 +597,28 @@ export default function Dashboard() {
                     className="w-8 h-8 lg:w-10 lg:h-10 rounded-full"
                   />
                 )}
-                <button
-                  onClick={handleSignOut}
-                  className="px-3 py-1 lg:px-4 lg:py-2 text-sm lg:text-base bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors duration-200"
-                >
-                  Sign Out
-                </button>
+                <div className="flex items-center space-x-2 lg:space-x-3">
+                  <button
+                    onClick={() => alert('Settings coming soon!')}
+                    className="px-3 py-1 lg:px-4 lg:py-2 text-sm lg:text-base bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors duration-200 flex items-center space-x-2"
+                  >
+                    <span>⚙️</span>
+                    <span className="hidden sm:inline">Settings</span>
+                  </button>
+                  <button
+                    onClick={() => setShowUpgradeModal(true)}
+                    className="px-3 py-1 lg:px-4 lg:py-2 text-sm lg:text-base bg-[#16D9E3] text-[#0F1C2E] rounded-lg hover:bg-[#16D9E3]/90 transition-colors duration-200 flex items-center space-x-2 font-semibold"
+                  >
+                    <span>🚀</span>
+                    <span className="hidden sm:inline">Upgrade</span>
+                  </button>
+                  <button
+                    onClick={handleSignOut}
+                    className="px-3 py-1 lg:px-4 lg:py-2 text-sm lg:text-base bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors duration-200"
+                  >
+                    Sign Out
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -611,9 +627,9 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-6 lg:py-12">
-        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Left Column - Main Dashboard */}
-          <div className="lg:col-span-2 space-y-6 lg:space-y-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Main Dashboard */}
+          <div className="space-y-6 lg:space-y-8">
             {/* Usage Section */}
             <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
               <div className="flex items-center justify-between mb-4 lg:mb-6">
@@ -729,60 +745,10 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Recent Activity */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
-              <div className="flex items-center justify-between mb-4 lg:mb-6">
-                <h2 className="text-lg lg:text-2xl font-semibold text-white">Recent Activity</h2>
-                <button className="text-sm text-[#16D9E3] hover:text-[#16D9E3]/80 transition-colors duration-200">
-                  View all
-                </button>
-              </div>
-                            <div className="space-y-3 lg:space-y-4">
-                <div className="text-center py-8">
-                  <div className="w-12 h-12 bg-[#16D9E3]/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-[#16D9E3] text-lg">📊</span>
-                  </div>
-                  <p className="text-white/60 text-sm">No activity yet</p>
-                  <p className="text-white/40 text-xs mt-1">Your recent activity will appear here</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Quick Actions */}
-          <div className="space-y-6 lg:space-y-8">
-            {/* Quick Actions */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
-              <h3 className="text-lg lg:text-xl font-semibold text-white mb-4 lg:mb-6">Quick Actions</h3>
-              <div className="grid grid-cols-2 gap-4 lg:gap-6">
-                <button className="p-4 lg:p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 shadow-lg hover:bg-white/10 transition-all duration-300 hover:scale-105">
-                  <div className="text-center">
-                    <div className="w-12 h-12 lg:w-16 lg:h-16 bg-[#16D9E3]/20 rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4">
-                      <span className="text-[#16D9E3] text-xl lg:text-2xl">⚙️</span>
-                    </div>
-                    <p className="text-white font-medium text-sm lg:text-base">Settings</p>
-                  </div>
-                </button>
-                
-                <button 
-                  onClick={async () => {
-                    await refreshUserData()
-                    setShowUpgradeModal(true)
-                  }}
-                  className="p-4 lg:p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 shadow-lg hover:bg-white/10 transition-all duration-300 hover:scale-105"
-                >
-                  <div className="text-center">
-                    <div className="w-12 h-12 lg:w-16 lg:h-16 bg-[#FF6B4A]/20 rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4">
-                      <span className="text-[#FF6B4A] text-xl lg:text-2xl">⬆️</span>
-                    </div>
-                    <p className="text-white font-medium text-sm lg:text-base">Upgrade</p>
-                  </div>
-                </button>
-              </div>
-            </div>
-
 
           </div>
+
+
         </div>
       </div>
 
