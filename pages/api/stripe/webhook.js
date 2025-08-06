@@ -67,37 +67,45 @@ export default async function handler(req, res) {
           const smsLimit = smsLimits[plan] || 25
           console.log('SMS limit for plan:', plan, '=', smsLimit)
 
-          // Try to find user by x_user_id first, then by any UUID field if needed
+          // Try to find user by x_user_id first, then by internal UUID id if needed
           let userData = null
           let updateError = null
           
-          // First try with x_user_id (this should work for new users)
-          const { data: userData1, error: error1 } = await supabaseAdmin
-            .from('users')
-            .update({
-              plan: mappedPlan,
-              sms_limit: smsLimit
-            })
-            .eq('x_user_id', userId)
-            .select()
-
-          if (error1 && error1.code === 'PGRST116') {
-            // User not found by x_user_id, try to find by UUID (backward compatibility)
-            console.log('User not found by x_user_id, checking if UUID format:', userId)
-            
-            // Check if userId looks like a UUID
-            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)
-            
-            if (isUUID) {
-              console.log('UUID detected, this might be an old session format. Logging for debugging.')
-              console.error('UUID user ID found in webhook:', userId, 'This indicates a session mismatch.')
-            }
-            
-            updateError = error1
-          } else if (error1) {
-            updateError = error1
-          } else {
+          // Check if userId looks like a UUID (internal database ID) vs X user ID (numeric string)
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)
+          const isXUserId = /^\d+$/.test(userId)
+          
+          if (isXUserId) {
+            // This is an X user ID, use x_user_id field
+            console.log('X user ID detected, searching by x_user_id:', userId)
+            const { data: userData1, error: error1 } = await supabaseAdmin
+              .from('users')
+              .update({
+                plan: mappedPlan,
+                sms_limit: smsLimit
+              })
+              .eq('x_user_id', userId)
+              .select()
+              
             userData = userData1
+            updateError = error1
+          } else if (isUUID) {
+            // This is an internal database ID, use id field
+            console.log('Internal database ID detected, searching by id:', userId)
+            const { data: userData2, error: error2 } = await supabaseAdmin
+              .from('users')
+              .update({
+                plan: mappedPlan,
+                sms_limit: smsLimit
+              })
+              .eq('id', userId)
+              .select()
+              
+            userData = userData2
+            updateError = error2
+          } else {
+            console.error('Unknown user ID format:', userId)
+            updateError = { message: 'Unknown user ID format' }
           }
 
           if (updateError) {

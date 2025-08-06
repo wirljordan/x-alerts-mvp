@@ -271,6 +271,9 @@ export default function Dashboard() {
       // Use real email from session, fallback to username-based email
       const userEmail = user?.email || (user?.username ? `${user.username}@earlyreply.app` : 'user@earlyreply.app')
       
+      console.log('Creating checkout for user:', user)
+      console.log('Sending userId:', user?.x_user_id || 'unknown')
+      
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: {
