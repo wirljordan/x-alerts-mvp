@@ -12,7 +12,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields: userId, name, query' })
     }
 
+    console.log('=== ALERT CREATE DEBUG ===')
+    console.log('Request body:', req.body)
     console.log('Looking for user with X user ID:', userId)
+    console.log('User ID type:', typeof userId)
     
     // First, get the user's internal UUID from their X user ID
     const { data: userData, error: userError } = await supabaseAdmin
@@ -20,6 +23,8 @@ export default async function handler(req, res) {
       .select('id')
       .eq('x_user_id', userId)
       .single()
+
+    console.log('Database query result:', { userData, userError })
 
     if (userError || !userData) {
       console.error('User not found in database:', userError)
