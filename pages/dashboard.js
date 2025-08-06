@@ -278,7 +278,7 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           plan: plan,
-          userId: user?.id || 'unknown',
+          userId: user?.x_user_id || 'unknown',
           userEmail: userEmail
         })
       })

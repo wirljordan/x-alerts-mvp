@@ -67,8 +67,12 @@ export default async function handler(req, res) {
           const smsLimit = smsLimits[plan] || 25
           console.log('SMS limit for plan:', plan, '=', smsLimit)
 
-          // Update user in Supabase
-          const { data, error } = await supabaseAdmin
+          // Try to find user by x_user_id first, then by any UUID field if needed
+          let userData = null
+          let updateError = null
+          
+          // First try with x_user_id (this should work for new users)
+          const { data: userData1, error: error1 } = await supabaseAdmin
             .from('users')
             .update({
               plan: mappedPlan,
@@ -77,15 +81,36 @@ export default async function handler(req, res) {
             .eq('x_user_id', userId)
             .select()
 
-          if (error) {
-            console.error('Failed to update user subscription:', error)
+          if (error1 && error1.code === 'PGRST116') {
+            // User not found by x_user_id, try to find by UUID (backward compatibility)
+            console.log('User not found by x_user_id, checking if UUID format:', userId)
+            
+            // Check if userId looks like a UUID
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)
+            
+            if (isUUID) {
+              console.log('UUID detected, this might be an old session format. Logging for debugging.')
+              console.error('UUID user ID found in webhook:', userId, 'This indicates a session mismatch.')
+            }
+            
+            updateError = error1
+          } else if (error1) {
+            updateError = error1
+          } else {
+            userData = userData1
+          }
+
+          if (updateError) {
+            console.error('Failed to update user subscription:', updateError)
             console.error('Error details:', {
-              message: error.message,
-              details: error.details,
-              hint: error.hint
+              message: updateError.message,
+              details: updateError.details,
+              hint: updateError.hint,
+              userId: userId,
+              isUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)
             })
           } else {
-            console.log('User subscription updated successfully in Supabase:', data)
+            console.log('User subscription updated successfully in Supabase:', userData)
           }
         } catch (error) {
           console.error('Error updating user subscription:', error)
