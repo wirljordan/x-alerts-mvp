@@ -56,16 +56,9 @@ function AlertItem({ alert, onToggle, onDelete }) {
             <div className="absolute right-0 mt-2 w-48 bg-[#0F1C2E] border border-white/10 rounded-lg shadow-lg z-10">
               <button
                 onClick={() => {
-                  onToggle(alert.id, alert.status)
-                  setShowDropdown(false)
-                }}
-                className="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors"
-              >
-                {alert.status === 'active' ? 'Pause' : 'Resume'}
-              </button>
-              <button
-                onClick={() => {
-                  onDelete(alert.id)
+                  if (confirm('Are you sure you want to delete this keyword?')) {
+                    onDelete(alert.id)
+                  }
                   setShowDropdown(false)
                 }}
                 className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
@@ -333,10 +326,6 @@ export default function Dashboard() {
   }
 
   const handleDeleteAlert = async (alertId) => {
-    if (!confirm('Are you sure you want to delete this keyword?')) {
-      return
-    }
-
     try {
       const response = await fetch('/api/alerts/delete', {
         method: 'DELETE',
@@ -345,7 +334,7 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           alertId: alertId,
-          userId: user?.id
+          userId: user?.x_user_id || user?.id
         })
       })
 

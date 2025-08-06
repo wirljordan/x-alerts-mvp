@@ -12,6 +12,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields: alertId, userId' })
     }
 
+    console.log('=== ALERT DELETE DEBUG ===')
+    console.log('Request body:', req.body)
+    console.log('Looking for user with X user ID:', userId)
+    
     // First, get the user's internal UUID from their X user ID
     const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
@@ -19,9 +23,16 @@ export default async function handler(req, res) {
       .eq('x_user_id', userId)
       .single()
 
+    console.log('Database query result:', { userData, userError })
+
     if (userError || !userData) {
-      console.error('User not found:', userError)
-      return res.status(404).json({ error: 'User not found' })
+      console.error('User not found in database:', userError)
+      console.log('User ID searched:', userId)
+      return res.status(404).json({ 
+        error: 'User not found', 
+        code: 'ONBOARDING_REQUIRED',
+        message: 'Please complete your account setup first' 
+      })
     }
 
     // Delete the alert (only if it belongs to this user)
