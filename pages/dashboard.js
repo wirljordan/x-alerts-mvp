@@ -648,13 +648,6 @@ export default function Dashboard() {
                 )}
                 <div className="flex items-center space-x-2 lg:space-x-3">
                   <button
-                    onClick={() => alert('Settings coming soon!')}
-                    className="px-3 py-1 lg:px-4 lg:py-2 text-sm lg:text-base bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors duration-200 flex items-center space-x-2"
-                  >
-                    <span>⚙️</span>
-                    <span className="hidden sm:inline">Settings</span>
-                  </button>
-                  <button
                     onClick={() => setShowUpgradeModal(true)}
                     className="px-3 py-1 lg:px-4 lg:py-2 text-sm lg:text-base bg-[#16D9E3] text-[#0F1C2E] rounded-lg hover:bg-[#16D9E3]/90 transition-colors duration-200 flex items-center space-x-2 font-semibold"
                   >
