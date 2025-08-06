@@ -185,6 +185,7 @@ export default function Dashboard() {
                     }))
                     
                     // Set current plan from Supabase
+                    console.log('Setting current plan to:', data.user.plan || 'free')
                     setCurrentPlan(data.user.plan || 'free')
                     
                     // Update usage limits from database
@@ -263,6 +264,7 @@ export default function Dashboard() {
   }
 
   const handleAddAlert = () => {
+    console.log('Add Alert clicked! Current plan:', currentPlan, 'Alerts length:', alerts.length, 'Limit:', getKeywordLimit(currentPlan))
     setShowKeywordModal(true)
   }
 
@@ -728,7 +730,7 @@ export default function Dashboard() {
                       : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
                   }`}
                 >
-                  Add Alert
+                  Add Alert ({alerts.length}/{getKeywordLimit(currentPlan)})
                 </button>
               </div>
             </div>
