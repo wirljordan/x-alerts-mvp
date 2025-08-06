@@ -234,11 +234,13 @@ export default function Dashboard() {
   }, [router.query.success, router.query.session_id, router.query.alert_created])
 
   const handleSignOut = () => {
-    // Clear session cookies
-    document.cookie = 'x_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
-    document.cookie = 'x_session_secure=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
-    document.cookie = 'x_user_id=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
-    router.push('/')
+    if (confirm('Are you sure you want to sign out?')) {
+      // Clear session cookies
+      document.cookie = 'x_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+      document.cookie = 'x_session_secure=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+      document.cookie = 'x_user_id=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+      router.push('/')
+    }
   }
 
   const fetchUserAlerts = async (userId) => {
