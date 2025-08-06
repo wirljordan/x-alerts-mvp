@@ -44,25 +44,43 @@ export default async function handler(req, res) {
         })
       }
       
-      // If they're on a paid plan but no Stripe customer ID, just update them to free
-      console.log('User on paid plan without Stripe customer ID, updating to free')
+      // If they're on a paid plan but no Stripe customer ID, schedule the downgrade
+      console.log('User on paid plan without Stripe customer ID, scheduling downgrade')
+      
+      // Calculate end of current billing period (30 days from now for simplicity)
+      const cancelAt = new Date()
+      cancelAt.setDate(cancelAt.getDate() + 30)
+      
+      const updateData = {
+        subscription_status: 'canceling',
+        subscription_cancel_at: cancelAt.toISOString()
+      }
+      
+      // For partial downgrades, store the target plan
+      if (targetPlan && targetPlan !== 'free') {
+        updateData.pending_plan = targetPlan
+      } else {
+        // Full cancellation to free
+        updateData.pending_plan = 'free'
+      }
+      
       const { error: updateError } = await supabaseAdmin
         .from('users')
-        .update({
-          plan: 'free',
-          sms_limit: 25,
-          subscription_status: 'canceled'
-        })
+        .update(updateData)
         .eq('x_user_id', userId)
 
       if (updateError) {
-        console.error('Error updating user to free plan:', updateError)
-        return res.status(500).json({ error: 'Failed to update user plan' })
+        console.error('Error scheduling user downgrade:', updateError)
+        return res.status(500).json({ error: 'Failed to schedule downgrade' })
       }
 
+      const message = targetPlan && targetPlan !== 'free' 
+        ? `Successfully scheduled downgrade to ${targetPlan} plan at end of billing period`
+        : 'Successfully scheduled cancellation at end of billing period'
+        
       return res.status(200).json({ 
         success: true, 
-        message: 'Successfully downgraded to free plan'
+        message: message
       })
     }
 

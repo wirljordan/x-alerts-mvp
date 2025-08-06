@@ -225,6 +225,25 @@ export default function Dashboard() {
     
     // Check if this is a downgrade
     if (targetPlanLevel < currentPlanLevel) {
+      // Show confirmation dialog for downgrades
+      const planNames = {
+        'free': 'Free',
+        'starter': 'Starter', 
+        'growth': 'Growth',
+        'pro': 'Pro'
+      }
+      
+      const currentPlanName = planNames[currentPlan] || currentPlan
+      const targetPlanName = planNames[plan] || plan
+      
+      const confirmMessage = plan === 'free' 
+        ? `Are you sure you want to cancel your ${currentPlanName} subscription? Your subscription will remain active until the end of your current billing period.`
+        : `Are you sure you want to downgrade from ${currentPlanName} to ${targetPlanName}? Your current plan will remain active until the end of your billing period, then you'll be moved to ${targetPlanName}.`
+      
+      if (!confirm(confirmMessage)) {
+        return // User canceled the downgrade
+      }
+      
       // Handle downgrade - cancel subscription at end of period
       console.log('Attempting downgrade for user:', user)
       console.log('User ID being sent:', user?.x_user_id || 'unknown')
@@ -419,6 +438,27 @@ export default function Dashboard() {
                   <span className="text-sm lg:text-base text-white/80">
                     {usage.used} / {usage.limit} texts sent
                   </span>
+                  
+                  {/* Billing Cycle Information */}
+                  <div className="mt-2 space-y-1">
+                    {/* Next reset date */}
+                    <p className="text-xs lg:text-sm text-white/60">
+                      Resets in {Math.ceil((30 - new Date().getDate()) / 30 * 30)} days
+                    </p>
+                    
+                    {/* Pending plan change */}
+                    {user?.subscription_status === 'canceling' && user?.subscription_cancel_at && (
+                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-2 mt-2">
+                        <p className="text-orange-400 text-xs lg:text-sm font-medium">
+                          {user?.pending_plan === 'free' 
+                            ? `Subscription ends ${new Date(user.subscription_cancel_at).toLocaleDateString()}`
+                            : `Downgrading to ${user.pending_plan} on ${new Date(user.subscription_cancel_at).toLocaleDateString()}`
+                          }
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
                   {(usage.used / usage.limit) >= 0.8 && (
                     <div className="mt-2">
                       <p className="text-orange-400 text-xs lg:text-sm font-medium">Upgrade for more SMS</p>
