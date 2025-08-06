@@ -297,7 +297,7 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user?.id,
+          userId: user?.x_user_id || user?.id,
           name: keywordForm.keyword.trim(),
           query: keywordForm.keyword.trim()
         })
@@ -311,7 +311,7 @@ export default function Dashboard() {
         setShowKeywordModal(false)
         
         // Refresh alerts list
-        await fetchUserAlerts(user?.id)
+        await fetchUserAlerts(user?.x_user_id || user?.id)
         
         alert('Keyword created successfully!')
       } else {
@@ -353,7 +353,7 @@ export default function Dashboard() {
 
       if (response.ok && data.success) {
         // Refresh alerts list
-        await fetchUserAlerts(user?.id)
+        await fetchUserAlerts(user?.x_user_id || user?.id)
         alert('Keyword deleted successfully!')
       } else {
         throw new Error(data.error || 'Failed to delete keyword')
@@ -384,7 +384,7 @@ export default function Dashboard() {
 
       if (response.ok && data.success) {
         // Refresh alerts list
-        await fetchUserAlerts(user?.id)
+        await fetchUserAlerts(user?.x_user_id || user?.id)
       } else {
         throw new Error(data.error || 'Failed to update keyword')
       }

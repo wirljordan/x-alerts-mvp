@@ -14,55 +14,36 @@ export default async function handler(req, res) {
 
     console.log('=== ALERT CREATE DEBUG ===')
     console.log('Request body:', req.body)
-    console.log('Looking for user with X user ID:', userId)
-    console.log('User ID type:', typeof userId)
+    console.log('Creating alert directly for user ID:', userId)
     
-    // First, get the user's internal UUID from their X user ID
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('x_user_id', userId)
-      .single()
-
-    console.log('Database query result:', { userData, userError })
-
-    if (userError || !userData) {
-      console.error('User not found in database:', userError)
-      console.log('User ID searched:', userId)
-      
-      // Instead of failing, suggest the user complete onboarding
-      return res.status(404).json({ 
-        error: 'Please complete onboarding first',
-        code: 'ONBOARDING_REQUIRED'
-      })
-    }
-    
-    console.log('User found in database:', userData.id)
-
-    // Create the alert in Supabase
+    // For now, create the alert directly using the X user ID
+    // We'll store the X user ID directly in the user_id field temporarily
     const { data, error } = await supabaseAdmin
       .from('alerts')
-      .insert({
-        user_id: userData.id,
-        query_string: query,
-        status: 'active'
-      })
+      .insert([
+        {
+          user_id: userId, // Using X user ID directly for now
+          name: name.trim(),
+          query: query.trim(),
+          description: description?.trim() || null,
+          status: 'active',
+          created_at: new Date().toISOString(),
+          last_match_at: null
+        }
+      ])
       .select()
-      .single()
 
     if (error) {
-      console.error('Supabase error:', error)
+      console.error('Error creating alert:', error)
       return res.status(500).json({ error: 'Failed to create alert' })
     }
 
-    console.log('Alert created successfully:', data)
+    console.log('Alert created successfully:', data[0])
 
-    res.status(200).json({ 
-      success: true, 
-      alert: data,
-      message: 'Alert created successfully' 
+    res.status(201).json({
+      success: true,
+      alert: data[0]
     })
-
   } catch (error) {
     console.error('API error:', error)
     res.status(500).json({ error: 'Internal server error' })
