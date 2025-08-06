@@ -6,23 +6,7 @@ import Head from 'next/head'
 function AlertItem({ alert, onToggle, onDelete }) {
   const [showDropdown, setShowDropdown] = useState(false)
 
-  const formatLastMatch = (lastMatchAt) => {
-    if (!lastMatchAt) return 'Never'
-    
-    const now = new Date()
-    const matchDate = new Date(lastMatchAt)
-    const diffMs = now - matchDate
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-    
-    if (diffDays > 0) {
-      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
-    } else if (diffHours > 0) {
-      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
-    } else {
-      return 'Less than 1 hour ago'
-    }
-  }
+
 
   return (
     <div className="flex items-center justify-between p-4 lg:p-6 bg-white/5 rounded-lg lg:rounded-xl border border-white/10 hover:bg-white/10 transition-colors duration-200">
@@ -32,7 +16,6 @@ function AlertItem({ alert, onToggle, onDelete }) {
         }`}></div>
         <div>
           <h3 className="font-medium text-white text-sm lg:text-base">{alert.query_string}</h3>
-          <p className="text-sm lg:text-base text-white/60">Last match: {formatLastMatch(alert.last_match_at)}</p>
         </div>
       </div>
       <div className="flex items-center space-x-2 lg:space-x-3">
