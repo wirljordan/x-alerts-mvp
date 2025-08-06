@@ -721,6 +721,14 @@ export default function Dashboard() {
                     </div>
                   )}
                 </div>
+
+              </div>
+            </div>
+
+            {/* Keywords Section */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
+              <div className="flex items-center justify-between mb-4 lg:mb-6">
+                <h2 className="text-lg lg:text-2xl font-semibold text-white">Keywords</h2>
                 <button
                   onClick={handleAddAlert}
                   disabled={alerts.length >= getKeywordLimit(currentPlan)}
@@ -730,14 +738,9 @@ export default function Dashboard() {
                       : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
                   }`}
                 >
-                  Add Alert ({alerts.length}/{getKeywordLimit(currentPlan)})
+                  Add Keyword ({alerts.length}/{getKeywordLimit(currentPlan)})
                 </button>
               </div>
-            </div>
-
-            {/* Keywords Section */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
-              <h2 className="text-lg lg:text-2xl font-semibold text-white mb-4 lg:mb-6">Keywords</h2>
               
               {alerts.length === 0 ? (
                 <div className="text-center py-8 lg:py-12">
@@ -745,12 +748,12 @@ export default function Dashboard() {
                     <span className="text-[#16D9E3] text-2xl lg:text-3xl">🔔</span>
                   </div>
                   <p className="text-white/60 mb-4 lg:mb-6 text-sm lg:text-base">Create your first keyword</p>
-                                      <button
-                      onClick={handleAddAlert}
-                      className="px-6 py-3 lg:px-8 lg:py-4 bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base"
-                    >
-                      Create Your First Keyword
-                    </button>
+                  <button
+                    onClick={handleAddAlert}
+                    className="px-6 py-3 lg:px-8 lg:py-4 bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base"
+                  >
+                    Create Your First Keyword
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-3 lg:space-y-4">
