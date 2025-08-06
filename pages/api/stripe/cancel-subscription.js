@@ -3,6 +3,72 @@ import { supabaseAdmin } from '../../../lib/supabase'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
+// Function to get keyword limits for each plan
+function getKeywordLimit(plan) {
+  const limits = {
+    'free': 1,
+    'starter': 2,
+    'growth': 10,
+    'pro': 30
+  }
+  return limits[plan] || 1
+}
+
+// Function to handle keyword overflow when downgrading
+async function handleKeywordOverflow(userId, targetPlan) {
+  console.log(`Checking for keyword overflow when downgrading to ${targetPlan}`)
+  
+  const targetLimit = getKeywordLimit(targetPlan)
+  
+  // Get user's current keywords
+  const { data: alerts, error: alertsError } = await supabaseAdmin
+    .from('alerts')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true }) // Keep oldest keywords first
+  
+  if (alertsError) {
+    console.error('Error fetching user alerts:', alertsError)
+    return { removedCount: 0, error: 'Failed to fetch keywords' }
+  }
+  
+  const currentKeywordCount = alerts.length
+  console.log(`User has ${currentKeywordCount} keywords, target limit is ${targetLimit}`)
+  
+  if (currentKeywordCount <= targetLimit) {
+    console.log('No keyword overflow detected')
+    return { removedCount: 0, removedKeywords: [] }
+  }
+  
+  // Calculate how many keywords need to be removed
+  const keywordsToRemove = currentKeywordCount - targetLimit
+  console.log(`Need to remove ${keywordsToRemove} keywords`)
+  
+  // Remove the newest keywords (keep the oldest ones)
+  const keywordsToDelete = alerts.slice(-keywordsToRemove)
+  const keywordIdsToDelete = keywordsToDelete.map(alert => alert.id)
+  
+  if (keywordIdsToDelete.length > 0) {
+    const { error: deleteError } = await supabaseAdmin
+      .from('alerts')
+      .delete()
+      .in('id', keywordIdsToDelete)
+    
+    if (deleteError) {
+      console.error('Error deleting excess keywords:', deleteError)
+      return { removedCount: 0, error: 'Failed to remove excess keywords' }
+    }
+    
+    console.log(`Successfully removed ${keywordsToDelete.length} keywords`)
+    return { 
+      removedCount: keywordsToDelete.length, 
+      removedKeywords: keywordsToDelete.map(k => k.query_string)
+    }
+  }
+  
+  return { removedCount: 0, removedKeywords: [] }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -32,6 +98,21 @@ export default async function handler(req, res) {
 
     console.log('User found:', user.x_user_id, 'Plan:', user.plan, 'Stripe customer ID:', user.stripe_customer_id)
 
+    // Handle keyword overflow if downgrading
+    let keywordOverflowResult = { removedCount: 0, removedKeywords: [] }
+    if (targetPlan && targetPlan !== user.plan) {
+      // Get the internal user ID for the alerts table
+      const { data: userData } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('x_user_id', userId)
+        .single()
+      
+      if (userData) {
+        keywordOverflowResult = await handleKeywordOverflow(userData.id, targetPlan)
+      }
+    }
+
     // If user doesn't have a stripe_customer_id, they might not have a subscription
     if (!user.stripe_customer_id) {
       console.log('User has no Stripe customer ID, checking if they have a paid plan')
@@ -40,7 +121,8 @@ export default async function handler(req, res) {
       if (user.plan === 'free') {
         return res.status(200).json({ 
           success: true, 
-          message: 'You are already on the free plan'
+          message: 'You are already on the free plan',
+          keywordOverflow: keywordOverflowResult
         })
       }
       
@@ -80,7 +162,8 @@ export default async function handler(req, res) {
         
       return res.status(200).json({ 
         success: true, 
-        message: message
+        message: message,
+        keywordOverflow: keywordOverflowResult
       })
     }
 
@@ -111,7 +194,8 @@ export default async function handler(req, res) {
 
       return res.status(200).json({ 
         success: true, 
-        message: 'Successfully downgraded to free plan'
+        message: 'Successfully downgraded to free plan',
+        keywordOverflow: keywordOverflowResult
       })
     }
 
@@ -141,7 +225,8 @@ export default async function handler(req, res) {
     res.status(200).json({ 
       success: true, 
       message: 'Subscription will be canceled at the end of the current billing period',
-      cancelAt: canceledSubscription.current_period_end
+      cancelAt: canceledSubscription.current_period_end,
+      keywordOverflow: keywordOverflowResult
     })
   } catch (error) {
     console.error('Error canceling subscription:', error)

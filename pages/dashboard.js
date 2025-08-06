@@ -453,12 +453,21 @@ export default function Dashboard() {
         throw new Error(data.error || 'Failed to cancel subscription')
       }
 
-      // Show success message
+      // Show success message with keyword overflow info
+      let message = ''
       if (plan === 'free') {
-        setSuccessMessage('Your subscription will be canceled at the end of your current billing period. You can continue using your current plan until then.')
+        message = 'Your subscription will be canceled at the end of your current billing period. You can continue using your current plan until then.'
       } else {
-        setSuccessMessage(`Your subscription will be downgraded to ${plan} at the end of your current billing period. You can continue using your current plan until then.`)
+        message = `Your subscription will be downgraded to ${plan} at the end of your current billing period. You can continue using your current plan until then.`
       }
+      
+      // Add keyword overflow information if any keywords were removed
+      if (data.keywordOverflow && data.keywordOverflow.removedCount > 0) {
+        const removedKeywords = data.keywordOverflow.removedKeywords.join(', ')
+        message += `\n\n⚠️ ${data.keywordOverflow.removedCount} keyword(s) were removed to fit your new plan limit: "${removedKeywords}"`
+      }
+      
+      setSuccessMessage(message)
       setShowSuccessModal(true)
       
       // Close downgrade modal

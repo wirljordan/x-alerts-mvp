@@ -5,6 +5,72 @@ import { supabaseAdmin } from '../../../lib/supabase'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
+// Function to get keyword limits for each plan
+function getKeywordLimit(plan) {
+  const limits = {
+    'free': 1,
+    'starter': 2,
+    'growth': 10,
+    'pro': 30
+  }
+  return limits[plan] || 1
+}
+
+// Function to handle keyword overflow when downgrading
+async function handleKeywordOverflow(userId, targetPlan) {
+  console.log(`Checking for keyword overflow when downgrading to ${targetPlan}`)
+  
+  const targetLimit = getKeywordLimit(targetPlan)
+  
+  // Get user's current keywords
+  const { data: alerts, error: alertsError } = await supabaseAdmin
+    .from('alerts')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true }) // Keep oldest keywords first
+  
+  if (alertsError) {
+    console.error('Error fetching user alerts:', alertsError)
+    return { removedCount: 0, error: 'Failed to fetch keywords' }
+  }
+  
+  const currentKeywordCount = alerts.length
+  console.log(`User has ${currentKeywordCount} keywords, target limit is ${targetLimit}`)
+  
+  if (currentKeywordCount <= targetLimit) {
+    console.log('No keyword overflow detected')
+    return { removedCount: 0, removedKeywords: [] }
+  }
+  
+  // Calculate how many keywords need to be removed
+  const keywordsToRemove = currentKeywordCount - targetLimit
+  console.log(`Need to remove ${keywordsToRemove} keywords`)
+  
+  // Remove the newest keywords (keep the oldest ones)
+  const keywordsToDelete = alerts.slice(-keywordsToRemove)
+  const keywordIdsToDelete = keywordsToDelete.map(alert => alert.id)
+  
+  if (keywordIdsToDelete.length > 0) {
+    const { error: deleteError } = await supabaseAdmin
+      .from('alerts')
+      .delete()
+      .in('id', keywordIdsToDelete)
+    
+    if (deleteError) {
+      console.error('Error deleting excess keywords:', deleteError)
+      return { removedCount: 0, error: 'Failed to remove excess keywords' }
+    }
+    
+    console.log(`Successfully removed ${keywordsToDelete.length} keywords`)
+    return { 
+      removedCount: keywordsToDelete.length, 
+      removedKeywords: keywordsToDelete.map(k => k.query_string)
+    }
+  }
+  
+  return { removedCount: 0, removedKeywords: [] }
+}
+
 export const config = {
   api: {
     bodyParser: false,
@@ -185,6 +251,19 @@ export default async function handler(req, res) {
           const { userId } = deletedSubscription.metadata
           
           if (userId) {
+            // Get the internal user ID for the alerts table
+            const { data: userData } = await supabaseAdmin
+              .from('users')
+              .select('id')
+              .eq('x_user_id', userId)
+              .single()
+            
+            // Handle keyword overflow when downgrading to free plan
+            let keywordOverflowResult = { removedCount: 0, removedKeywords: [] }
+            if (userData) {
+              keywordOverflowResult = await handleKeywordOverflow(userData.id, 'free')
+            }
+            
             const { data, error } = await supabaseAdmin
               .from('users')
               .update({
@@ -199,6 +278,9 @@ export default async function handler(req, res) {
               console.error('Failed to update user to free plan:', error)
             } else {
               console.log('User updated to free plan after subscription deletion:', data)
+              if (keywordOverflowResult.removedCount > 0) {
+                console.log(`Removed ${keywordOverflowResult.removedCount} keywords due to plan downgrade:`, keywordOverflowResult.removedKeywords)
+              }
             }
           }
         } catch (error) {
