@@ -2,21 +2,123 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 
+// Alert Item Component
+function AlertItem({ alert, onToggle, onDelete }) {
+  const [showDropdown, setShowDropdown] = useState(false)
+
+  const formatLastMatch = (lastMatchAt) => {
+    if (!lastMatchAt) return 'Never'
+    
+    const now = new Date()
+    const matchDate = new Date(lastMatchAt)
+    const diffMs = now - matchDate
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    
+    if (diffDays > 0) {
+      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+    } else if (diffHours > 0) {
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    } else {
+      return 'Less than 1 hour ago'
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-between p-4 lg:p-6 bg-white/5 rounded-lg lg:rounded-xl border border-white/10 hover:bg-white/10 transition-colors duration-200">
+      <div className="flex items-center space-x-3 lg:space-x-4">
+        <div className={`w-3 h-3 lg:w-4 lg:h-4 rounded-full ${
+          alert.status === 'active' ? 'bg-[#16D9E3]' : 'bg-yellow-500'
+        }`}></div>
+        <div>
+          <h3 className="font-medium text-white text-sm lg:text-base">{alert.query_string}</h3>
+          <p className="text-sm lg:text-base text-white/60">Last match: {formatLastMatch(alert.last_match_at)}</p>
+        </div>
+      </div>
+      <div className="flex items-center space-x-2 lg:space-x-3">
+        <span className={`px-2 py-1 lg:px-3 lg:py-2 text-xs lg:text-sm rounded-full ${
+          alert.status === 'active' 
+            ? 'bg-green-500/20 text-green-400' 
+            : 'bg-yellow-500/20 text-yellow-400'
+        }`}>
+          {alert.status}
+        </span>
+        <div className="relative">
+          <button 
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="p-1 lg:p-2 text-white/60 hover:text-white transition-colors duration-200"
+          >
+            <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+            </svg>
+          </button>
+          {showDropdown && (
+            <div className="absolute right-0 mt-2 w-48 bg-[#0F1C2E] border border-white/10 rounded-lg shadow-lg z-10">
+              <button
+                onClick={() => {
+                  onToggle(alert.id, alert.status)
+                  setShowDropdown(false)
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors"
+              >
+                {alert.status === 'active' ? 'Pause' : 'Resume'}
+              </button>
+              <button
+                onClick={() => {
+                  onDelete(alert.id)
+                  setShowDropdown(false)
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Helper function to get keyword limits based on plan
+function getKeywordLimit(plan) {
+  const limits = {
+    'free': 1,
+    'starter': 2,
+    'growth': 10,
+    'pro': 30
+  }
+  return limits[plan] || 1
+}
+
 export default function Dashboard() {
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showKeywordModal, setShowKeywordModal] = useState(false)
   const [usage, setUsage] = useState({ used: 0, limit: 25 }) // Default to free plan limits
   const [alerts, setAlerts] = useState([])
   const [currentPlan, setCurrentPlan] = useState('free') // free, starter, growth, pro
+  const [keywordForm, setKeywordForm] = useState({ name: '', query: '' })
+  const [isCreatingKeyword, setIsCreatingKeyword] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
-    // Handle Stripe success redirect
-    const handleStripeSuccess = async () => {
+    // Handle success messages
+    const handleSuccessMessages = async () => {
       console.log('Dashboard loaded with query:', router.query)
       
+      // Handle alert creation success  
+      if (router.query.alert_created === 'true') {
+        setShowSuccessMessage(true)
+        setTimeout(() => setShowSuccessMessage(false), 5000)
+        // Clean up URL
+        router.replace('/dashboard', undefined, { shallow: true })
+        return // Don't process other success messages
+      }
+      
+      // Handle Stripe success redirect
       if (router.query.success === 'true' && router.query.session_id) {
         console.log('Stripe success detected! Setting onboarding cookie...')
         
@@ -106,6 +208,9 @@ export default function Dashboard() {
                     
                     // Update usage limits from database
                     setUsage({ used: data.user.sms_used || 0, limit: data.user.sms_limit || 25 })
+                    
+                    // Fetch user's alerts/keywords
+                    await fetchUserAlerts(sessionData.user.id)
                   } else {
                     // User doesn't exist in database, redirect to onboarding
                     console.log('User not found in database, redirecting to onboarding')
@@ -141,14 +246,14 @@ export default function Dashboard() {
       }
     }
 
-    // Handle Stripe success first, then check session
-    handleStripeSuccess()
+    // Handle success messages first, then check session
+    handleSuccessMessages()
     
     // Small delay to ensure cookie is set if this is a Stripe success
     setTimeout(async () => {
       await getUserFromSession()
     }, 100)
-  }, [router.query.success, router.query.session_id])
+  }, [router.query.success, router.query.session_id, router.query.alert_created])
 
   const handleSignOut = () => {
     // Clear session cookies
@@ -158,15 +263,126 @@ export default function Dashboard() {
     router.push('/')
   }
 
-  const handleAddAlert = () => {
-    // For now, add a simple keyword (in a real app, this would open a form)
-    const newKeyword = {
-      id: Date.now(),
-      name: `Keyword ${alerts.length + 1}`,
-      status: 'active',
-      lastMatch: 'Never'
+  const fetchUserAlerts = async (userId) => {
+    try {
+      const response = await fetch(`/api/alerts/list?userId=${userId}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setAlerts(data.alerts)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching alerts:', error)
     }
-    setAlerts([...alerts, newKeyword])
+  }
+
+  const handleAddAlert = () => {
+    setShowKeywordModal(true)
+  }
+
+  const handleCreateKeyword = async () => {
+    if (!keywordForm.name.trim() || !keywordForm.query.trim()) {
+      alert('Please fill in both name and query fields')
+      return
+    }
+
+    setIsCreatingKeyword(true)
+    try {
+      const response = await fetch('/api/alerts/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+          name: keywordForm.name.trim(),
+          query: keywordForm.query.trim()
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        // Reset form and close modal
+        setKeywordForm({ name: '', query: '' })
+        setShowKeywordModal(false)
+        
+        // Refresh alerts list
+        await fetchUserAlerts(user?.id)
+        
+        alert('Keyword created successfully!')
+      } else {
+        throw new Error(data.error || 'Failed to create keyword')
+      }
+    } catch (error) {
+      console.error('Error creating keyword:', error)
+      alert(`Failed to create keyword: ${error.message}`)
+    } finally {
+      setIsCreatingKeyword(false)
+    }
+  }
+
+  const handleDeleteAlert = async (alertId) => {
+    if (!confirm('Are you sure you want to delete this keyword?')) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/alerts/delete', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          alertId: alertId,
+          userId: user?.id
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        // Refresh alerts list
+        await fetchUserAlerts(user?.id)
+        alert('Keyword deleted successfully!')
+      } else {
+        throw new Error(data.error || 'Failed to delete keyword')
+      }
+    } catch (error) {
+      console.error('Error deleting keyword:', error)
+      alert(`Failed to delete keyword: ${error.message}`)
+    }
+  }
+
+  const handleToggleAlert = async (alertId, currentStatus) => {
+    const newStatus = currentStatus === 'active' ? 'paused' : 'active'
+    
+    try {
+      const response = await fetch('/api/alerts/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          alertId: alertId,
+          userId: user?.id,
+          status: newStatus
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        // Refresh alerts list
+        await fetchUserAlerts(user?.id)
+      } else {
+        throw new Error(data.error || 'Failed to update keyword')
+      }
+    } catch (error) {
+      console.error('Error updating keyword:', error)
+      alert(`Failed to update keyword: ${error.message}`)
+    }
   }
 
   const refreshUserData = async () => {
@@ -364,7 +580,14 @@ export default function Dashboard() {
       {/* Success Message */}
       {showSuccessMessage && (
         <div className="bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-3 text-center">
-          <p className="font-medium">🎉 Payment successful! Your account has been activated.</p>
+          <p className="font-medium">
+            {router.query.alert_created === 'true' 
+              ? '🎉 Keyword created successfully!' 
+              : router.query.success === 'true' 
+              ? '🎉 Payment successful! Your account has been activated.'
+              : '🎉 Success!'
+            }
+          </p>
         </div>
       )}
 
@@ -482,9 +705,9 @@ export default function Dashboard() {
                 </div>
                 <button
                   onClick={handleAddAlert}
-                  disabled={alerts.length >= 2} // Assuming 2 is the limit for demo
+                  disabled={alerts.length >= getKeywordLimit(currentPlan)}
                   className={`px-4 py-2 lg:px-6 lg:py-3 font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base ${
-                    alerts.length >= 2 
+                    alerts.length >= getKeywordLimit(currentPlan)
                       ? 'bg-white/20 text-white/40 cursor-not-allowed' 
                       : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
                   }`}
@@ -514,32 +737,12 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-3 lg:space-y-4">
                   {alerts.map((alert) => (
-                    <div key={alert.id} className="flex items-center justify-between p-4 lg:p-6 bg-white/5 rounded-lg lg:rounded-xl border border-white/10 hover:bg-white/10 transition-colors duration-200 cursor-pointer">
-                      <div className="flex items-center space-x-3 lg:space-x-4">
-                        <div className="w-3 h-3 lg:w-4 lg:h-4 bg-[#16D9E3] rounded-full"></div>
-                        <div>
-                          <h3 className="font-medium text-white text-sm lg:text-base">{alert.name}</h3>
-                          <p className="text-sm lg:text-base text-white/60">Last match: {alert.lastMatch}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2 lg:space-x-3">
-                        <span className={`px-2 py-1 lg:px-3 lg:py-2 text-xs lg:text-sm rounded-full ${
-                          alert.status === 'active' 
-                            ? 'bg-green-500/20 text-green-400' 
-                            : 'bg-yellow-500/20 text-yellow-400'
-                        }`}>
-                          {alert.status}
-                        </span>
-                        <div className="relative">
-                          <button className="p-1 lg:p-2 text-white/60 hover:text-white transition-colors duration-200">
-                            <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                            </svg>
-                          </button>
-                          {/* Dropdown menu would go here */}
-                        </div>
-                      </div>
-                    </div>
+                    <AlertItem 
+                      key={alert.id} 
+                      alert={alert} 
+                      onToggle={handleToggleAlert}
+                      onDelete={handleDeleteAlert}
+                    />
                   ))}
                 </div>
               )}
@@ -763,6 +966,81 @@ export default function Dashboard() {
 
             <div className="mt-6 text-center">
               <p className="text-white/60 text-sm">Change or cancel anytime.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Keyword Creation Modal */}
+      {showKeywordModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-6 lg:p-8 max-w-md w-full">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl lg:text-2xl font-bold text-white">Add New Keyword</h2>
+              <button
+                onClick={() => {
+                  setShowKeywordModal(false)
+                  setKeywordForm({ name: '', query: '' })
+                }}
+                className="text-white/60 hover:text-white transition-colors duration-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-white font-medium mb-2">Keyword Name</label>
+                <input
+                  type="text"
+                  value={keywordForm.name}
+                  onChange={(e) => setKeywordForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Sneaker Leads, Crypto Alpha"
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-white font-medium mb-2">Search Query</label>
+                <textarea
+                  value={keywordForm.query}
+                  onChange={(e) => setKeywordForm(prev => ({ ...prev, query: e.target.value }))}
+                  placeholder="Enter your search query (e.g., 'sneakers OR kicks -RT', 'crypto bitcoin')"
+                  rows={3}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors resize-none"
+                />
+                <p className="text-xs text-white/60 mt-1">
+                  Use X search operators: OR, AND, -RT (no retweets), from:username, etc.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4 mt-6 pt-4 border-t border-white/10">
+              <button
+                onClick={() => {
+                  setShowKeywordModal(false)
+                  setKeywordForm({ name: '', query: '' })
+                }}
+                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateKeyword}
+                disabled={!keywordForm.name.trim() || !keywordForm.query.trim() || isCreatingKeyword}
+                className="flex-1 px-4 py-2 bg-[#16D9E3] hover:bg-[#16D9E3]/90 disabled:bg-white/20 disabled:cursor-not-allowed text-[#0F1C2E] font-semibold rounded-lg transition-colors"
+              >
+                {isCreatingKeyword ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0F1C2E] mr-2 inline"></div>
+                    Creating...
+                  </>
+                ) : (
+                  'Create Keyword'
+                )}
+              </button>
             </div>
           </div>
         </div>

@@ -107,13 +107,30 @@ export default function CreateAlert() {
     setIsCreating(true)
     
     try {
-      // TODO: Implement actual alert creation API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Redirect to dashboard with success message
-      router.push('/dashboard?alert_created=true')
+      const response = await fetch('/api/alerts/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+          name: formData.name.trim(),
+          query: formData.query.trim(),
+          description: formData.description.trim()
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        // Redirect to dashboard with success message
+        router.push('/dashboard?alert_created=true')
+      } else {
+        throw new Error(data.error || 'Failed to create alert')
+      }
     } catch (error) {
       console.error('Alert creation failed:', error)
+      alert(`Failed to create alert: ${error.message}`)
     } finally {
       setIsCreating(false)
     }
