@@ -110,13 +110,14 @@ The webhook expects a JSON payload with the following structure:
 
 ```bash
 # Twilio Configuration
-TWILIO_SID=your_twilio_account_sid
-TWILIO_AUTH=your_twilio_auth_token
-TWILIO_FROM=your_twilio_phone_number
+TWILIO_ACCOUNT_SID=your_twilio_account_sid
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_PHONE_NUMBER=your_twilio_phone_number
 
 # Twilert API Configuration
 TWILERT_API_KEY=your_twilert_api_key
 TWILERT_WEBHOOK_SECRET=your_twilert_webhook_secret
+TWILERT_API_BASE_URL=https://api.twilert.com/v1
 
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url

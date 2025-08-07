@@ -1,7 +1,7 @@
 // Twilert API Client
 // TODO: Replace with actual Twilert API credentials
 const TWILERT_API_KEY = process.env.TWILERT_API_KEY || 'your_twilert_api_key_here'
-const TWILERT_API_BASE_URL = 'https://api.twilert.com/v1' // TODO: Replace with actual Twilert API URL
+const TWILERT_API_BASE_URL = process.env.TWILERT_API_BASE_URL || 'https://api.twilert.com/v1' // TODO: Replace with actual Twilert API URL
 
 interface TwilertAlert {
   id: string

@@ -9,11 +9,11 @@ import { supabaseAdmin } from '../../lib/supabase'
 // Initialize Twilio client
 // TODO: Replace with actual environment variables
 const twilioClient = twilio(
-  process.env.TWILIO_SID || 'your_twilio_sid_here',
-  process.env.TWILIO_AUTH || 'your_twilio_auth_token_here'
+  process.env.TWILIO_ACCOUNT_SID || 'your_twilio_account_sid_here',
+  process.env.TWILIO_AUTH_TOKEN || 'your_twilio_auth_token_here'
 )
 
-const FROM_NUMBER = process.env.TWILIO_FROM || '+1234567890'
+const FROM_NUMBER = process.env.TWILIO_PHONE_NUMBER || '+1234567890'
 
 // Twilert API Configuration
 // TODO: Replace with actual Twilert API credentials
