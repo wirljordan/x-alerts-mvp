@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import twilio from 'twilio'
+import crypto from 'crypto'
 import { validateTwilertPayload, type TwilertPayload } from '../../types/TwilertPayload'
 import { isQuietHours } from '../../lib/quietHours'
 import { checkAndInsertTweetId } from '../../lib/dedupe'
@@ -14,10 +15,52 @@ const twilioClient = twilio(
 
 const FROM_NUMBER = process.env.TWILIO_FROM || '+1234567890'
 
+// Twilert API Configuration
+// TODO: Replace with actual Twilert API credentials
+const TWILERT_API_KEY = process.env.TWILERT_API_KEY || 'your_twilert_api_key_here'
+const TWILERT_WEBHOOK_SECRET = process.env.TWILERT_WEBHOOK_SECRET || 'your_twilert_webhook_secret_here'
+
 interface TwilertResponse {
   received: number
   sent: number
   errors?: string[]
+}
+
+/**
+ * Verify Twilert webhook signature
+ */
+function verifyTwilertSignature(req: NextApiRequest): boolean {
+  try {
+    const signature = req.headers['x-twilert-signature'] as string
+    const timestamp = req.headers['x-twilert-timestamp'] as string
+    
+    if (!signature || !timestamp) {
+      console.warn('Missing Twilert signature headers')
+      return false
+    }
+
+    // Create expected signature
+    const payload = JSON.stringify(req.body)
+    const expectedSignature = crypto
+      .createHmac('sha256', TWILERT_WEBHOOK_SECRET)
+      .update(`${timestamp}.${payload}`)
+      .digest('hex')
+
+    // Compare signatures
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(signature, 'hex'),
+      Buffer.from(expectedSignature, 'hex')
+    )
+
+    if (!isValid) {
+      console.warn('Invalid Twilert webhook signature')
+    }
+
+    return isValid
+  } catch (error) {
+    console.error('Error verifying Twilert signature:', error)
+    return false
+  }
 }
 
 export default async function handler(
@@ -26,6 +69,11 @@ export default async function handler(
 ) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  // Verify Twilert webhook signature
+  if (!verifyTwilertSignature(req)) {
+    return res.status(401).json({ error: 'Invalid webhook signature' })
   }
 
   let receivedCount = 0

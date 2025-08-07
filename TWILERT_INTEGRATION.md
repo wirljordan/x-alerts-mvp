@@ -114,6 +114,10 @@ TWILIO_SID=your_twilio_account_sid
 TWILIO_AUTH=your_twilio_auth_token
 TWILIO_FROM=your_twilio_phone_number
 
+# Twilert API Configuration
+TWILERT_API_KEY=your_twilert_api_key
+TWILERT_WEBHOOK_SECRET=your_twilert_webhook_secret
+
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
@@ -161,6 +165,11 @@ ALTER TABLE users ADD COLUMN quiet_end TEXT;   -- HH:MM format
 
 - `TwilertPayloadSchema` - Zod schema for payload validation
 - `validateTwilertPayload(data)` - Validates incoming webhook data
+
+### `lib/twilert.ts`
+
+- `TwilertClient` - API client for managing Twilert alerts and webhooks
+- `twilertClient` - Default client instance
 
 ## Testing
 
@@ -213,10 +222,39 @@ Key metrics to monitor:
 - Implement rate limiting if needed
 - Monitor for unusual webhook patterns
 - Log all operations for audit trail
+- Verify Twilert webhook signatures
+- Use secure API key management
+
+## Twilert API Setup
+
+### 1. Get Twilert API Credentials
+
+1. Sign up for a Twilert account at [twilert.com](https://twilert.com)
+2. Navigate to your API settings
+3. Generate an API key
+4. Create a webhook secret for signature verification
+
+### 2. Configure Webhook
+
+1. Set your webhook URL to: `https://yourdomain.com/api/twilert`
+2. Configure webhook events to include `tweet_matched`
+3. Set the webhook secret in your environment variables
+
+### 3. Test Webhook
+
+Use the Twilert API client to test connectivity:
+
+```typescript
+import { twilertClient } from '../lib/twilert'
+
+// Test webhook connectivity
+const isConnected = await twilertClient.testWebhook('your_webhook_id')
+console.log('Webhook connected:', isConnected)
+```
 
 ## Deployment
 
-1. Set up environment variables
+1. Set up environment variables (including Twilert credentials)
 2. Deploy the API route
 3. Configure Twilert webhook URL
 4. Set up database functions
