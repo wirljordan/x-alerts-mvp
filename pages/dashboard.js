@@ -54,7 +54,7 @@ function AlertItem({ alert, onToggle, onDelete }) {
   )
 }
 
-// Force deployment - fix onboarding logic v2
+// Force deployment - add test buttons for Twitter API integration
 // Helper function to get keyword limits based on plan
 function getKeywordLimit(plan) {
   const limits = {
