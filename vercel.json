@@ -4,5 +4,6 @@
       "path": "/api/cron/monitor-keywords",
       "schedule": "*/5 * * * *"
     }
-  ]
+  ],
+  "comment": "Force Vercel deployment - test buttons must be visible"
 } 
