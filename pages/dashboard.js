@@ -512,6 +512,32 @@ export default function Dashboard() {
     }
   }
 
+  const testTwitterAPI = async () => {
+    setIsTestingMonitoring(true)
+    try {
+      const response = await fetch('/api/test/twitter-api', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      const data = await response.json()
+      
+      if (response.ok && data.success) {
+        setSuccessMessage(`Twitter API test successful! Found ${data.data.data?.length || 0} tweets.`)
+      } else {
+        setSuccessMessage(`Twitter API test failed: ${data.error || data.message}`)
+      }
+      setShowSuccessModal(true)
+    } catch (error) {
+      console.error('Error testing Twitter API:', error)
+      setSuccessMessage('Error testing Twitter API: ' + error.message)
+      setShowSuccessModal(true)
+    } finally {
+      setIsTestingMonitoring(false)
+    }
+  }
+
   const handleUpgrade = async (plan) => {
     if (plan === currentPlan) return
     
@@ -770,8 +796,19 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                {/* Test Monitoring Button */}
-                <div className="mt-4">
+                {/* Test Buttons */}
+                <div className="mt-4 space-y-2">
+                  <button
+                    onClick={testTwitterAPI}
+                    disabled={isTestingMonitoring}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                      isTestingMonitoring
+                        ? 'bg-white/20 text-white/40 cursor-not-allowed'
+                        : 'bg-green-500 hover:bg-green-600 text-white'
+                    }`}
+                  >
+                    {isTestingMonitoring ? 'Testing...' : 'Test Twitter API'}
+                  </button>
                   <button
                     onClick={testKeywordMonitoring}
                     disabled={isTestingMonitoring}
