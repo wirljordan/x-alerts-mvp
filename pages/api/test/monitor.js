@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 
     const results = []
     let totalSmsSent = 0
-    const usersNotified = new Set() // Track users who have been notified this cycle
+    let smsSentThisCycle = false // Track if we've sent an SMS this cycle
 
     for (const alert of alerts) {
       try {
@@ -58,10 +58,10 @@ export default async function handler(req, res) {
           continue
         }
 
-        // Check if user has already been notified this cycle (rate limiting)
-        if (usersNotified.has(user.id)) {
-          console.log(`⚠️ User ${user.x_user_id} already notified this cycle, skipping`)
-          continue
+        // Stop after first successful SMS to save costs
+        if (smsSentThisCycle) {
+          console.log(`✅ SMS already sent this cycle, skipping remaining keywords to save costs`)
+          break
         }
 
         // Add longer delay between API calls to avoid rate limiting (3 seconds)
@@ -101,8 +101,8 @@ export default async function handler(req, res) {
           // Send SMS notification
           await sendSMSNotification(formattedPhone, smsMessage)
           
-          // Mark user as notified for this cycle
-          usersNotified.add(user.id)
+          // Mark that we've sent an SMS this cycle
+          smsSentThisCycle = true
           
           // Update SMS usage
           const { error: updateError } = await supabaseAdmin
@@ -131,6 +131,8 @@ export default async function handler(req, res) {
             author: tweetUser.username,
             success: true
           })
+
+          console.log(`✅ SMS sent successfully for keyword: "${alert.query_string}" - stopping to save costs`)
 
         } catch (tweetError) {
           console.error(`❌ Error processing tweet ${tweet.id}:`, tweetError)
