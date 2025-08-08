@@ -35,6 +35,7 @@ export default async function handler(req, res) {
 
     const results = []
     let totalSmsSent = 0
+    const usersNotified = new Set() // Track users who have been notified this cycle
 
     for (const alert of alerts) {
       try {
@@ -52,6 +53,12 @@ export default async function handler(req, res) {
           continue
         }
 
+        // Check if user has already been notified this cycle (rate limiting)
+        if (usersNotified.has(user.id)) {
+          console.log(`⚠️ User ${user.x_user_id} already notified this cycle, skipping`)
+          continue
+        }
+
         // Search for tweets containing the keyword
         const tweetsData = await searchTweetsByKeyword(alert.query_string, alert.last_match_at)
         
@@ -62,66 +69,68 @@ export default async function handler(req, res) {
 
         console.log(`🎯 Found ${tweetsData.data.length} new tweets for keyword: "${alert.query_string}"`)
 
-        // Process each new tweet
-        for (const tweet of tweetsData.data) {
-          try {
-            // Find the user data for this tweet
-            const tweetUser = tweetsData.includes?.users?.find(u => u.id === tweet.author_id)
-            
-            if (!tweetUser) {
-              console.log(`⚠️ Could not find user data for tweet ${tweet.id}`)
-              continue
-            }
-
-            // Format tweet data for SMS
-            const tweetData = formatTweetForSMS(tweet, tweetUser)
-            
-            // Format SMS message
-            const smsMessage = formatKeywordAlertSMS(alert.query_string, tweetData)
-            
-            // Format phone number for Twilio
-            const formattedPhone = formatPhoneNumber(user.phone)
-            
-            // Send SMS notification
-            await sendSMSNotification(formattedPhone, smsMessage)
-            
-            // Update SMS usage
-            const { error: updateError } = await supabaseAdmin
-              .from('users')
-              .update({ sms_used: user.sms_used + 1 })
-              .eq('id', user.id)
-
-            if (updateError) {
-              console.error('❌ Error updating SMS usage:', updateError)
-            }
-
-            // Update last_match_at for this alert
-            const { error: alertUpdateError } = await supabaseAdmin
-              .from('alerts')
-              .update({ last_match_at: new Date().toISOString() })
-              .eq('id', alert.id)
-
-            if (alertUpdateError) {
-              console.error('❌ Error updating alert last_match_at:', alertUpdateError)
-            }
-
-            totalSmsSent++
-            results.push({
-              keyword: alert.query_string,
-              tweetId: tweet.id,
-              author: tweetUser.username,
-              success: true
-            })
-
-          } catch (tweetError) {
-            console.error(`❌ Error processing tweet ${tweet.id}:`, tweetError)
-            results.push({
-              keyword: alert.query_string,
-              tweetId: tweet.id,
-              error: tweetError.message,
-              success: false
-            })
+        // Only process the first tweet to avoid spam (rate limiting)
+        const tweet = tweetsData.data[0]
+        try {
+          // Find the user data for this tweet
+          const tweetUser = tweetsData.includes?.users?.find(u => u.id === tweet.author_id)
+          
+          if (!tweetUser) {
+            console.log(`⚠️ Could not find user data for tweet ${tweet.id}`)
+            continue
           }
+
+          // Format tweet data for SMS
+          const tweetData = formatTweetForSMS(tweet, tweetUser)
+          
+          // Format SMS message
+          const smsMessage = formatKeywordAlertSMS(alert.query_string, tweetData)
+          
+          // Format phone number for Twilio
+          const formattedPhone = formatPhoneNumber(user.phone)
+          
+          // Send SMS notification
+          await sendSMSNotification(formattedPhone, smsMessage)
+          
+          // Mark user as notified for this cycle
+          usersNotified.add(user.id)
+          
+          // Update SMS usage
+          const { error: updateError } = await supabaseAdmin
+            .from('users')
+            .update({ sms_used: user.sms_used + 1 })
+            .eq('id', user.id)
+
+          if (updateError) {
+            console.error('❌ Error updating SMS usage:', updateError)
+          }
+
+          // Update last_match_at for this alert
+          const { error: alertUpdateError } = await supabaseAdmin
+            .from('alerts')
+            .update({ last_match_at: new Date().toISOString() })
+            .eq('id', alert.id)
+
+          if (alertUpdateError) {
+            console.error('❌ Error updating alert last_match_at:', alertUpdateError)
+          }
+
+          totalSmsSent++
+          results.push({
+            keyword: alert.query_string,
+            tweetId: tweet.id,
+            author: tweetUser.username,
+            success: true
+          })
+
+        } catch (tweetError) {
+          console.error(`❌ Error processing tweet ${tweet.id}:`, tweetError)
+          results.push({
+            keyword: alert.query_string,
+            tweetId: tweet.id,
+            error: tweetError.message,
+            success: false
+          })
         }
 
       } catch (alertError) {
