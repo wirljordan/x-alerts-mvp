@@ -2,6 +2,11 @@ import { supabaseAdmin } from '../../../lib/supabase'
 import { searchTweetsByKeyword, formatTweetForSMS } from '../../../lib/twitter-api'
 import { sendSMSNotification, formatKeywordAlertSMS, formatPhoneNumber } from '../../../lib/twilio'
 
+// Helper function to add delay between API calls
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -58,6 +63,9 @@ export default async function handler(req, res) {
           console.log(`⚠️ User ${user.x_user_id} already notified this cycle, skipping`)
           continue
         }
+
+        // Add delay between API calls to avoid rate limiting (1 second delay)
+        await delay(1000)
 
         // Search for tweets containing the keyword
         const tweetsData = await searchTweetsByKeyword(alert.query_string, alert.last_match_at)
