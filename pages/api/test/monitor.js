@@ -105,16 +105,13 @@ export default async function handler(req, res) {
               console.error('❌ Error updating alert last_match_at:', alertUpdateError)
             }
 
-            // Log the successful notification
+            totalSmsSent++
             results.push({
               keyword: alert.query_string,
               tweetId: tweet.id,
-              userPhone: formattedPhone,
+              author: tweetUser.username,
               success: true
             })
-
-            totalSmsSent++
-            console.log(`✅ SMS sent for keyword "${alert.query_string}" to ${formattedPhone}`)
 
           } catch (tweetError) {
             console.error(`❌ Error processing tweet ${tweet.id}:`, tweetError)
@@ -155,4 +152,4 @@ export default async function handler(req, res) {
       details: error.message
     })
   }
-} 
+}
