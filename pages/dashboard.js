@@ -54,7 +54,7 @@ function AlertItem({ alert, onToggle, onDelete }) {
   )
 }
 
-// Force deployment - add test buttons for Twitter API integration
+// Force deployment - ensure test buttons are visible on production
 // Helper function to get keyword limits based on plan
 function getKeywordLimit(plan) {
   const limits = {
