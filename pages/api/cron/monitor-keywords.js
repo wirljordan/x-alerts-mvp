@@ -1,6 +1,6 @@
-import { supabaseAdmin } from '../../lib/supabase'
-import { searchTweetsByKeyword, formatTweetForSMS } from '../../lib/twitter-api'
-import { sendSMSNotification, formatKeywordAlertSMS, formatPhoneNumber } from '../../lib/twilio'
+import { supabaseAdmin } from '../../../lib/supabase'
+import { searchTweetsByKeyword, formatTweetForSMS } from '../../../lib/twitter-api'
+import { sendSMSNotification, formatKeywordAlertSMS, formatPhoneNumber } from '../../../lib/twilio'
 
 export default async function handler(req, res) {
   // Verify this is a legitimate cron request (optional security)

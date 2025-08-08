@@ -1,4 +1,4 @@
-import { searchTweetsByKeyword } from '../../lib/twitter-api'
+import { searchTweetsByKeyword } from '../../../lib/twitter-api'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
