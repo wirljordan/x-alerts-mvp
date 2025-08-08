@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Force Vercel deployment - test buttons must be visible
   reactStrictMode: true,
   swcMinify: true,
   

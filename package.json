@@ -2,7 +2,6 @@
   "name": "x-alerts-mvp",
   "version": "0.1.0",
   "private": true,
-  "description": "Force Vercel deployment - test buttons must be visible",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

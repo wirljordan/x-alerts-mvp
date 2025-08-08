@@ -67,12 +67,6 @@ function getKeywordLimit(plan) {
 }
 
 export default function Dashboard() {
-  // Force deployment - ensure test buttons are visible on production
-  console.log('Dashboard loaded - test buttons should be visible')
-  
-  // Force Vercel to deploy this version
-  const FORCE_DEPLOYMENT = 'db14c51-' + Date.now() + '-tiny-change'
-  
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
