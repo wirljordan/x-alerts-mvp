@@ -64,8 +64,9 @@ export default async function handler(req, res) {
           continue
         }
 
-        // Add delay between API calls to avoid rate limiting (1 second delay)
-        await delay(1000)
+        // Add longer delay between API calls to avoid rate limiting (3 seconds)
+        console.log(`⏳ Waiting 3 seconds before API call for keyword: "${alert.query_string}"`)
+        await delay(3000)
 
         // Search for tweets containing the keyword
         const tweetsData = await searchTweetsByKeyword(alert.query_string, alert.last_match_at)
