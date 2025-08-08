@@ -47,12 +47,12 @@ export default async function handler(req, res) {
     const keywords = alerts.map(alert => alert.query_string)
     const user = alerts[0].users // All alerts belong to the same user
 
-    // Check if user has SMS credits remaining
+    // Check if user has SMS credits remaining - STOP BEFORE QUERY to save credits
     if (user.sms_used >= user.sms_limit) {
-      console.log(`⚠️ User ${user.x_user_id} has reached SMS limit (${user.sms_used}/${user.sms_limit})`)
+      console.log(`⚠️ User ${user.x_user_id} has reached SMS limit (${user.sms_used}/${user.sms_limit}) - skipping API call to save credits`)
       return res.status(200).json({
         success: true,
-        message: 'User has reached SMS limit',
+        message: 'User has reached SMS limit - no API call made',
         totalProcessed: 0,
         totalSmsSent: 0,
         timestamp: new Date().toISOString()
@@ -71,11 +71,23 @@ export default async function handler(req, res) {
       })
     }
 
-    // Single API call for all keywords
-    console.log(`🚀 Making single API call for ${keywords.length} keywords`)
+    // Get the most recent last_match_at to use as since_id
+    const lastMatchTimes = alerts
+      .map(alert => alert.last_match_at)
+      .filter(time => time !== null)
+      .sort()
+      .reverse()
+
+    const sinceId = lastMatchTimes.length > 0 ? lastMatchTimes[0] : null
+    
+    // Dynamic max_results based on previous performance
+    const maxResults = 5 // Default to 5, can be increased if needed
+
+    // Single API call for all keywords with since_id
+    console.log(`🚀 Making single API call for ${keywords.length} keywords with since_id: ${sinceId || 'none'}`)
     
     try {
-      const tweetsData = await searchTweetsByMultipleKeywords(keywords)
+      const tweetsData = await searchTweetsByMultipleKeywords(keywords, sinceId, maxResults)
       
       if (!tweetsData.data || tweetsData.data.length === 0) {
         console.log(`🔍 No new tweets found for any keywords`)
