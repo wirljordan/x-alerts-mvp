@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import Head from 'next/head'
 import { useRouter } from 'next/router'
 
+// Force Vercel deployment - test buttons must be visible
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
