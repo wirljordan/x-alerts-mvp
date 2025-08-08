@@ -1,11 +1,6 @@
 import { supabaseAdmin } from '../../../lib/supabase'
-import { searchTweetsByKeyword, formatTweetForSMS } from '../../../lib/twitter-api'
+import { searchTweetsByMultipleKeywords, formatTweetForSMS, findMatchingKeyword } from '../../../lib/twitter-api'
 import { sendSMSNotification, formatKeywordAlertSMS, formatPhoneNumber } from '../../../lib/twilio'
-
-// Helper function to add delay between API calls
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -13,7 +8,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🧪 Starting test keyword monitoring...')
+    console.log('🧪 Starting optimized keyword monitoring...')
 
     // Get all active keywords from the database
     const { data: alerts, error: alertsError } = await supabaseAdmin
@@ -38,135 +33,156 @@ export default async function handler(req, res) {
 
     console.log(`📊 Found ${alerts.length} active keywords to monitor`)
 
-    const results = []
-    let totalSmsSent = 0
-    let smsSentThisCycle = false // Track if we've sent an SMS this cycle
-
-    for (const alert of alerts) {
-      try {
-        const user = alert.users
-        
-        // Check if user has SMS credits remaining
-        if (user.sms_used >= user.sms_limit) {
-          console.log(`⚠️ User ${user.x_user_id} has reached SMS limit (${user.sms_used}/${user.sms_limit})`)
-          continue
-        }
-
-        // Check if user has a valid phone number
-        if (!user.phone || !user.phone.trim()) {
-          console.log(`⚠️ User ${user.x_user_id} has no phone number`)
-          continue
-        }
-
-        // Stop after first successful SMS to save costs
-        if (smsSentThisCycle) {
-          console.log(`✅ SMS already sent this cycle, skipping remaining keywords to save costs`)
-          break
-        }
-
-        // Add longer delay between API calls to avoid rate limiting (3 seconds)
-        console.log(`⏳ Waiting 3 seconds before API call for keyword: "${alert.query_string}"`)
-        await delay(3000)
-
-        // Search for tweets containing the keyword
-        const tweetsData = await searchTweetsByKeyword(alert.query_string, alert.last_match_at)
-        
-        if (!tweetsData.data || tweetsData.data.length === 0) {
-          console.log(`🔍 No new tweets found for keyword: "${alert.query_string}"`)
-          continue
-        }
-
-        console.log(`🎯 Found ${tweetsData.data.length} new tweets for keyword: "${alert.query_string}"`)
-
-        // Only process the first tweet to avoid spam (rate limiting)
-        const tweet = tweetsData.data[0]
-        try {
-          // Find the user data for this tweet
-          const tweetUser = tweetsData.includes?.users?.find(u => u.id === tweet.author_id)
-          
-          if (!tweetUser) {
-            console.log(`⚠️ Could not find user data for tweet ${tweet.id}`)
-            continue
-          }
-
-          // Format tweet data for SMS
-          const tweetData = formatTweetForSMS(tweet, tweetUser)
-          
-          // Format SMS message
-          const smsMessage = formatKeywordAlertSMS(alert.query_string, tweetData)
-          
-          // Format phone number for Twilio
-          const formattedPhone = formatPhoneNumber(user.phone)
-          
-          // Send SMS notification
-          await sendSMSNotification(formattedPhone, smsMessage)
-          
-          // Mark that we've sent an SMS this cycle
-          smsSentThisCycle = true
-          
-          // Update SMS usage
-          const { error: updateError } = await supabaseAdmin
-            .from('users')
-            .update({ sms_used: user.sms_used + 1 })
-            .eq('id', user.id)
-
-          if (updateError) {
-            console.error('❌ Error updating SMS usage:', updateError)
-          }
-
-          // Update last_match_at for this alert
-          const { error: alertUpdateError } = await supabaseAdmin
-            .from('alerts')
-            .update({ last_match_at: new Date().toISOString() })
-            .eq('id', alert.id)
-
-          if (alertUpdateError) {
-            console.error('❌ Error updating alert last_match_at:', alertUpdateError)
-          }
-
-          totalSmsSent++
-          results.push({
-            keyword: alert.query_string,
-            tweetId: tweet.id,
-            author: tweetUser.username,
-            success: true
-          })
-
-          console.log(`✅ SMS sent successfully for keyword: "${alert.query_string}" - stopping to save costs`)
-
-        } catch (tweetError) {
-          console.error(`❌ Error processing tweet ${tweet.id}:`, tweetError)
-          results.push({
-            keyword: alert.query_string,
-            tweetId: tweet.id,
-            error: tweetError.message,
-            success: false
-          })
-        }
-
-      } catch (alertError) {
-        console.error(`❌ Error processing alert ${alert.id}:`, alertError)
-        results.push({
-          keyword: alert.query_string,
-          error: alertError.message,
-          success: false
-        })
-      }
+    if (alerts.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No active keywords to monitor',
+        totalProcessed: 0,
+        totalSmsSent: 0,
+        timestamp: new Date().toISOString()
+      })
     }
 
-    console.log(`🎉 Test keyword monitoring completed. Processed ${results.length} notifications, sent ${totalSmsSent} SMS.`)
+    // Extract keywords and user info
+    const keywords = alerts.map(alert => alert.query_string)
+    const user = alerts[0].users // All alerts belong to the same user
 
-    res.status(200).json({
-      success: true,
-      message: 'Test keyword monitoring completed',
-      results: results,
-      totalProcessed: results.length,
-      totalSmsSent: totalSmsSent,
-      timestamp: new Date().toISOString()
-    })
+    // Check if user has SMS credits remaining
+    if (user.sms_used >= user.sms_limit) {
+      console.log(`⚠️ User ${user.x_user_id} has reached SMS limit (${user.sms_used}/${user.sms_limit})`)
+      return res.status(200).json({
+        success: true,
+        message: 'User has reached SMS limit',
+        totalProcessed: 0,
+        totalSmsSent: 0,
+        timestamp: new Date().toISOString()
+      })
+    }
+
+    // Check if user has a valid phone number
+    if (!user.phone || !user.phone.trim()) {
+      console.log(`⚠️ User ${user.x_user_id} has no phone number`)
+      return res.status(200).json({
+        success: true,
+        message: 'User has no phone number',
+        totalProcessed: 0,
+        totalSmsSent: 0,
+        timestamp: new Date().toISOString()
+      })
+    }
+
+    // Single API call for all keywords
+    console.log(`🚀 Making single API call for ${keywords.length} keywords`)
+    
+    try {
+      const tweetsData = await searchTweetsByMultipleKeywords(keywords)
+      
+      if (!tweetsData.data || tweetsData.data.length === 0) {
+        console.log(`🔍 No new tweets found for any keywords`)
+        return res.status(200).json({
+          success: true,
+          message: 'No new tweets found',
+          totalProcessed: 0,
+          totalSmsSent: 0,
+          timestamp: new Date().toISOString()
+        })
+      }
+
+      console.log(`🎯 Found ${tweetsData.data.length} tweets, checking for keyword matches`)
+
+      // Process tweets and find matches
+      for (const tweet of tweetsData.data) {
+        const matchingKeyword = findMatchingKeyword(tweet.text, keywords)
+        
+        if (matchingKeyword) {
+          console.log(`✅ Found match for keyword: "${matchingKeyword}" in tweet ${tweet.id}`)
+          
+          try {
+            // Find the user data for this tweet
+            const tweetUser = tweetsData.includes?.users?.find(u => u.id === tweet.author_id)
+            
+            if (!tweetUser) {
+              console.log(`⚠️ Could not find user data for tweet ${tweet.id}`)
+              continue
+            }
+
+            // Format tweet data for SMS
+            const tweetData = formatTweetForSMS(tweet, tweetUser)
+            
+            // Format SMS message
+            const smsMessage = formatKeywordAlertSMS(matchingKeyword, tweetData)
+            
+            // Format phone number for Twilio
+            const formattedPhone = formatPhoneNumber(user.phone)
+            
+            // Send SMS notification immediately
+            await sendSMSNotification(formattedPhone, smsMessage)
+            
+            // Update SMS usage
+            const { error: updateError } = await supabaseAdmin
+              .from('users')
+              .update({ sms_used: user.sms_used + 1 })
+              .eq('id', user.id)
+
+            if (updateError) {
+              console.error('❌ Error updating SMS usage:', updateError)
+            }
+
+            // Update last_match_at for the matching alert
+            const matchingAlert = alerts.find(alert => alert.query_string === matchingKeyword)
+            if (matchingAlert) {
+              const { error: alertUpdateError } = await supabaseAdmin
+                .from('alerts')
+                .update({ last_match_at: new Date().toISOString() })
+                .eq('id', matchingAlert.id)
+
+              if (alertUpdateError) {
+                console.error('❌ Error updating alert last_match_at:', alertUpdateError)
+              }
+            }
+
+            console.log(`🎉 SMS sent successfully for keyword: "${matchingKeyword}"`)
+
+            return res.status(200).json({
+              success: true,
+              message: 'SMS sent successfully',
+              results: [{
+                keyword: matchingKeyword,
+                tweetId: tweet.id,
+                author: tweetUser.username,
+                success: true
+              }],
+              totalProcessed: 1,
+              totalSmsSent: 1,
+              timestamp: new Date().toISOString()
+            })
+
+          } catch (tweetError) {
+            console.error(`❌ Error processing tweet ${tweet.id}:`, tweetError)
+          }
+        }
+      }
+
+      console.log(`🔍 No matching keywords found in ${tweetsData.data.length} tweets`)
+
+      return res.status(200).json({
+        success: true,
+        message: 'No matching keywords found',
+        totalProcessed: tweetsData.data.length,
+        totalSmsSent: 0,
+        timestamp: new Date().toISOString()
+      })
+
+    } catch (apiError) {
+      console.error('❌ Error in Twitter API call:', apiError)
+      return res.status(500).json({
+        error: 'Twitter API error',
+        details: apiError.message
+      })
+    }
 
   } catch (error) {
-    console.error('❌ Error in test keyword monitoring:', error)
+    console.error('❌ Error in optimized keyword monitoring:', error)
     res.status(500).json({
       error: 'Internal server error',
       details: error.message
