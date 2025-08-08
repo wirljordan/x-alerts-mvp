@@ -84,6 +84,7 @@ export default function Dashboard() {
   const [currentPlan, setCurrentPlan] = useState('free') // free, starter, growth, pro
   const [keywordForm, setKeywordForm] = useState({ keyword: '' })
   const [isCreatingKeyword, setIsCreatingKeyword] = useState(false)
+  const [isTestingMonitoring, setIsTestingMonitoring] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -485,6 +486,32 @@ export default function Dashboard() {
     }
   }
 
+  const testKeywordMonitoring = async () => {
+    setIsTestingMonitoring(true)
+    try {
+      const response = await fetch('/api/test/monitor', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      const data = await response.json()
+      
+      if (response.ok) {
+        setSuccessMessage(`Keyword monitoring test completed! Processed ${data.totalProcessed} notifications, sent ${data.totalSmsSent} SMS.`)
+      } else {
+        setSuccessMessage(`Test failed: ${data.error}`)
+      }
+      setShowSuccessModal(true)
+    } catch (error) {
+      console.error('Error testing keyword monitoring:', error)
+      setSuccessMessage('Error testing keyword monitoring: ' + error.message)
+      setShowSuccessModal(true)
+    } finally {
+      setIsTestingMonitoring(false)
+    }
+  }
+
   const handleUpgrade = async (plan) => {
     if (plan === currentPlan) return
     
@@ -741,6 +768,21 @@ export default function Dashboard() {
                       <p className="text-orange-400 text-xs lg:text-sm font-medium">Upgrade for more SMS</p>
                     </div>
                   )}
+                </div>
+
+                {/* Test Monitoring Button */}
+                <div className="mt-4">
+                  <button
+                    onClick={testKeywordMonitoring}
+                    disabled={isTestingMonitoring}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                      isTestingMonitoring
+                        ? 'bg-white/20 text-white/40 cursor-not-allowed'
+                        : 'bg-blue-500 hover:bg-blue-600 text-white'
+                    }`}
+                  >
+                    {isTestingMonitoring ? 'Testing...' : 'Test Monitoring'}
+                  </button>
                 </div>
 
               </div>
