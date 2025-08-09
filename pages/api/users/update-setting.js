@@ -18,6 +18,21 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: `Invalid setting key. Allowed: ${allowedSettings.join(', ')}` })
     }
 
+    // Check if the column exists before trying to update
+    const { data: columnCheck } = await supabaseAdmin
+      .from('information_schema.columns')
+      .select('column_name')
+      .eq('table_name', 'users')
+      .eq('column_name', settingKey)
+      .single()
+
+    if (!columnCheck) {
+      return res.status(400).json({ 
+        error: `Column '${settingKey}' does not exist. Please run the migration script first.`,
+        migrationRequired: true
+      })
+    }
+
     // Validate timezone if provided
     if (settingKey === 'timezone') {
       const validTimezones = [

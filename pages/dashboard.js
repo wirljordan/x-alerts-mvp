@@ -979,53 +979,71 @@ export default function Dashboard() {
                 <h2 className="text-lg lg:text-2xl font-semibold text-white">Quiet Hours</h2>
               </div>
               
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-white font-medium mb-2">Timezone</label>
-                  <select
-                    value={user?.timezone || 'UTC'}
-                    onChange={(e) => handleUpdateUserSetting('timezone', e.target.value)}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
-                  >
-                    <option value="UTC">UTC</option>
-                    <option value="America/New_York">Eastern Time (ET)</option>
-                    <option value="America/Chicago">Central Time (CT)</option>
-                    <option value="America/Denver">Mountain Time (MT)</option>
-                    <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                    <option value="Europe/London">London (GMT)</option>
-                    <option value="Europe/Paris">Paris (CET)</option>
-                    <option value="Asia/Tokyo">Tokyo (JST)</option>
-                    <option value="Australia/Sydney">Sydney (AEST)</option>
-                  </select>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-white font-medium mb-2">Quiet Hours Start</label>
-                    <input
-                      type="time"
-                      value={user?.quiet_hours_start || '22:00'}
-                      onChange={(e) => handleUpdateUserSetting('quiet_hours_start', e.target.value)}
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
-                    />
+              {/* Show migration notice if columns don't exist */}
+              {!user?.timezone && !user?.quiet_hours_start && (
+                <div className="text-center py-8 lg:py-12">
+                  <div className="w-16 h-16 lg:w-20 lg:h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
+                    <span className="text-yellow-400 text-2xl lg:text-3xl">⚠️</span>
                   </div>
-                  <div>
-                    <label className="block text-white font-medium mb-2">Quiet Hours End</label>
-                    <input
-                      type="time"
-                      value={user?.quiet_hours_end || '08:00'}
-                      onChange={(e) => handleUpdateUserSetting('quiet_hours_end', e.target.value)}
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
-                    />
-                  </div>
-                </div>
-                
-                <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-blue-400 text-sm">
-                    💡 During quiet hours, you'll still receive notifications but they won't be sent via SMS to avoid disturbing you.
+                  <p className="text-white/60 mb-4 lg:mb-6 text-sm lg:text-base">
+                    Quiet hours feature requires database migration.
+                  </p>
+                  <p className="text-white/40 text-xs">
+                    This feature will be available after running the migration script in Supabase.
                   </p>
                 </div>
-              </div>
+              )}
+              
+              {/* Show settings if columns exist */}
+              {user?.timezone && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-white font-medium mb-2">Timezone</label>
+                    <select
+                      value={user?.timezone || 'UTC'}
+                      onChange={(e) => handleUpdateUserSetting('timezone', e.target.value)}
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
+                    >
+                      <option value="UTC">UTC</option>
+                      <option value="America/New_York">Eastern Time (ET)</option>
+                      <option value="America/Chicago">Central Time (CT)</option>
+                      <option value="America/Denver">Mountain Time (MT)</option>
+                      <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                      <option value="Europe/London">London (GMT)</option>
+                      <option value="Europe/Paris">Paris (CET)</option>
+                      <option value="Asia/Tokyo">Tokyo (JST)</option>
+                      <option value="Australia/Sydney">Sydney (AEST)</option>
+                    </select>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-white font-medium mb-2">Quiet Hours Start</label>
+                      <input
+                        type="time"
+                        value={user?.quiet_hours_start || '22:00'}
+                        onChange={(e) => handleUpdateUserSetting('quiet_hours_start', e.target.value)}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white font-medium mb-2">Quiet Hours End</label>
+                      <input
+                        type="time"
+                        value={user?.quiet_hours_end || '08:00'}
+                        onChange={(e) => handleUpdateUserSetting('quiet_hours_end', e.target.value)}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <p className="text-blue-400 text-sm">
+                      💡 During quiet hours, you'll still receive notifications but they won't be sent via SMS to avoid disturbing you.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
 

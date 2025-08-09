@@ -162,6 +162,12 @@ async function sendAlert(user, ruleId, tweet, channel = 'sms') {
 
 // Backfill worker
 async function backfillWorker(user, ruleId, initialTweets, seenTweetIds) {
+  // Check quiet hours before starting backfill
+  if (isInQuietHours(user)) {
+    console.log(`😴 User ${user.x_user_id} is in quiet hours, skipping backfill for rule ${ruleId}`)
+    return initialTweets.length
+  }
+
   const startTime = Date.now()
   let totalTweets = initialTweets.length
   let pages = 0
@@ -315,10 +321,11 @@ export default async function handler(req, res) {
         continue
       }
 
-      // Check quiet hours
+      // Check quiet hours - skip entire processing if user is in quiet hours
       const inQuietHours = isInQuietHours(user)
       if (inQuietHours) {
-        console.log(`😴 User ${user.x_user_id} is in quiet hours, skipping alerts`)
+        console.log(`😴 User ${user.x_user_id} is in quiet hours, skipping all processing (no API calls or SMS)`)
+        continue
       }
 
       // Generate deterministic seed for current minute
@@ -386,13 +393,11 @@ export default async function handler(req, res) {
           // Take the newest tweet for immediate alert
           const newestTweet = newTweets[0]
           
-          // Send immediate alert if not in quiet hours
-          if (!inQuietHours) {
-            const alertSent = await sendAlert(user, rule.id, newestTweet, user.delivery_mode || 'sms')
-            if (alertSent) {
-              userSmsSent++
-              totalSmsSent++
-            }
+          // Send immediate alert (quiet hours already checked above)
+          const alertSent = await sendAlert(user, rule.id, newestTweet, user.delivery_mode || 'sms')
+          if (alertSent) {
+            userSmsSent++
+            totalSmsSent++
           }
 
           // Log the cost
