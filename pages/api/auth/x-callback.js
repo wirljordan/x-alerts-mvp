@@ -116,89 +116,51 @@ export default async function handler(req, res) {
       // Get user info using the correct API endpoint
       console.log('Fetching user info from X API...')
       
-      // Try v2 API first with retry logic for rate limiting
+      // Try v2 API first
+      const userResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      console.log('User response status:', userResponse.status)
+
       let userData
-      let userResponse
-      let retryCount = 0
-      const maxRetries = 2
-      
-      while (retryCount <= maxRetries) {
-        try {
-          userResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
-            headers: {
-              'Authorization': `Bearer ${tokenData.access_token}`,
-              'Content-Type': 'application/json'
-            }
-          })
-
-          console.log(`User response status (attempt ${retryCount + 1}):`, userResponse.status)
-
-          if (userResponse.ok) {
-            userData = await userResponse.json()
-            console.log('User data from v2 API:', userData)
-            break
-          } else if (userResponse.status === 429 && retryCount < maxRetries) {
-            // Rate limited, wait and retry
-            const waitTime = Math.pow(2, retryCount) * 1000 // Exponential backoff: 1s, 2s
-            console.log(`Rate limited (429), waiting ${waitTime}ms before retry...`)
-            await new Promise(resolve => setTimeout(resolve, waitTime))
-            retryCount++
-            continue
-          } else {
-            const errorText = await userResponse.text()
-            console.error('v2 API failed:', errorText)
-            break
-          }
-        } catch (fetchError) {
-          console.error('Fetch error on attempt', retryCount + 1, ':', fetchError)
-          if (retryCount < maxRetries) {
-            retryCount++
-            continue
-          }
-          throw fetchError
-        }
-      }
-
-      // If v2 API failed, try v1.1 API as fallback
-      if (!userData) {
+      if (!userResponse.ok) {
+        const errorText = await userResponse.text()
+        console.error('v2 API failed:', errorText)
+        
+        // Try v1.1 API as fallback
         console.log('Trying v1.1 API endpoint...')
-        try {
-          const v1UserResponse = await fetch('https://api.twitter.com/1.1/account/verify_credentials.json', {
-            headers: {
-              'Authorization': `Bearer ${tokenData.access_token}`,
-              'Content-Type': 'application/json'
-            }
-          })
-          
-          if (v1UserResponse.ok) {
-            const v1UserData = await v1UserResponse.json()
-            console.log('v1.1 API worked:', v1UserData)
-            // Convert v1.1 format to v2 format
-            userData = {
-              data: {
-                id: v1UserData.id_str,
-                name: v1UserData.name,
-                username: v1UserData.screen_name,
-                profile_image_url: v1UserData.profile_image_url_https,
-                verified: v1UserData.verified || false
-              }
-            }
-          } else {
-            const v1ErrorText = await v1UserResponse.text()
-            console.error('v1.1 API also failed:', v1ErrorText)
-            
-            // If both APIs fail, we need to handle this gracefully
-            console.log('Both APIs failed, attempting to proceed with minimal user data')
-            
-            // We can't proceed without valid user data, so redirect with error
-            res.redirect('/?error=api_rate_limited')
-            return
+        const v1UserResponse = await fetch('https://api.twitter.com/1.1/account/verify_credentials.json', {
+          headers: {
+            'Authorization': `Bearer ${tokenData.access_token}`,
+            'Content-Type': 'application/json'
           }
-        } catch (v1Error) {
-          console.error('v1.1 API fetch error:', v1Error)
-          res.redirect('/?error=api_fetch_error')
-          return
+        })
+        
+        if (v1UserResponse.ok) {
+          const v1UserData = await v1UserResponse.json()
+          console.log('v1.1 API worked:', v1UserData)
+          // Convert v1.1 format to v2 format
+          userData = {
+            data: {
+              id: v1UserData.id_str,
+              name: v1UserData.name,
+              username: v1UserData.screen_name,
+              profile_image_url: v1UserData.profile_image_url_https,
+              verified: v1UserData.verified || false
+            }
+          }
+        } else {
+          const v1ErrorText = await v1UserResponse.text()
+          console.error('v1.1 API also failed:', v1ErrorText)
+          throw new Error(`Both v2 and v1.1 APIs failed. v2: ${userResponse.status}, v1.1: ${v1UserResponse.status}`)
         }
+      } else {
+        userData = await userResponse.json()
+        console.log('User data from v2 API:', userData)
       }
 
       // Create session data

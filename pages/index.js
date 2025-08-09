@@ -53,9 +53,7 @@ export default function Home() {
         'no_state': 'Authentication session expired. Please try again.',
         'state_mismatch': 'Security verification failed. Please try again.',
         'invalid_session': 'Session is invalid. Please sign in again.',
-        'no_session': 'No active session found. Please sign in.',
-        'api_rate_limited': 'X API is temporarily rate limited. Please wait a moment and try again.',
-        'api_fetch_error': 'Failed to connect to X API. Please try again.'
+        'no_session': 'No active session found. Please sign in.'
       }
       setError(errorMessages[router.query.error] || 'Authentication failed. Please try again.')
     }
