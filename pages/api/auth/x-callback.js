@@ -116,58 +116,34 @@ export default async function handler(req, res) {
       // Get user info using the correct API endpoint
       console.log('Fetching user info from X API...')
       
-      // Try v2 API first with rate limiting handling
-      let userData
-      let userResponse
-      let retryCount = 0
-      const maxRetries = 3
-      
-      while (retryCount <= maxRetries) {
-        try {
-          userResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
-            headers: {
-              'Authorization': `Bearer ${tokenData.access_token}`,
-              'Content-Type': 'application/json'
-            }
-          })
-
-          console.log(`User response status (attempt ${retryCount + 1}):`, userResponse.status)
-
-          if (userResponse.ok) {
-            userData = await userResponse.json()
-            console.log('User data from v2 API:', userData)
-            break
-          } else if (userResponse.status === 429 && retryCount < maxRetries) {
-            // Rate limited, wait and retry with exponential backoff
-            const waitTime = Math.pow(2, retryCount) * 2000 // 2s, 4s, 8s
-            console.log(`Rate limited (429), waiting ${waitTime}ms before retry...`)
-            await new Promise(resolve => setTimeout(resolve, waitTime))
-            retryCount++
-            continue
-          } else {
-            const errorText = await userResponse.text()
-            console.error('v2 API failed:', errorText)
-            break
-          }
-        } catch (fetchError) {
-          console.error('Fetch error on attempt', retryCount + 1, ':', fetchError)
-          if (retryCount < maxRetries) {
-            retryCount++
-            continue
-          }
-          throw fetchError
+      // Simple approach - just try once and handle gracefully
+      console.log('Making single API call to get user info...')
+      const userResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json'
         }
-      }
+      })
 
-      // If v2 API failed after all retries, try alternative approach
-      if (!userData) {
-        console.log('v2 API failed after retries, trying alternative approach...')
+      console.log('User response status:', userResponse.status)
+
+      let userData
+      if (!userResponse.ok) {
+        const errorText = await userResponse.text()
+        console.error('X API failed:', errorText)
         
-        // Try to get user info from the token exchange response or use a different method
-        // For now, we'll redirect with a specific error to handle this gracefully
-        console.log('All API attempts failed, redirecting with error')
-        res.redirect('/?error=api_rate_limited')
-        return
+        // If rate limited, just redirect with a simple message
+        if (userResponse.status === 429) {
+          console.log('Rate limited, redirecting to try again later')
+          res.redirect('/?error=api_rate_limited')
+          return
+        }
+        
+        // For other errors, throw to be caught by the outer try-catch
+        throw new Error(`X API failed with status ${userResponse.status}: ${errorText}`)
+      } else {
+        userData = await userResponse.json()
+        console.log('User data from X API:', userData)
       }
 
       // Create session data
