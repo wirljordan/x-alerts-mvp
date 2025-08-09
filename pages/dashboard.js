@@ -1000,15 +1000,15 @@ export default function Dashboard() {
                   <div>
                     <label className="block text-white font-medium mb-2">Timezone</label>
                     <select
-                      value={user?.timezone || 'America/New_York'}
+                      value={user?.timezone || 'UTC'}
                       onChange={(e) => handleUpdateUserSetting('timezone', e.target.value)}
                       className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
                     >
+                      <option value="UTC">UTC</option>
                       <option value="America/New_York">Eastern Time (ET)</option>
                       <option value="America/Chicago">Central Time (CT)</option>
                       <option value="America/Denver">Mountain Time (MT)</option>
                       <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                      <option value="UTC">UTC</option>
                       <option value="Europe/London">London (GMT)</option>
                       <option value="Europe/Paris">Paris (CET)</option>
                       <option value="Asia/Tokyo">Tokyo (JST)</option>
@@ -1021,11 +1021,10 @@ export default function Dashboard() {
                       <label className="block text-white font-medium mb-2">Quiet Hours Start</label>
                       <input
                         type="time"
-                        value={user?.quiet_hours_start || '16:00'}
+                        value={user?.quiet_hours_start || '22:00'}
                         onChange={(e) => handleUpdateUserSetting('quiet_hours_start', e.target.value)}
                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
                       />
-                      <p className="text-white/40 text-xs mt-1">4:00 PM (when you want to stop SMS)</p>
                     </div>
                     <div>
                       <label className="block text-white font-medium mb-2">Quiet Hours End</label>
@@ -1035,29 +1034,7 @@ export default function Dashboard() {
                         onChange={(e) => handleUpdateUserSetting('quiet_hours_end', e.target.value)}
                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
                       />
-                      <p className="text-white/40 text-xs mt-1">8:00 AM (when SMS resume)</p>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={() => {
-                        handleUpdateUserSetting('quiet_hours_start', '16:00');
-                        handleUpdateUserSetting('quiet_hours_end', '08:00');
-                      }}
-                      className="px-4 py-2 bg-[#16D9E3]/20 border border-[#16D9E3]/30 rounded-lg text-[#16D9E3] hover:bg-[#16D9E3]/30 transition-colors text-sm"
-                    >
-                      Set to 4 PM - 8 AM
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleUpdateUserSetting('quiet_hours_start', '22:00');
-                        handleUpdateUserSetting('quiet_hours_end', '08:00');
-                      }}
-                      className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white/60 hover:text-white transition-colors text-sm"
-                    >
-                      Set to 10 PM - 8 AM
-                    </button>
                   </div>
                   
                   <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
