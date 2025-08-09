@@ -41,17 +41,17 @@ export default async function handler(req, res) {
       starter: {
         price: 900, // $9.00 in cents
         name: 'Starter Plan',
-        description: '2 keywords tracked, 300 SMS/month'
+        description: '3 keywords tracked, 100 SMS/month'
       },
       growth: {
         price: 1900, // $19.00 in cents
         name: 'Growth Plan',
-        description: '10 keywords tracked, 1,000 SMS/month'
+        description: '10 keywords tracked, 300 SMS/month'
       },
       pro: {
         price: 4900, // $49.00 in cents
         name: 'Pro Plan',
-        description: '30 keywords tracked, 3,000 SMS/month'
+        description: '30 keywords tracked, 1,000 SMS/month'
       }
     }
 

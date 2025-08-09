@@ -914,7 +914,7 @@ export default function Dashboard() {
                   <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$0</p>
                   <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
                     <p>1 keyword tracked</p>
-                    <p>25 SMS / mo</p>
+                    <p>10 SMS / mo</p>
                   </div>
                   <button
                     onClick={() => handleUpgrade('free')}
@@ -940,8 +940,8 @@ export default function Dashboard() {
                   <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">Starter</h3>
                   <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$9<span className="text-sm font-normal text-white/60">/mo</span></p>
                   <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
-                    <p>2 keywords tracked</p>
-                    <p>300 SMS / mo</p>
+                    <p>3 keywords tracked</p>
+                    <p>100 SMS / mo</p>
                   </div>
                   <button
                     onClick={() => handleUpgrade('starter')}
@@ -971,7 +971,7 @@ export default function Dashboard() {
                   <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$19<span className="text-sm font-normal text-white/60">/mo</span></p>
                   <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
                     <p>10 keywords tracked</p>
-                    <p>1,000 SMS / mo</p>
+                    <p>300 SMS / mo</p>
                   </div>
                   <button
                     onClick={() => handleUpgrade('growth')}
@@ -1000,7 +1000,7 @@ export default function Dashboard() {
                   <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$49<span className="text-sm font-normal text-white/60">/mo</span></p>
                   <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
                     <p>30 keywords tracked</p>
-                    <p>3,000 SMS / mo</p>
+                    <p>1,000 SMS / mo</p>
                   </div>
                   <button
                     onClick={() => handleUpgrade('pro')}

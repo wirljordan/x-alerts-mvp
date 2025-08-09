@@ -583,7 +583,7 @@ export default function Onboarding() {
                     value: 'free', 
                     label: 'Free', 
                     price: 'Free',
-                    texts: '25 SMS / mo',
+                    texts: '10 SMS / mo',
                     keywords: '1 keyword tracked',
                     features: ['Basic monitoring', 'SMS notifications', 'Email support']
                   },
@@ -591,15 +591,15 @@ export default function Onboarding() {
                     value: 'starter', 
                     label: 'Starter', 
                     price: '$9 / mo',
-                    texts: '300 SMS / mo',
-                    keywords: '2 keywords tracked',
+                    texts: '100 SMS / mo',
+                    keywords: '3 keywords tracked',
                     features: ['Basic monitoring', 'SMS notifications', 'Email support']
                   },
                   { 
                     value: 'growth', 
                     label: 'Growth', 
                     price: '$19 / mo',
-                    texts: '1,000 SMS / mo',
+                    texts: '300 SMS / mo',
                     keywords: '10 keywords tracked',
                     features: ['Advanced monitoring', 'Priority notifications', 'Priority support'],
                     popular: true
@@ -608,7 +608,7 @@ export default function Onboarding() {
                     value: 'pro', 
                     label: 'Pro', 
                     price: '$49 / mo',
-                    texts: '3,000 SMS / mo',
+                    texts: '1,000 SMS / mo',
                     keywords: '30 keywords tracked',
                     features: ['Team collaboration', 'Custom integrations', 'Dedicated support']
                   }
