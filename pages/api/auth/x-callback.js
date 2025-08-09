@@ -1,3 +1,5 @@
+import { supabaseAdmin } from '../../../lib/supabase'
+
 export default async function handler(req, res) {
   console.log('=== X CALLBACK DEBUG ===')
   console.log('Method:', req.method)
@@ -113,89 +115,139 @@ export default async function handler(req, res) {
       console.log('Token received successfully')
       console.log('Token data:', tokenData)
 
-      // Get user info using the correct API endpoint
-      console.log('Fetching user info from X API...')
-      
-      // Try v2 API first with retry logic for rate limits
-      let userData
-      let retryCount = 0
-      const maxRetries = 3
-      
-      while (retryCount < maxRetries) {
-        try {
-          const userResponse = await fetch('https://api.x.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
-            headers: {
-              'Authorization': `Bearer ${tokenData.access_token}`,
-              'Content-Type': 'application/json'
-            }
-          })
-
-          console.log('User response status:', userResponse.status)
-
-          if (userResponse.status === 429) {
-            retryCount++
-            const waitTime = Math.pow(2, retryCount) * 1000 // Exponential backoff: 2s, 4s, 8s
-            console.log(`Rate limited, waiting ${waitTime/1000} seconds and retrying... (attempt ${retryCount}/${maxRetries})`)
-            await new Promise(resolve => setTimeout(resolve, waitTime))
-            continue
-          }
-
-          if (!userResponse.ok) {
-            const errorText = await userResponse.text()
-            console.error('v2 API failed:', errorText)
-            break // Don't retry on non-429 errors
-          }
-
-          userData = await userResponse.json()
-          console.log('User data from v2 API:', userData)
-          break // Success, exit retry loop
-
-        } catch (error) {
-          console.error('Error fetching user data:', error)
-          retryCount++
-          if (retryCount >= maxRetries) {
-            console.error('Max retries reached, trying fallback methods')
-            break
-          }
+      // Try to extract user ID from the token first (if possible)
+      let userId = null
+      try {
+        // Try to decode the token to get user info
+        const tokenParts = tokenData.access_token.split('.')
+        if (tokenParts.length >= 2) {
+          const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString())
+          userId = payload.sub || payload.user_id
+          console.log('Extracted user ID from token:', userId)
         }
+      } catch (error) {
+        console.log('Could not extract user ID from token, will try API')
       }
 
-      // If v2 API failed after retries, try v1.1 API
-      if (!userData) {
-        console.log('Trying v1.1 API endpoint...')
+      // Get user info - try Supabase first, then Twitter API
+      console.log('Fetching user info...')
+      
+      let userData = null
+      
+      // If we have a user ID, try to get existing data from Supabase first
+      if (userId) {
+        console.log('Checking Supabase for existing user data...')
         try {
-          const v1UserResponse = await fetch('https://api.x.com/1.1/account/verify_credentials.json', {
-            headers: {
-              'Authorization': `Bearer ${tokenData.access_token}`,
-              'Content-Type': 'application/json'
-            }
-          })
-          
-          if (v1UserResponse.ok) {
-            const v1UserData = await v1UserResponse.json()
-            console.log('v1.1 API worked:', v1UserData)
-            // Convert v1.1 format to v2 format
+          const { data: supabaseUser, error } = await supabaseAdmin
+            .from('users')
+            .select('x_user_id, handle, email, phone, plan, alerts_limit, alerts_used')
+            .eq('x_user_id', userId)
+            .single()
+
+          if (supabaseUser && !error) {
+            console.log('Found existing user in Supabase:', supabaseUser)
             userData = {
               data: {
-                id: v1UserData.id_str,
-                name: v1UserData.name,
-                username: v1UserData.screen_name,
-                profile_image_url: v1UserData.profile_image_url_https,
-                verified: v1UserData.verified || false
+                id: supabaseUser.x_user_id,
+                name: supabaseUser.handle, // Use handle as name
+                username: supabaseUser.handle,
+                profile_image_url: `https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png`,
+                verified: false
               }
             }
+            console.log('Using existing Supabase user data')
           } else {
-            const v1ErrorText = await v1UserResponse.text()
-            console.error('v1.1 API also failed:', v1ErrorText)
+            console.log('No existing user found in Supabase, will try Twitter API')
           }
         } catch (error) {
-          console.error('v1.1 API error:', error)
+          console.log('Supabase lookup failed, will try Twitter API:', error.message)
         }
       }
 
-      // If all API calls failed, use fallback data
+      // If no Supabase data, try Twitter API with retry logic
       if (!userData) {
-        console.log('All API methods failed, using fallback user data')
+        console.log('Fetching user info from Twitter API...')
+        
+        // Try v2 API first with retry logic for rate limits
+        let retryCount = 0
+        const maxRetries = 3
+        
+        while (retryCount < maxRetries) {
+          try {
+            const userResponse = await fetch('https://api.x.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
+              headers: {
+                'Authorization': `Bearer ${tokenData.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            })
+
+            console.log('User response status:', userResponse.status)
+
+            if (userResponse.status === 429) {
+              retryCount++
+              const waitTime = Math.pow(2, retryCount) * 1000 // Exponential backoff: 2s, 4s, 8s
+              console.log(`Rate limited, waiting ${waitTime/1000} seconds and retrying... (attempt ${retryCount}/${maxRetries})`)
+              await new Promise(resolve => setTimeout(resolve, waitTime))
+              continue
+            }
+
+            if (!userResponse.ok) {
+              const errorText = await userResponse.text()
+              console.error('v2 API failed:', errorText)
+              break // Don't retry on non-429 errors
+            }
+
+            userData = await userResponse.json()
+            console.log('User data from v2 API:', userData)
+            break // Success, exit retry loop
+
+          } catch (error) {
+            console.error('Error fetching user data:', error)
+            retryCount++
+            if (retryCount >= maxRetries) {
+              console.error('Max retries reached, trying fallback methods')
+              break
+            }
+          }
+        }
+
+        // If v2 API failed after retries, try v1.1 API
+        if (!userData) {
+          console.log('Trying v1.1 API endpoint...')
+          try {
+            const v1UserResponse = await fetch('https://api.x.com/1.1/account/verify_credentials.json', {
+              headers: {
+                'Authorization': `Bearer ${tokenData.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            
+            if (v1UserResponse.ok) {
+              const v1UserData = await v1UserResponse.json()
+              console.log('v1.1 API worked:', v1UserData)
+              // Convert v1.1 format to v2 format
+              userData = {
+                data: {
+                  id: v1UserData.id_str,
+                  name: v1UserData.name,
+                  username: v1UserData.screen_name,
+                  profile_image_url: v1UserData.profile_image_url_https,
+                  verified: v1UserData.verified || false
+                }
+              }
+            } else {
+              const v1ErrorText = await v1UserResponse.text()
+              console.error('v1.1 API also failed:', v1ErrorText)
+            }
+          } catch (error) {
+            console.error('v1.1 API error:', error)
+          }
+        }
+      }
+
+      // If all methods failed, use fallback data
+      if (!userData) {
+        console.log('All methods failed, using fallback user data')
         userData = {
           data: {
             id: 'unknown',
