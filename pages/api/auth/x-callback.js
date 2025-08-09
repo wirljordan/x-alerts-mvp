@@ -116,61 +116,109 @@ export default async function handler(req, res) {
       // Get user info using the correct API endpoint
       console.log('Fetching user info from X API...')
       
-      // Try v2 API first
-      const userResponse = await fetch('https://api.x.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
-        headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      console.log('User response status:', userResponse.status)
-
+      // Try v2 API first with proper error handling
       let userData
-      if (!userResponse.ok) {
-        const errorText = await userResponse.text()
-        console.error('v2 API failed:', errorText)
-        
-        // Try v1.1 API as fallback
-        console.log('Trying v1.1 API endpoint...')
-        const v1UserResponse = await fetch('https://api.x.com/1.1/account/verify_credentials.json', {
+      try {
+        const userResponse = await fetch('https://api.x.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
           headers: {
             'Authorization': `Bearer ${tokenData.access_token}`,
             'Content-Type': 'application/json'
           }
         })
-        
-        if (v1UserResponse.ok) {
-          const v1UserData = await v1UserResponse.json()
-          console.log('v1.1 API worked:', v1UserData)
-          // Convert v1.1 format to v2 format
-          userData = {
-            data: {
-              id: v1UserData.id_str,
-              name: v1UserData.name,
-              username: v1UserData.screen_name,
-              profile_image_url: v1UserData.profile_image_url_https,
-              verified: v1UserData.verified || false
-            }
-          }
+
+        console.log('User response status:', userResponse.status)
+
+        if (userResponse.ok) {
+          userData = await userResponse.json()
+          console.log('User data from v2 API:', userData)
         } else {
-          const v1ErrorText = await v1UserResponse.text()
-          console.error('v1.1 API also failed:', v1ErrorText)
-          console.log('Using fallback user data')
-          // Fallback user data if API call fails
-          userData = {
-            data: {
-              id: 'unknown',
-              name: 'X User',
-              username: 'xuser',
-              profile_image_url: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
-              verified: false
+          const errorText = await userResponse.text()
+          console.error('v2 API failed:', errorText)
+          
+          // If it's a rate limit, wait and retry once
+          if (userResponse.status === 429) {
+            console.log('Rate limited, waiting 2 seconds and retrying...')
+            await new Promise(resolve => setTimeout(resolve, 2000))
+            
+            const retryResponse = await fetch('https://api.x.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
+              headers: {
+                'Authorization': `Bearer ${tokenData.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            
+            if (retryResponse.ok) {
+              userData = await retryResponse.json()
+              console.log('User data from v2 API (retry):', userData)
+            } else {
+              throw new Error(`v2 API retry failed: ${retryResponse.status}`)
             }
+          } else {
+            throw new Error(`v2 API failed: ${userResponse.status}`)
           }
         }
-      } else {
-        userData = await userResponse.json()
-        console.log('User data from v2 API:', userData)
+      } catch (error) {
+        console.error('Error fetching user data:', error.message)
+        
+        // Try alternative v2 endpoint
+        try {
+          console.log('Trying alternative v2 endpoint...')
+          const altResponse = await fetch('https://api.x.com/2/users/me', {
+            headers: {
+              'Authorization': `Bearer ${tokenData.access_token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (altResponse.ok) {
+            userData = await altResponse.json()
+            console.log('User data from alternative v2 API:', userData)
+          } else {
+            throw new Error(`Alternative v2 API failed: ${altResponse.status}`)
+          }
+                 } catch (altError) {
+           console.error('Alternative v2 API also failed:', altError.message)
+           
+           // Last resort: try to extract user ID from the access token
+           // The access token might contain encoded user information
+           console.log('Attempting to extract user info from token...')
+           
+           // Try to decode the JWT token to get user info
+           try {
+             const tokenParts = tokenData.access_token.split('.')
+             if (tokenParts.length === 3) {
+               const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString())
+               console.log('Token payload:', payload)
+               
+               // If we can extract user info from token, use it
+               if (payload.sub || payload.user_id) {
+                 const userId = payload.sub || payload.user_id
+                 console.log('Extracted user ID from token:', userId)
+                 
+                 userData = {
+                   data: {
+                     id: userId,
+                     name: 'X User',
+                     username: 'xuser',
+                     profile_image_url: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
+                     verified: false
+                   }
+                 }
+               } else {
+                 throw new Error('No user ID found in token')
+               }
+             } else {
+               throw new Error('Invalid token format')
+             }
+           } catch (tokenError) {
+             console.error('Failed to extract user info from token:', tokenError.message)
+             
+             // Final fallback: redirect to error page
+             console.log('All methods failed, redirecting to error page')
+             res.redirect('/?error=api_unavailable&token=' + encodeURIComponent(tokenData.access_token))
+             return
+           }
+         }
       }
 
       // Create session data

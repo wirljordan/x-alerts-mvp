@@ -43,6 +43,12 @@ export default function Home() {
 
     // Handle OAuth errors
     if (router.query.error) {
+      // Redirect to auth-error page for API unavailable errors
+      if (router.query.error === 'api_unavailable') {
+        router.push('/auth-error?error=api_unavailable&token=' + encodeURIComponent(router.query.token || ''))
+        return
+      }
+      
       const errorMessages = {
         'oauth_failed': 'X authentication failed. Please try again.',
         'no_code': 'No authorization code received. Please try again.',
