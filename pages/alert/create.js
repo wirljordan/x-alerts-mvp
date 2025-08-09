@@ -18,7 +18,7 @@ export default function CreateAlert() {
 
   useEffect(() => {
     // Get user from session cookie
-    const getUserFromSession = () => {
+    const getUserFromSession = async () => {
       if (typeof document !== 'undefined') {
         const cookies = document.cookie.split(';').reduce((acc, cookie) => {
           const [key, value] = cookie.trim().split('=')
@@ -38,6 +38,30 @@ export default function CreateAlert() {
             if (!hasCompletedOnboarding) {
               router.push('/onboarding')
               return
+            }
+            
+            // Fetch user data from database to get access to x_user_id
+            if (sessionData.user?.id) {
+              try {
+                const response = await fetch(`/api/users/get?userId=${sessionData.user.id}`)
+                if (response.ok) {
+                  const data = await response.json()
+                  if (data.success && data.user) {
+                    // Merge session data with database data, ensuring we have both IDs
+                    const mergedUser = {
+                      ...sessionData.user,
+                      ...data.user,
+                      // Keep the X user ID from session for API calls
+                      x_user_id: sessionData.user.id,
+                      // Use the internal UUID from database for database operations
+                      internal_id: data.user.id
+                    }
+                    setUser(mergedUser)
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching user data from database:', error)
+              }
             }
           } catch (error) {
             console.error('Error parsing session:', error)
@@ -107,13 +131,19 @@ export default function CreateAlert() {
     setIsCreating(true)
     
     try {
+      // Use x_user_id for API calls (this is the Twitter/X user ID)
+      const userId = user?.x_user_id
+      if (!userId) {
+        throw new Error('User ID not found')
+      }
+
       const response = await fetch('/api/alerts/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user?.id,
+          userId: userId,
           name: formData.name.trim(),
           query: formData.query.trim(),
           description: formData.description.trim()

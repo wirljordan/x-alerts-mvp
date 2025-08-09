@@ -166,16 +166,25 @@ export default function Dashboard() {
           // Fetch user data from Supabase to check if they exist (database is source of truth)
           if (sessionData.user?.id) {
             try {
+              // sessionData.user.id is the X user ID (Twitter ID), not the internal UUID
               const response = await fetch(`/api/users/get?userId=${sessionData.user.id}`)
               if (response.ok) {
                 const data = await response.json()
                 if (data.success && data.user) {
                   // User exists in database, they have completed onboarding
                   console.log('User found in database:', data.user)
-                  setUser(prevUser => ({
-                    ...prevUser,
-                    ...data.user
-                  }))
+                  
+                  // Merge session data with database data, ensuring we have both IDs
+                  const mergedUser = {
+                    ...sessionData.user,
+                    ...data.user,
+                    // Keep the X user ID from session for API calls
+                    x_user_id: sessionData.user.id,
+                    // Use the internal UUID from database for database operations
+                    internal_id: data.user.id
+                  }
+                  
+                  setUser(mergedUser)
                   
                   // Set current plan from Supabase
                   console.log('Setting current plan to:', data.user.plan || 'free')
@@ -208,7 +217,7 @@ export default function Dashboard() {
                   
                   setUsage({ used: alertsUsed, limit: alertsLimit })
                   
-                  // Fetch user's alerts/keywords
+                  // Fetch user's alerts/keywords using the X user ID
                   await fetchUserAlerts(sessionData.user.id)
                 } else {
                   // User doesn't exist in database, redirect to onboarding
@@ -298,13 +307,19 @@ export default function Dashboard() {
 
     setIsCreatingKeyword(true)
     try {
+      // Use x_user_id for API calls (this is the Twitter/X user ID)
+      const userId = user?.x_user_id
+      if (!userId) {
+        throw new Error('User ID not found')
+      }
+
       const response = await fetch('/api/alerts/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user?.x_user_id || user?.id,
+          userId: userId,
           name: keywordForm.keyword.trim(),
           query: keywordForm.keyword.trim()
         })
@@ -317,8 +332,8 @@ export default function Dashboard() {
         setKeywordForm({ keyword: '' })
         setShowKeywordModal(false)
         
-        // Refresh alerts list
-        await fetchUserAlerts(user?.x_user_id || user?.id)
+        // Refresh alerts list using the same user ID
+        await fetchUserAlerts(userId)
         
         // Show success modal
         setSuccessMessage('Keyword created successfully!')
@@ -350,6 +365,12 @@ export default function Dashboard() {
     if (!keywordToDelete) return
     
     try {
+      // Use x_user_id for API calls (this is the Twitter/X user ID)
+      const userId = user?.x_user_id
+      if (!userId) {
+        throw new Error('User ID not found')
+      }
+
       const response = await fetch('/api/alerts/delete', {
         method: 'DELETE',
         headers: {
@@ -357,15 +378,15 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           alertId: keywordToDelete,
-          userId: user?.x_user_id || user?.id
+          userId: userId
         })
       })
 
       const data = await response.json()
 
       if (response.ok && data.success) {
-        // Refresh alerts list
-        await fetchUserAlerts(user?.x_user_id || user?.id)
+        // Refresh alerts list using the same user ID
+        await fetchUserAlerts(userId)
         setShowDeleteModal(false)
         setKeywordToDelete(null)
       } else {
@@ -383,6 +404,12 @@ export default function Dashboard() {
     const newStatus = currentStatus === 'active' ? 'paused' : 'active'
     
     try {
+      // Use internal_id for database operations (this is the internal UUID)
+      const userId = user?.internal_id
+      if (!userId) {
+        throw new Error('User ID not found')
+      }
+
       const response = await fetch('/api/alerts/update', {
         method: 'PUT',
         headers: {
@@ -390,7 +417,7 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           alertId: alertId,
-          userId: user?.id,
+          userId: userId,
           status: newStatus
         })
       })
@@ -398,8 +425,8 @@ export default function Dashboard() {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        // Refresh alerts list
-        await fetchUserAlerts(user?.x_user_id || user?.id)
+        // Refresh alerts list using the X user ID
+        await fetchUserAlerts(user?.x_user_id)
       } else {
         throw new Error(data.error || 'Failed to update keyword')
       }
@@ -422,14 +449,19 @@ export default function Dashboard() {
       if (cookies.x_session) {
         const sessionData = JSON.parse(cookies.x_session)
         if (sessionData.user?.id) {
+          // Use the X user ID from session to fetch user data
           const response = await fetch(`/api/users/get?userId=${sessionData.user.id}`)
           if (response.ok) {
             const data = await response.json()
             if (data.success && data.user) {
-              // Update user data with fresh data from Supabase
+              // Update user data with fresh data from Supabase, maintaining ID mapping
               setUser(prevUser => ({
                 ...prevUser,
-                ...data.user
+                ...data.user,
+                // Keep the X user ID from session for API calls
+                x_user_id: sessionData.user.id,
+                // Use the internal UUID from database for database operations
+                internal_id: data.user.id
               }))
               
               // Update current plan
@@ -471,13 +503,19 @@ export default function Dashboard() {
     console.log('Downgrading from', currentPlan, 'to', plan)
     
     try {
+      // Use x_user_id for API calls (this is the Twitter/X user ID)
+      const userId = user?.x_user_id
+      if (!userId) {
+        throw new Error('User ID not found')
+      }
+
       const response = await fetch('/api/stripe/cancel-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user?.x_user_id || 'unknown',
+          userId: userId,
           targetPlan: plan // Include target plan for partial downgrades
         })
       })
@@ -514,8 +552,7 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Downgrade error:', error)
       setSuccessMessage(`Downgrade failed: ${error.message}`)
-      setShowSuccessModal(true)
-      setShowDowngradeModal(false)
+      setShowSuccessModal(false)
       setDowngradeInfo({ plan: '', message: '' })
     }
   }
@@ -696,7 +733,7 @@ export default function Dashboard() {
       console.error('Error details:', {
         message: error.message,
         plan: plan,
-        userId: user?.id,
+        userId: user?.x_user_id,
         userEmail: user?.email
       })
       alert(`Upgrade failed: ${error.message}`)
@@ -704,7 +741,9 @@ export default function Dashboard() {
   }
 
   const handleUpdateUserSetting = async (key, value) => {
-    if (!user?.id) return
+    // Use internal_id for database operations (this is the internal UUID)
+    const userId = user?.internal_id
+    if (!userId) return
 
     try {
       const response = await fetch('/api/users/update-setting', {
@@ -713,7 +752,7 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.id,
+          userId: userId,
           settingKey: key,
           settingValue: value
         })
