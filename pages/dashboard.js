@@ -1000,15 +1000,15 @@ export default function Dashboard() {
                   <div>
                     <label className="block text-white font-medium mb-2">Timezone</label>
                     <select
-                      value={user?.timezone || 'UTC'}
+                      value={user?.timezone || 'America/New_York'}
                       onChange={(e) => handleUpdateUserSetting('timezone', e.target.value)}
                       className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
                     >
-                      <option value="UTC">UTC</option>
                       <option value="America/New_York">Eastern Time (ET)</option>
                       <option value="America/Chicago">Central Time (CT)</option>
                       <option value="America/Denver">Mountain Time (MT)</option>
                       <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                      <option value="UTC">UTC</option>
                       <option value="Europe/London">London (GMT)</option>
                       <option value="Europe/Paris">Paris (CET)</option>
                       <option value="Asia/Tokyo">Tokyo (JST)</option>
@@ -1019,21 +1019,59 @@ export default function Dashboard() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-white font-medium mb-2">Quiet Hours Start</label>
-                      <input
-                        type="time"
-                        value={user?.quiet_hours_start || '22:00'}
-                        onChange={(e) => handleUpdateUserSetting('quiet_hours_start', e.target.value)}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
-                      />
+                      <div className="space-y-2">
+                        <input
+                          type="time"
+                          value={user?.quiet_hours_start || '16:00'}
+                          onChange={(e) => handleUpdateUserSetting('quiet_hours_start', e.target.value)}
+                          className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          {['16:00', '18:00', '20:00', '22:00'].map((time) => (
+                            <button
+                              key={time}
+                              onClick={() => handleUpdateUserSetting('quiet_hours_start', time)}
+                              className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                (user?.quiet_hours_start || '16:00') === time
+                                  ? 'bg-[#16D9E3] text-black font-medium'
+                                  : 'bg-white/10 text-white/70 hover:bg-white/20'
+                              }`}
+                            >
+                              {time === '16:00' ? '4:00 PM' : 
+                               time === '18:00' ? '6:00 PM' : 
+                               time === '20:00' ? '8:00 PM' : '10:00 PM'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-white font-medium mb-2">Quiet Hours End</label>
-                      <input
-                        type="time"
-                        value={user?.quiet_hours_end || '08:00'}
-                        onChange={(e) => handleUpdateUserSetting('quiet_hours_end', e.target.value)}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
-                      />
+                      <div className="space-y-2">
+                        <input
+                          type="time"
+                          value={user?.quiet_hours_end || '08:00'}
+                          onChange={(e) => handleUpdateUserSetting('quiet_hours_end', e.target.value)}
+                          className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          {['06:00', '07:00', '08:00', '09:00'].map((time) => (
+                            <button
+                              key={time}
+                              onClick={() => handleUpdateUserSetting('quiet_hours_end', time)}
+                              className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                (user?.quiet_hours_end || '08:00') === time
+                                  ? 'bg-[#16D9E3] text-black font-medium'
+                                  : 'bg-white/10 text-white/70 hover:bg-white/20'
+                              }`}
+                            >
+                              {time === '06:00' ? '6:00 AM' : 
+                               time === '07:00' ? '7:00 AM' : 
+                               time === '08:00' ? '8:00 AM' : '9:00 AM'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
