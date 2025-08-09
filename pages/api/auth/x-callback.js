@@ -1,7 +1,4 @@
 import crypto from 'crypto'
-import { redisGet, redisSet, redisDel, redisLpush, REDIS_TTLS } from '../../../lib/redis'
-
-const APP_BASE_URL = process.env.APP_BASE_URL || 'https://earlyreply.app'
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -60,23 +57,7 @@ export default async function handler(req, res) {
       }
       console.log('State verification passed')
 
-      // Check if this code has already been used (idempotency)
-      const codeKey = `oauth_code:${code}`
-      const codeUsed = await redisGet(codeKey)
-      if (codeUsed) {
-        console.log('Code already used, preventing duplicate processing')
-        res.redirect('/?error=code_already_used')
-        return
-      }
 
-      // Mark code as used immediately (10 minute TTL)
-      await redisSet(codeKey, { used: true, timestamp: Date.now() }, REDIS_TTLS.CODE)
-      console.log('Code marked as used for idempotency protection')
-
-      // Invalidate state immediately
-      const stateKey = `oauth_state:${state}`
-      await redisDel(stateKey)
-      console.log('State invalidated to prevent reuse')
 
       // Exchange code for token
       console.log('Exchanging code for token...')
@@ -131,68 +112,67 @@ export default async function handler(req, res) {
         scope: tokenData.scope
       })
 
-      // Generate session ID
-      const sessionId = crypto.randomBytes(32).toString('hex')
-      console.log('Generated session ID:', sessionId)
+      // Simple approach - just try once and handle gracefully
+      console.log('Making single API call to get user info...')
+      const userResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      })
 
-      // Store access token in Redis (10 minute TTL)
-      const tokenKey = `oauth_token:${sessionId}`
-      await redisSet(tokenKey, {
-        access_token: tokenData.access_token,
-        token_type: tokenData.token_type,
-        expires_in: tokenData.expires_in,
-        scope: tokenData.scope,
-        created_at: Date.now()
-      }, REDIS_TTLS.TOKEN)
-      console.log('Access token stored in Redis')
+      console.log('User response status:', userResponse.status)
 
-      // Create minimal session data (without profile)
-      const sessionData = {
-        sessionId: sessionId,
-        authenticated: true,
-        profile_fetching: true
+      let userData
+      if (!userResponse.ok) {
+        const errorText = await userResponse.text()
+        console.error('X API failed:', errorText)
+        
+        // If rate limited, just redirect with a simple message
+        if (userResponse.status === 429) {
+          console.log('Rate limited, redirecting to try again later')
+          res.redirect('/?error=api_rate_limited')
+          return
+        }
+        
+        // For other errors, throw to be caught by the outer try-catch
+        throw new Error(`X API failed with status ${userResponse.status}: ${errorText}`)
+      } else {
+        userData = await userResponse.json()
+        console.log('User data from X API:', userData)
       }
 
-      // Set session cookies
+      // Create session data
+      const sessionData = {
+        user: {
+          id: userData.data.id,
+          name: userData.data.name,
+          username: userData.data.username,
+          image: userData.data.profile_image_url,
+          verified: userData.data.verified,
+          handle: userData.data.username
+        },
+        accessToken: tokenData.access_token
+      }
+
+      // Set session cookies and clear OAuth cookies
       const host = req.headers.host || 'localhost:3000'
       const protocol = host.includes('localhost') ? 'http' : 'https'
       const secureFlag = protocol === 'https' ? '; Secure' : ''
       
       res.setHeader('Set-Cookie', [
-        // Session cookie
+        // HttpOnly cookie for security (server-side access)
+        `x_session_secure=${JSON.stringify(sessionData)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${24 * 60 * 60}${secureFlag}`,
+        // Non-HttpOnly cookie for client-side access
         `x_session=${JSON.stringify(sessionData)}; Path=/; SameSite=Lax; Max-Age=${24 * 60 * 60}${secureFlag}`,
-        // Clear OAuth cookies
+        `x_user_id=${userData.data.id}; Path=/; SameSite=Lax; Max-Age=${24 * 60 * 60}${secureFlag}`,
         'code_verifier=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;',
         'oauth_state=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
       ])
-
-      // Enqueue background job to fetch user profile
-      const jobData = {
-        sessionId: sessionId,
-        access_token: tokenData.access_token,
-        enqueued_at: Date.now()
-      }
-
-      const jobEnqueued = await redisLpush('x_user_fetch_jobs', jobData)
-      if (jobEnqueued) {
-        console.log('User fetch job enqueued successfully')
-      } else {
-        console.error('Failed to enqueue user fetch job')
-      }
-
-      // Fire-and-forget: Trigger worker without awaiting
-      console.log('Triggering background worker...')
-      fetch(`${APP_BASE_URL}/api/workers/x-user-fetch`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.CRON_SECRET || 'internal'}`
-        }
-      }).catch(error => {
-        console.error('Background worker trigger failed:', error)
-      })
-
+      
       console.log('Authentication successful, redirecting to dashboard')
+      console.log('Session data set:', { userId: userData.data.id, username: userData.data.username })
+      // Redirect to dashboard
       res.redirect('/dashboard')
 
     } catch (error) {
