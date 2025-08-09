@@ -382,15 +382,7 @@ export default async function handler(req, res) {
 
       // Try to acquire distributed lock for this user
       const lockKey = `scan:${user.x_user_id}`
-      let lockAcquired = false
-      
-      try {
-        lockAcquired = await acquireLock(lockKey, user.id, CONFIG.LOCK_TTL_SECONDS)
-      } catch (error) {
-        console.warn(`⚠️ Distributed lock not available for user ${user.x_user_id}, proceeding without lock:`, error.message)
-        // Continue without lock if the table doesn't exist yet
-        lockAcquired = true
-      }
+      const lockAcquired = await acquireLock(lockKey, user.id, CONFIG.LOCK_TTL_SECONDS)
       
       if (!lockAcquired) {
         console.log(`🔒 User ${user.x_user_id} is already being processed, skipping`)
@@ -426,22 +418,10 @@ export default async function handler(req, res) {
             console.log(`🔍 Processing rule: "${rule.query}" for user ${user.x_user_id}`)
             
             // Get or create rule state for since_id tracking
-            let ruleState = null
-            let sinceId = null
+            const { data: ruleState } = await supabaseAdmin
+              .rpc('get_or_create_rule_state', { rule_uuid: rule.id })
             
-            try {
-              const { data, error } = await supabaseAdmin
-                .rpc('get_or_create_rule_state', { rule_uuid: rule.id })
-              
-              if (error) {
-                console.warn(`⚠️ Could not get rule state for rule ${rule.id}, proceeding without since_id:`, error.message)
-              } else {
-                ruleState = data
-                sinceId = data?.since_id
-              }
-            } catch (error) {
-              console.warn(`⚠️ Rule state function not available, proceeding without since_id:`, error.message)
-            }
+            const sinceId = ruleState?.since_id
             
             // Build query with filters
             const query = buildQuery(rule.query, rule.filters || {})
@@ -498,16 +478,12 @@ export default async function handler(req, res) {
             // Update since_id to the highest tweet ID seen
             const highestTweetId = Math.max(...tweetsData.map(t => parseInt(t.id)))
             if (highestTweetId > (parseInt(sinceId) || 0)) {
-              try {
-                await supabaseAdmin
-                  .rpc('update_rule_state_since_id', { 
-                    rule_uuid: rule.id, 
-                    new_since_id: highestTweetId.toString() 
-                  })
-                console.log(`📝 Updated since_id for rule ${rule.id} to ${highestTweetId}`)
-              } catch (error) {
-                console.warn(`⚠️ Could not update since_id for rule ${rule.id}:`, error.message)
-              }
+              await supabaseAdmin
+                .rpc('update_rule_state_since_id', { 
+                  rule_uuid: rule.id, 
+                  new_since_id: highestTweetId.toString() 
+                })
+              console.log(`📝 Updated since_id for rule ${rule.id} to ${highestTweetId}`)
             }
             
             // Take the newest tweet for immediate alert
@@ -552,16 +528,10 @@ export default async function handler(req, res) {
         // Log user summary
         console.log(`✅ User ${user.x_user_id}: processed ${userProcessed} rules, sent ${userSmsSent} alerts, calls: ${userCallsMade}, tweets: ${userTweetsReturned}`)
         
-             } finally {
-         // Always release the lock if we acquired one
-         if (lockAcquired) {
-           try {
-             await releaseLock(lockKey, user.id)
-           } catch (error) {
-             console.warn(`⚠️ Failed to release lock for user ${user.x_user_id}:`, error.message)
-           }
-         }
-       }
+      } finally {
+        // Always release the lock
+        await releaseLock(lockKey, user.id)
+      }
     }
 
     // Log cycle summary
