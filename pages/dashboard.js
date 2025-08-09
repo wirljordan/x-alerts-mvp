@@ -572,6 +572,32 @@ export default function Dashboard() {
     }
   }
 
+  const testCronJob = async () => {
+    setIsTestingMonitoring(true)
+    try {
+      const response = await fetch('/api/test/cron', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      const data = await response.json()
+      
+      if (response.ok) {
+        setSuccessMessage(`Cron job test completed! ${data.message} Processed: ${data.totalProcessed}, SMS sent: ${data.totalSmsSent}`)
+      } else {
+        setSuccessMessage(`Cron job test failed: ${data.error}`)
+      }
+      setShowSuccessModal(true)
+    } catch (error) {
+      console.error('Error testing cron job:', error)
+      setSuccessMessage('Error testing cron job: ' + error.message)
+      setShowSuccessModal(true)
+    } finally {
+      setIsTestingMonitoring(false)
+    }
+  }
+
   const handleUpgrade = async (plan) => {
     if (plan === currentPlan) return
     
@@ -852,6 +878,17 @@ export default function Dashboard() {
                     }`}
                   >
                     {isTestingMonitoring ? 'Testing...' : 'Test Monitoring'}
+                  </button>
+                  <button
+                    onClick={testCronJob}
+                    disabled={isTestingMonitoring}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                      isTestingMonitoring
+                        ? 'bg-white/20 text-white/40 cursor-not-allowed'
+                        : 'bg-purple-500 hover:bg-purple-600 text-white'
+                    }`}
+                  >
+                    {isTestingMonitoring ? 'Testing...' : 'Test Cron Job'}
                   </button>
                 </div>
 
