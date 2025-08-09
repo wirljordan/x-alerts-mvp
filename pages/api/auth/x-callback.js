@@ -117,7 +117,7 @@ export default async function handler(req, res) {
       console.log('Fetching user info from X API...')
       
       // Try v2 API first
-      const userResponse = await fetch('https://api.x.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
+      const userResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,
           'Content-Type': 'application/json'
@@ -133,7 +133,7 @@ export default async function handler(req, res) {
         
         // Try v1.1 API as fallback
         console.log('Trying v1.1 API endpoint...')
-        const v1UserResponse = await fetch('https://api.x.com/1.1/account/verify_credentials.json', {
+        const v1UserResponse = await fetch('https://api.twitter.com/1.1/account/verify_credentials.json', {
           headers: {
             'Authorization': `Bearer ${tokenData.access_token}`,
             'Content-Type': 'application/json'
@@ -156,17 +156,7 @@ export default async function handler(req, res) {
         } else {
           const v1ErrorText = await v1UserResponse.text()
           console.error('v1.1 API also failed:', v1ErrorText)
-          console.log('Using fallback user data')
-          // Fallback user data if API call fails
-          userData = {
-            data: {
-              id: 'unknown',
-              name: 'X User',
-              username: 'xuser',
-              profile_image_url: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
-              verified: false
-            }
-          }
+          throw new Error(`Both v2 and v1.1 APIs failed. v2: ${userResponse.status}, v1.1: ${v1UserResponse.status}`)
         }
       } else {
         userData = await userResponse.json()
