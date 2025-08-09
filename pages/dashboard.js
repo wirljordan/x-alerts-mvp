@@ -182,7 +182,8 @@ export default function Dashboard() {
                   setCurrentPlan(data.user.plan || 'free')
                   
                   // Update usage limits from database (handle both old SMS and new alerts fields)
-                  const alertsUsed = data.user.alerts_used !== undefined ? data.user.alerts_used : (data.user.sms_used || 0)
+                  // Prioritize sms_used since alerts_used might be outdated during migration
+                  const alertsUsed = data.user.sms_used !== undefined ? data.user.sms_used : (data.user.alerts_used || 0)
                   let alertsLimit = data.user.alerts_limit
                   
                   // Debug logging to see what values we're getting
@@ -436,7 +437,8 @@ export default function Dashboard() {
               console.log('User data refreshed, plan updated to:', data.user.plan)
               
               // Update usage limits from database (handle both old SMS and new alerts fields)
-              const alertsUsed = data.user.alerts_used !== undefined ? data.user.alerts_used : (data.user.sms_used || 0)
+              // Prioritize sms_used since alerts_used might be outdated during migration
+              const alertsUsed = data.user.sms_used !== undefined ? data.user.sms_used : (data.user.alerts_used || 0)
               let alertsLimit = data.user.alerts_limit
               
               // If alerts_limit is not set (migration not run), calculate from plan
