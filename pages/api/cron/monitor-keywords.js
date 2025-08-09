@@ -3,14 +3,19 @@ import { searchTweetsByMultipleKeywords, formatTweetForSMS, findMatchingKeyword 
 import { sendSMSNotification, formatKeywordAlertSMS, formatPhoneNumber } from '../../../lib/twilio'
 
 export default async function handler(req, res) {
-  // Verify this is a legitimate cron request (optional security)
+  // Verify this is a legitimate cron request (optional security for Vercel cron)
   const authHeader = req.headers.authorization
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = process.env.CRON_SECRET
+  
+  // Only check auth if CRON_SECRET is set (for testing, it might not be set)
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    console.log('⚠️ Unauthorized cron request - missing or invalid CRON_SECRET')
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+  // Accept both GET and POST methods for Vercel cron compatibility
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed. Use GET or POST.' })
   }
 
   try {
