@@ -1019,60 +1019,45 @@ export default function Dashboard() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-white font-medium mb-2">Quiet Hours Start</label>
-                      <div className="space-y-2">
-                        <input
-                          type="time"
-                          value={user?.quiet_hours_start || '16:00'}
-                          onChange={(e) => handleUpdateUserSetting('quiet_hours_start', e.target.value)}
-                          className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
-                        />
-                        <div className="flex flex-wrap gap-2">
-                          {['16:00', '18:00', '20:00', '22:00'].map((time) => (
-                            <button
-                              key={time}
-                              onClick={() => handleUpdateUserSetting('quiet_hours_start', time)}
-                              className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                                (user?.quiet_hours_start || '16:00') === time
-                                  ? 'bg-[#16D9E3] text-black font-medium'
-                                  : 'bg-white/10 text-white/70 hover:bg-white/20'
-                              }`}
-                            >
-                              {time === '16:00' ? '4:00 PM' : 
-                               time === '18:00' ? '6:00 PM' : 
-                               time === '20:00' ? '8:00 PM' : '10:00 PM'}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      <input
+                        type="time"
+                        value={user?.quiet_hours_start || '16:00'}
+                        onChange={(e) => handleUpdateUserSetting('quiet_hours_start', e.target.value)}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
+                      />
+                      <p className="text-white/40 text-xs mt-1">4:00 PM (when you want to stop SMS)</p>
                     </div>
                     <div>
                       <label className="block text-white font-medium mb-2">Quiet Hours End</label>
-                      <div className="space-y-2">
-                        <input
-                          type="time"
-                          value={user?.quiet_hours_end || '08:00'}
-                          onChange={(e) => handleUpdateUserSetting('quiet_hours_end', e.target.value)}
-                          className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
-                        />
-                        <div className="flex flex-wrap gap-2">
-                          {['06:00', '07:00', '08:00', '09:00'].map((time) => (
-                            <button
-                              key={time}
-                              onClick={() => handleUpdateUserSetting('quiet_hours_end', time)}
-                              className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                                (user?.quiet_hours_end || '08:00') === time
-                                  ? 'bg-[#16D9E3] text-black font-medium'
-                                  : 'bg-white/10 text-white/70 hover:bg-white/20'
-                              }`}
-                            >
-                              {time === '06:00' ? '6:00 AM' : 
-                               time === '07:00' ? '7:00 AM' : 
-                               time === '08:00' ? '8:00 AM' : '9:00 AM'}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      <input
+                        type="time"
+                        value={user?.quiet_hours_end || '08:00'}
+                        onChange={(e) => handleUpdateUserSetting('quiet_hours_end', e.target.value)}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
+                      />
+                      <p className="text-white/40 text-xs mt-1">8:00 AM (when SMS resume)</p>
                     </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => {
+                        handleUpdateUserSetting('quiet_hours_start', '16:00');
+                        handleUpdateUserSetting('quiet_hours_end', '08:00');
+                      }}
+                      className="px-4 py-2 bg-[#16D9E3]/20 border border-[#16D9E3]/30 rounded-lg text-[#16D9E3] hover:bg-[#16D9E3]/30 transition-colors text-sm"
+                    >
+                      Set to 4 PM - 8 AM
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleUpdateUserSetting('quiet_hours_start', '22:00');
+                        handleUpdateUserSetting('quiet_hours_end', '08:00');
+                      }}
+                      className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white/60 hover:text-white transition-colors text-sm"
+                    >
+                      Set to 10 PM - 8 AM
+                    </button>
                   </div>
                   
                   <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
