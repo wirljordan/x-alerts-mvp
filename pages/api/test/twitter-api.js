@@ -8,8 +8,8 @@ export default async function handler(req, res) {
   try {
     console.log('🧪 Testing Twitter API integration...')
 
-    // Test with a common keyword
-    const testKeyword = 'test'
+    // Test with a more relevant keyword for better demonstration
+    const testKeyword = 'marketing'
     console.log(`Searching for tweets containing: "${testKeyword}"`)
 
     const tweetsData = await searchTweetsByKeyword(testKeyword)
@@ -24,11 +24,28 @@ export default async function handler(req, res) {
       })
     }
 
+    // Filter out irrelevant tweets for demonstration
+    const relevantTweets = tweetsData.data.filter(tweet => {
+      const text = tweet.text.toLowerCase()
+      // Look for tweets that actually mention marketing in a business context
+      return text.includes('marketing') && (
+        text.includes('business') || 
+        text.includes('growth') || 
+        text.includes('strategy') || 
+        text.includes('campaign') ||
+        text.includes('digital') ||
+        text.includes('social')
+      )
+    })
+
     res.status(200).json({
       success: true,
-      message: `Found ${tweetsData.data.length} tweets for keyword "${testKeyword}"`,
+      message: `Found ${tweetsData.data.length} tweets for keyword "${testKeyword}" (${relevantTweets.length} relevant)`,
       data: tweetsData,
-      sampleTweet: tweetsData.data[0] || null
+      relevantTweets: relevantTweets,
+      sampleTweet: relevantTweets[0] || tweetsData.data[0] || null,
+      totalFound: tweetsData.data.length,
+      relevantCount: relevantTweets.length
     })
 
   } catch (error) {
