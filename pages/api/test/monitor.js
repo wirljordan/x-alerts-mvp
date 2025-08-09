@@ -19,11 +19,9 @@ export default async function handler(req, res) {
           id,
           x_user_id,
           phone,
-          alerts_used,
-          alerts_limit,
+          plan,
           sms_used,
-          sms_limit,
-          plan
+          sms_limit
         )
       `)
       .eq('status', 'active')
@@ -50,8 +48,17 @@ export default async function handler(req, res) {
     const user = alerts[0].users // All alerts belong to the same user
 
     // Handle both old SMS and new alerts fields during transition
-    const alertsUsed = user.alerts_used !== undefined ? user.alerts_used : (user.sms_used || 0)
-    const alertsLimit = user.alerts_limit !== undefined ? user.alerts_limit : (user.sms_limit || 10)
+    const alertsUsed = user.sms_used || 0
+    let alertsLimit = 10 // Default to free plan
+
+    // Calculate limits based on plan since alerts_limit column doesn't exist yet
+    const planLimits = {
+      'free': 10,
+      'starter': 100,
+      'growth': 300,
+      'pro': 1000
+    }
+    alertsLimit = planLimits[user.plan] || 10
 
     // Check if user has alerts credits remaining - STOP BEFORE QUERY to save credits
     if (alertsUsed >= alertsLimit) {
@@ -138,9 +145,7 @@ export default async function handler(req, res) {
             
             // Update alerts usage (handle both old and new field names)
             const newAlertsUsed = alertsUsed + 1
-            const updateData = user.alerts_used !== undefined 
-              ? { alerts_used: newAlertsUsed }
-              : { sms_used: newAlertsUsed }
+            const updateData = { sms_used: newAlertsUsed }
             
             const { error: updateError } = await supabaseAdmin
               .from('users')
