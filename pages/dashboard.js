@@ -144,7 +144,19 @@ export default function Dashboard() {
                   
                   // Update usage limits from database (handle both old SMS and new alerts fields)
                   const alertsUsed = data.user.alerts_used !== undefined ? data.user.alerts_used : (data.user.sms_used || 0)
-                  const alertsLimit = data.user.alerts_limit !== undefined ? data.user.alerts_limit : (data.user.sms_limit || 10)
+                  let alertsLimit = data.user.alerts_limit
+                  
+                  // If alerts_limit is not set (migration not run), calculate from plan
+                  if (alertsLimit === undefined || alertsLimit === null) {
+                    const planLimits = {
+                      'free': 10,
+                      'starter': 100,
+                      'growth': 300,
+                      'pro': 1000
+                    }
+                    alertsLimit = planLimits[data.user.plan] || 10
+                  }
+                  
                   setUsage({ used: alertsUsed, limit: alertsLimit })
                 }
               }
@@ -195,7 +207,19 @@ export default function Dashboard() {
                     
                     // Update usage limits from database (handle both old SMS and new alerts fields)
                     const alertsUsed = data.user.alerts_used !== undefined ? data.user.alerts_used : (data.user.sms_used || 0)
-                    const alertsLimit = data.user.alerts_limit !== undefined ? data.user.alerts_limit : (data.user.sms_limit || 10)
+                    let alertsLimit = data.user.alerts_limit
+                    
+                    // If alerts_limit is not set (migration not run), calculate from plan
+                    if (alertsLimit === undefined || alertsLimit === null) {
+                      const planLimits = {
+                        'free': 10,
+                        'starter': 100,
+                        'growth': 300,
+                        'pro': 1000
+                      }
+                      alertsLimit = planLimits[data.user.plan] || 10
+                    }
+                    
                     setUsage({ used: alertsUsed, limit: alertsLimit })
                     
                     // Fetch user's alerts/keywords
@@ -423,7 +447,19 @@ export default function Dashboard() {
               
               // Update usage limits from database (handle both old SMS and new alerts fields)
               const alertsUsed = data.user.alerts_used !== undefined ? data.user.alerts_used : (data.user.sms_used || 0)
-              const alertsLimit = data.user.alerts_limit !== undefined ? data.user.alerts_limit : (data.user.sms_limit || 10)
+              let alertsLimit = data.user.alerts_limit
+              
+              // If alerts_limit is not set (migration not run), calculate from plan
+              if (alertsLimit === undefined || alertsLimit === null) {
+                const planLimits = {
+                  'free': 10,
+                  'starter': 100,
+                  'growth': 300,
+                  'pro': 1000
+                }
+                alertsLimit = planLimits[data.user.plan] || 10
+              }
+              
               setUsage({ used: alertsUsed, limit: alertsLimit })
             }
           }
