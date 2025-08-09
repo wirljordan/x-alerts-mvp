@@ -1,103 +1,115 @@
+import crypto from 'crypto'
+import { redisGet, redisSet, redisDel, redisLpush, REDIS_TTLS } from '../../../lib/redis'
+
+const APP_BASE_URL = process.env.APP_BASE_URL || 'https://earlyreply.app'
+
 export default async function handler(req, res) {
-  console.log('=== X CALLBACK DEBUG ===')
-  console.log('Method:', req.method)
-  console.log('Query params:', req.query)
-  console.log('URL:', req.url)
-  
   if (req.method === 'GET') {
-    const { code, error, state } = req.query
-
-    console.log('Code from query:', code)
-    console.log('Error from query:', error)
-    console.log('State from query:', state)
-
-    if (error) {
-      console.error('OAuth error:', error)
-      return res.redirect('/?error=oauth_failed')
-    }
-
-    if (!code) {
-      console.log('No code received')
-      return res.redirect('/?error=no_code')
-    }
+    console.log('=== X CALLBACK DEBUG ===')
+    console.log('Method:', req.method)
+    console.log('Query params:', req.query)
+    console.log('URL:', req.url)
 
     try {
-      // Parse cookies properly
-      const cookies = req.headers.cookie?.split(';').reduce((acc, cookie) => {
-        const [key, value] = cookie.trim().split('=')
-        if (key && value) {
-          acc[key] = decodeURIComponent(value)
+      const { code, state, error } = req.query
+      console.log('Code from query:', code)
+      console.log('Error from query:', error)
+      console.log('State from query:', state)
+
+      // Check for OAuth errors
+      if (error) {
+        console.error('OAuth error received:', error)
+        res.redirect('/?error=oauth_error')
+        return
+      }
+
+      if (!code || !state) {
+        console.error('Missing code or state')
+        res.redirect('/?error=missing_params')
+        return
+      }
+
+      // Get OAuth cookies
+      const cookies = req.headers.cookie || ''
+      const cookieMap = {}
+      cookies.split(';').forEach(cookie => {
+        const [name, value] = cookie.trim().split('=')
+        if (name && value) {
+          cookieMap[name] = value
         }
-        return acc
-      }, {}) || {}
-
-      console.log('All cookies found:', Object.keys(cookies))
-      console.log('OAuth cookies:', {
-        code_verifier: cookies.code_verifier ? 'present' : 'missing',
-        oauth_state: cookies.oauth_state ? 'present' : 'missing'
       })
 
-      const codeVerifier = cookies.code_verifier
-      const storedState = cookies.oauth_state
+      console.log('All cookies found:', Object.keys(cookieMap))
+      const oauthCookies = {
+        code_verifier: cookieMap.code_verifier ? 'present' : 'missing',
+        oauth_state: cookieMap.oauth_state ? 'present' : 'missing'
+      }
+      console.log('OAuth cookies:', oauthCookies)
 
-      if (!codeVerifier) {
-        console.log('No code verifier found')
-        return res.redirect('/?error=no_verifier')
+      if (!cookieMap.code_verifier || !cookieMap.oauth_state) {
+        console.error('Missing OAuth cookies')
+        res.redirect('/?error=missing_cookies')
+        return
       }
 
-      if (!storedState) {
-        console.log('No stored state found')
-        return res.redirect('/?error=no_state')
+      // Validate state parameter
+      if (cookieMap.oauth_state !== state) {
+        console.error('State mismatch')
+        res.redirect('/?error=state_mismatch')
+        return
       }
-
-      // Verify state parameter for CSRF protection
-      if (state !== storedState) {
-        console.log('State mismatch:', { 
-          received: state, 
-          stored: storedState,
-          receivedLength: state?.length,
-          storedLength: storedState?.length
-        })
-        return res.redirect('/?error=state_mismatch')
-      }
-
       console.log('State verification passed')
-      console.log('Exchanging code for token...')
 
-      // Determine redirect URI for token exchange
-      const host = req.headers.host || 'localhost:3000'
-      const protocol = host.includes('localhost') ? 'http' : 'https'
-      
-      // For production, always use the non-www version to match X Developer Portal
-      let redirectUri
-      if (host.includes('earlyreply.app')) {
-        redirectUri = 'https://earlyreply.app/api/auth/x-callback'
-      } else {
-        redirectUri = `${protocol}://${host}/api/auth/x-callback`
+      // Check if this code has already been used (idempotency)
+      const codeKey = `oauth_code:${code}`
+      const codeUsed = await redisGet(codeKey)
+      if (codeUsed) {
+        console.log('Code already used, preventing duplicate processing')
+        res.redirect('/?error=code_already_used')
+        return
       }
 
-      // Debug environment variables
+      // Mark code as used immediately (10 minute TTL)
+      await redisSet(codeKey, { used: true, timestamp: Date.now() }, REDIS_TTLS.CODE)
+      console.log('Code marked as used for idempotency protection')
+
+      // Invalidate state immediately
+      const stateKey = `oauth_state:${state}`
+      await redisDel(stateKey)
+      console.log('State invalidated to prevent reuse')
+
+      // Exchange code for token
+      console.log('Exchanging code for token...')
+      const clientId = process.env.X_CLIENT_ID
+      const clientSecret = process.env.X_CLIENT_SECRET
+      const redirectUri = process.env.X_REDIRECT_URI || 'https://earlyreply.app/api/auth/x-callback'
+
       console.log('Environment check:', {
-        hasClientId: !!process.env.TWITTER_CLIENT_ID,
-        hasClientSecret: !!process.env.TWITTER_CLIENT_SECRET,
-        clientIdLength: process.env.TWITTER_CLIENT_ID?.length,
-        clientSecretLength: process.env.TWITTER_CLIENT_SECRET?.length,
-        clientIdStart: process.env.TWITTER_CLIENT_ID?.substring(0, 10),
-        clientSecretStart: process.env.TWITTER_CLIENT_SECRET?.substring(0, 10)
+        hasClientId: !!clientId,
+        hasClientSecret: !!clientSecret,
+        clientIdLength: clientId?.length,
+        clientSecretLength: clientSecret?.length,
+        clientIdStart: clientId?.substring(0, 10),
+        clientSecretStart: clientSecret?.substring(0, 10)
       })
 
-      // Exchange code for access token
-      const tokenResponse = await fetch('https://api.x.com/2/oauth2/token', {
+      if (!clientId || !clientSecret) {
+        console.error('Missing OAuth credentials')
+        res.redirect('/?error=oauth_not_configured')
+        return
+      }
+
+      const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Basic ${Buffer.from(`${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`).toString('base64')}`
+          'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
         },
         body: new URLSearchParams({
           grant_type: 'authorization_code',
           code: code,
           redirect_uri: redirectUri,
-          code_verifier: codeVerifier
+          code_verifier: cookieMap.code_verifier
         })
       })
 
@@ -106,74 +118,81 @@ export default async function handler(req, res) {
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text()
         console.error('Token exchange failed:', errorText)
-        return res.redirect('/?error=token_exchange_failed')
+        res.redirect('/?error=token_exchange_failed')
+        return
       }
 
       const tokenData = await tokenResponse.json()
       console.log('Token received successfully')
-      console.log('Token data:', tokenData)
-
-      // Get user info using the correct API endpoint
-      console.log('Fetching user info from X API...')
-      
-      // Simple approach - just try once and handle gracefully
-      console.log('Making single API call to get user info...')
-      const userResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
-        headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json'
-        }
+      console.log('Token data:', {
+        token_type: tokenData.token_type,
+        expires_in: tokenData.expires_in,
+        access_token: tokenData.access_token?.substring(0, 20) + '...',
+        scope: tokenData.scope
       })
 
-      console.log('User response status:', userResponse.status)
+      // Generate session ID
+      const sessionId = crypto.randomBytes(32).toString('hex')
+      console.log('Generated session ID:', sessionId)
 
-      let userData
-      if (!userResponse.ok) {
-        const errorText = await userResponse.text()
-        console.error('X API failed:', errorText)
-        
-        // If rate limited, just redirect with a simple message
-        if (userResponse.status === 429) {
-          console.log('Rate limited, redirecting to try again later')
-          res.redirect('/?error=api_rate_limited')
-          return
-        }
-        
-        // For other errors, throw to be caught by the outer try-catch
-        throw new Error(`X API failed with status ${userResponse.status}: ${errorText}`)
-      } else {
-        userData = await userResponse.json()
-        console.log('User data from X API:', userData)
-      }
+      // Store access token in Redis (10 minute TTL)
+      const tokenKey = `oauth_token:${sessionId}`
+      await redisSet(tokenKey, {
+        access_token: tokenData.access_token,
+        token_type: tokenData.token_type,
+        expires_in: tokenData.expires_in,
+        scope: tokenData.scope,
+        created_at: Date.now()
+      }, REDIS_TTLS.TOKEN)
+      console.log('Access token stored in Redis')
 
-      // Create session data
+      // Create minimal session data (without profile)
       const sessionData = {
-        user: {
-          id: userData.data.id,
-          name: userData.data.name,
-          username: userData.data.username,
-          image: userData.data.profile_image_url,
-          verified: userData.data.verified,
-          handle: userData.data.username
-        },
-        accessToken: tokenData.access_token
+        sessionId: sessionId,
+        authenticated: true,
+        profile_fetching: true
       }
 
-      // Set session cookies and clear OAuth cookies
+      // Set session cookies
+      const host = req.headers.host || 'localhost:3000'
+      const protocol = host.includes('localhost') ? 'http' : 'https'
       const secureFlag = protocol === 'https' ? '; Secure' : ''
+      
       res.setHeader('Set-Cookie', [
-        // HttpOnly cookie for security (server-side access)
-        `x_session_secure=${JSON.stringify(sessionData)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${24 * 60 * 60}${secureFlag}`,
-        // Non-HttpOnly cookie for client-side access
+        // Session cookie
         `x_session=${JSON.stringify(sessionData)}; Path=/; SameSite=Lax; Max-Age=${24 * 60 * 60}${secureFlag}`,
-        `x_user_id=${userData.data.id}; Path=/; SameSite=Lax; Max-Age=${24 * 60 * 60}${secureFlag}`,
+        // Clear OAuth cookies
         'code_verifier=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;',
         'oauth_state=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
       ])
-      
+
+      // Enqueue background job to fetch user profile
+      const jobData = {
+        sessionId: sessionId,
+        access_token: tokenData.access_token,
+        enqueued_at: Date.now()
+      }
+
+      const jobEnqueued = await redisLpush('x_user_fetch_jobs', jobData)
+      if (jobEnqueued) {
+        console.log('User fetch job enqueued successfully')
+      } else {
+        console.error('Failed to enqueue user fetch job')
+      }
+
+      // Fire-and-forget: Trigger worker without awaiting
+      console.log('Triggering background worker...')
+      fetch(`${APP_BASE_URL}/api/workers/x-user-fetch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CRON_SECRET || 'internal'}`
+        }
+      }).catch(error => {
+        console.error('Background worker trigger failed:', error)
+      })
+
       console.log('Authentication successful, redirecting to dashboard')
-      console.log('Session data set:', { userId: userData.data.id, username: userData.data.username })
-      // Redirect to dashboard
       res.redirect('/dashboard')
 
     } catch (error) {
