@@ -98,49 +98,88 @@ export default function Dashboard() {
         setTimeout(() => setShowSuccessMessage(false), 5000)
         // Clean up URL
         router.replace('/dashboard', undefined, { shallow: true })
-        return // Don't process other success messages
       }
       
-      // Handle Stripe success redirect
+      // Handle Stripe success
       if (router.query.success === 'true' && router.query.session_id) {
-        console.log('Stripe success detected! Setting onboarding cookie...')
-        
-        // Set onboarding completion cookie for successful payments
-        document.cookie = 'onboarding_completed=true; Path=/; Secure; SameSite=Strict; Max-Age=31536000'
-        
-        // Show success message
-        console.log('Payment successful! Session ID:', router.query.session_id)
-        setShowSuccessMessage(true)
-        
-        // Hide success message after 5 seconds
-        setTimeout(() => setShowSuccessMessage(false), 5000)
-        
-        // Refresh user data from Supabase to get updated plan
         try {
-          const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-            const [key, value] = cookie.trim().split('=')
-            if (key && value) {
-              acc[key] = decodeURIComponent(value)
-            }
-            return acc
-          }, {})
+          console.log('Stripe success detected, checking payment status...')
           
-          if (cookies.x_session) {
-            const sessionData = JSON.parse(cookies.x_session)
-            if (sessionData.user?.id) {
+          // Check if payment was successful by calling Stripe API
+          const response = await fetch('/api/stripe/webhook', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              type: 'checkout.session.completed',
+              data: {
+                object: {
+                  id: router.query.session_id,
+                  payment_status: 'paid'
+                }
+              }
+            })
+          })
+
+          if (response.ok) {
+            console.log('Payment status confirmed')
+          }
+          
+          // Refresh user data to get updated plan and limits
+          await refreshUserData()
+          
+        } catch (error) {
+          console.error('Error checking payment status:', error)
+        }
+        
+        // Clean up URL
+        router.replace('/dashboard', undefined, { shallow: true })
+      }
+    }
+
+    // Handle success messages first, then check session
+    handleSuccessMessages()
+    
+    // Small delay to ensure cookie is set if this is a Stripe success
+    setTimeout(async () => {
+      await getUserFromSession()
+    }, 100)
+  }, [router.query.success, router.query.session_id, router.query.alert_created])
+
+  // Get user from session cookie and fetch data from Supabase
+  const getUserFromSession = async () => {
+    if (typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=')
+        if (key && value) {
+          acc[key] = decodeURIComponent(value)
+        }
+        return acc
+      }, {})
+      
+      if (cookies.x_session) {
+        try {
+          const sessionData = JSON.parse(cookies.x_session)
+          setUser(sessionData.user)
+          
+          // Fetch user data from Supabase to check if they exist (database is source of truth)
+          if (sessionData.user?.id) {
+            try {
               const response = await fetch(`/api/users/get?userId=${sessionData.user.id}`)
               if (response.ok) {
                 const data = await response.json()
                 if (data.success && data.user) {
-                  // Update user data with new plan
+                  // User exists in database, they have completed onboarding
+                  console.log('User found in database:', data.user)
                   setUser(prevUser => ({
                     ...prevUser,
                     ...data.user
                   }))
                   
-                  // Update current plan
+                  // Set current plan from Supabase
+                  console.log('Setting current plan to:', data.user.plan || 'free')
                   setCurrentPlan(data.user.plan || 'free')
-                  console.log('User plan updated to:', data.user.plan)
                   
                   // Update usage limits from database (handle both old SMS and new alerts fields)
                   const alertsUsed = data.user.alerts_used !== undefined ? data.user.alerts_used : (data.user.sms_used || 0)
@@ -167,124 +206,57 @@ export default function Dashboard() {
                   }
                   
                   setUsage({ used: alertsUsed, limit: alertsLimit })
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error refreshing user data after payment:', error)
-        }
-        
-        // Clean up URL
-        router.replace('/dashboard', undefined, { shallow: true })
-      }
-    }
-
-    // Get user from session cookie and fetch data from Supabase
-    const getUserFromSession = async () => {
-      if (typeof document !== 'undefined') {
-        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-          const [key, value] = cookie.trim().split('=')
-          if (key && value) {
-            acc[key] = decodeURIComponent(value)
-          }
-          return acc
-        }, {})
-        
-        if (cookies.x_session) {
-          try {
-            const sessionData = JSON.parse(cookies.x_session)
-            setUser(sessionData.user)
-            
-            // Fetch user data from Supabase to check if they exist (database is source of truth)
-            if (sessionData.user?.id) {
-              try {
-                const response = await fetch(`/api/users/get?userId=${sessionData.user.id}`)
-                if (response.ok) {
-                  const data = await response.json()
-                  if (data.success && data.user) {
-                    // User exists in database, they have completed onboarding
-                    console.log('User found in database:', data.user)
-                    setUser(prevUser => ({
-                      ...prevUser,
-                      ...data.user
-                    }))
-                    
-                    // Set current plan from Supabase
-                    console.log('Setting current plan to:', data.user.plan || 'free')
-                    setCurrentPlan(data.user.plan || 'free')
-                    
-                    // Update usage limits from database (handle both old SMS and new alerts fields)
-                    const alertsUsed = data.user.alerts_used !== undefined ? data.user.alerts_used : (data.user.sms_used || 0)
-                    let alertsLimit = data.user.alerts_limit
-                    
-                    // Debug logging to see what values we're getting
-                    console.log('🔍 Debug SMS usage:', {
-                      alerts_used: data.user.alerts_used,
-                      sms_used: data.user.sms_used,
-                      final_alertsUsed: alertsUsed,
-                      alerts_limit: data.user.alerts_limit,
-                      plan: data.user.plan
-                    })
-                    
-                    // If alerts_limit is not set (migration not run), calculate from plan
-                    if (alertsLimit === undefined || alertsLimit === null) {
-                      const planLimits = {
-                        'free': 10,
-                        'starter': 100,
-                        'growth': 300,
-                        'pro': 1000
-                      }
-                      alertsLimit = planLimits[data.user.plan] || 10
-                    }
-                    
-                    setUsage({ used: alertsUsed, limit: alertsLimit })
-                    
-                    // Fetch user's alerts/keywords
-                    await fetchUserAlerts(sessionData.user.id)
-                  } else {
-                    // User doesn't exist in database, redirect to onboarding
-                    console.log('User not found in database, redirecting to onboarding')
-                    router.push('/onboarding')
-                    return
-                  }
+                  
+                  // Fetch user's alerts/keywords
+                  await fetchUserAlerts(sessionData.user.id)
                 } else {
                   // User doesn't exist in database, redirect to onboarding
                   console.log('User not found in database, redirecting to onboarding')
                   router.push('/onboarding')
                   return
                 }
-              } catch (error) {
-                console.error('Error fetching user data from Supabase:', error)
-                // On error, redirect to onboarding to be safe
+              } else {
+                // User doesn't exist in database, redirect to onboarding
+                console.log('User not found in database, redirecting to onboarding')
                 router.push('/onboarding')
                 return
               }
-            } else {
-              // No user ID, redirect to onboarding
-              console.log('No user ID in session, redirecting to onboarding')
+            } catch (error) {
+              console.error('Error fetching user data from Supabase:', error)
+              // On error, redirect to onboarding to be safe
               router.push('/onboarding')
               return
             }
-          } catch (error) {
-            console.error('Error parsing session:', error)
-            router.push('/?error=invalid_session')
+          } else {
+            // No user ID, redirect to onboarding
+            console.log('No user ID in session, redirecting to onboarding')
+            router.push('/onboarding')
+            return
           }
-        } else {
-          router.push('/?error=no_session')
+        } catch (error) {
+          console.error('Error parsing session:', error)
+          router.push('/?error=invalid_session')
         }
         setIsLoading(false)
+      } else {
+        router.push('/?error=no_session')
       }
     }
+  }
 
-    // Handle success messages first, then check session
-    handleSuccessMessages()
+  // Force refresh user data on component mount to ensure latest SMS usage
+  useEffect(() => {
+    const forceRefreshData = async () => {
+      if (user?.id) {
+        console.log('🔄 Force refreshing user data on component mount...')
+        await refreshUserData()
+      }
+    }
     
-    // Small delay to ensure cookie is set if this is a Stripe success
-    setTimeout(async () => {
-      await getUserFromSession()
-    }, 100)
-  }, [router.query.success, router.query.session_id, router.query.alert_created])
+    // Small delay to ensure user data is loaded first
+    const timer = setTimeout(forceRefreshData, 500)
+    return () => clearTimeout(timer)
+  }, [user?.id])
 
   const handleSignOut = () => {
     setShowSignOutModal(true)
@@ -789,16 +761,6 @@ export default function Dashboard() {
             <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
               <div className="flex items-center justify-between mb-4 lg:mb-6">
                 <h2 className="text-lg lg:text-2xl font-semibold text-white">Usage</h2>
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm lg:text-base text-white/60">{usage.used} SMS sent</span>
-                  <button
-                    onClick={refreshUserData}
-                    className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 text-white rounded transition-colors"
-                    title="Refresh usage data"
-                  >
-                    🔄
-                  </button>
-                </div>
               </div>
               
               {/* Progress Bar */}
