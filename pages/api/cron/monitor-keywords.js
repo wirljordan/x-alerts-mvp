@@ -1,15 +1,15 @@
 import { supabaseAdmin } from '../../../lib/supabase'
-import { acquireLock, releaseLock } from '../../../lib/distributed-lock'
+import { searchTweetsByMultipleKeywords, formatTweetForSMS, findMatchingKeyword } from '../../../lib/twitter-api'
 import { sendSMSNotification, formatKeywordAlertSMS, formatPhoneNumber } from '../../../lib/twilio'
 
 // Configuration constants
 const CONFIG = {
-  SEARCH_SINCE_PARAM: process.env.SEARCH_SINCE_PARAM || 'since_id',
-  BACKFILL_MAX_PAGES: parseInt(process.env.BACKFILL_MAX_PAGES) || 2,
-  BACKFILL_MAX_TWEETS: parseInt(process.env.BACKFILL_MAX_TWEETS) || 6,
-  LOCK_TTL_SECONDS: parseInt(process.env.LOCK_TTL_SECONDS) || 240,
-  CREDITS_PER_TWEET: 15,
-  MAX_TWEETS_PER_RESPONSE: 50
+  MAX_RESULTS_PER_CALL: 3,
+  BACKFILL_MAX_PAGES: 4,
+  BACKFILL_MAX_TWEETS: 20,
+  BACKFILL_MAX_RUNTIME_MS: 8000,
+  TIME_WINDOW_MINUTES: 5,
+  CREDITS_PER_TWEET: 15
 }
 
 // Fisher-Yates shuffle with deterministic seed
@@ -160,95 +160,44 @@ async function sendAlert(user, ruleId, tweet, channel = 'sms') {
   return success
 }
 
-// Search tweets with since_id (single request, no retries)
-async function searchTweetsWithSinceId(query, sinceId, requestId, userId, ruleId) {
-  const baseUrl = `${process.env.TWITTER_API_BASE_URL}/twitter/tweet/advanced_search`
-  
-  // Build URL with since_id parameter
-  let url = `${baseUrl}?query=${encodeURIComponent(query)}`
-  if (sinceId) {
-    url += `&${CONFIG.SEARCH_SINCE_PARAM}=${sinceId}`
-  }
-  
-  console.log(`🔍 [${requestId}] User ${userId}, Rule ${ruleId}: ${url}`)
-  
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'x-api-key': process.env.TWITTER_API_KEY,
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (!response.ok) {
-      console.error(`❌ [${requestId}] User ${userId}, Rule ${ruleId}: API call failed with status ${response.status}`)
-      return { data: [], error: `HTTP ${response.status}` }
-    }
-
-    const data = await response.json()
-    const tweets = data.tweets || []
-    
-    // Safety rail: abort if provider returns too many tweets
-    if (tweets.length > CONFIG.MAX_TWEETS_PER_RESPONSE) {
-      console.warn(`🚨 [${requestId}] User ${userId}, Rule ${ruleId}: HUGE_PAGE_WARNING - ${tweets.length} tweets returned, aborting backfill`)
-      return { data: tweets.slice(0, CONFIG.MAX_TWEETS_PER_RESPONSE), error: 'HUGE_PAGE_WARNING' }
-    }
-    
-    console.log(`✅ [${requestId}] User ${userId}, Rule ${ruleId}: ${tweets.length} tweets returned, credits_est: ${tweets.length * CONFIG.CREDITS_PER_TWEET}`)
-    
-    return { data: tweets, error: null }
-    
-  } catch (error) {
-    console.error(`❌ [${requestId}] User ${userId}, Rule ${ruleId}: API call error:`, error.message)
-    return { data: [], error: error.message }
-  }
-}
-
-// Backfill worker (only runs if rule hit)
-async function backfillWorker(user, ruleId, initialTweets, seenTweetIds, sinceId, requestId) {
+// Backfill worker
+async function backfillWorker(user, ruleId, initialTweets, seenTweetIds) {
   // Check quiet hours before starting backfill
   if (isInQuietHours(user)) {
-    console.log(`😴 [${requestId}] User ${user.x_user_id} is in quiet hours, skipping backfill for rule ${ruleId}`)
+    console.log(`😴 User ${user.x_user_id} is in quiet hours, skipping backfill for rule ${ruleId}`)
     return initialTweets.length
   }
 
+  const startTime = Date.now()
   let totalTweets = initialTweets.length
   let pages = 0
-  let currentSinceId = sinceId
   
-  console.log(`🔄 [${requestId}] Starting backfill for rule ${ruleId}, since_id: ${currentSinceId}`)
+  console.log(`🔄 Starting backfill for rule ${ruleId}`)
   
-  while (pages < CONFIG.BACKFILL_MAX_PAGES && totalTweets < CONFIG.BACKFILL_MAX_TWEETS) {
+  while (pages < CONFIG.BACKFILL_MAX_PAGES && 
+         totalTweets < CONFIG.BACKFILL_MAX_TWEETS && 
+         (Date.now() - startTime) < CONFIG.BACKFILL_MAX_RUNTIME_MS) {
+    
     try {
       // Get the oldest tweet from current batch for pagination
       const oldestTweet = initialTweets[initialTweets.length - 1]
       if (!oldestTweet) break
       
-      // Use the oldest tweet ID as since_id for next call
-      const nextSinceId = oldestTweet.id
-      
-      const { data: tweetsData, error } = await searchTweetsWithSinceId(
-        oldestTweet.keyword, 
-        nextSinceId, 
-        requestId, 
-        user.x_user_id, 
-        ruleId
+      const tweetsData = await searchTweetsByMultipleKeywords(
+        [initialTweets[0].keyword], 
+        oldestTweet.id, 
+        CONFIG.MAX_RESULTS_PER_CALL
       )
       
-      if (error === 'HUGE_PAGE_WARNING') {
-        console.log(`🚨 [${requestId}] Backfill aborted due to huge page size`)
+      if (!tweetsData.data || tweetsData.data.length === 0) {
+        console.log(`📄 Backfill page ${pages + 1}: No more tweets`)
         break
       }
       
-      if (!tweetsData || tweetsData.length === 0) {
-        console.log(`📄 [${requestId}] Backfill page ${pages + 1}: No more tweets`)
-        break
-      }
-      
-      const newTweets = tweetsData.filter(tweet => !seenTweetIds.has(tweet.id))
+      const newTweets = tweetsData.data.filter(tweet => !seenTweetIds.has(tweet.id))
       
       if (newTweets.length === 0) {
-        console.log(`📄 [${requestId}] Backfill page ${pages + 1}: All tweets already seen`)
+        console.log(`📄 Backfill page ${pages + 1}: All tweets already seen`)
         break
       }
       
@@ -261,31 +210,33 @@ async function backfillWorker(user, ruleId, initialTweets, seenTweetIds, sinceId
       totalTweets += newTweets.length
       pages++
       
-      console.log(`📄 [${requestId}] Backfill page ${pages}: Found ${newTweets.length} new tweets`)
+      console.log(`📄 Backfill page ${pages}: Found ${newTweets.length} new tweets`)
       
       // Small delay to respect rate limits
       await new Promise(resolve => setTimeout(resolve, 1000))
       
     } catch (error) {
-      console.error(`❌ [${requestId}] Backfill error on page ${pages + 1}:`, error)
+      console.error(`❌ Backfill error on page ${pages + 1}:`, error)
       break
     }
   }
   
-  console.log(`✅ [${requestId}] Backfill completed: ${pages} pages, ${totalTweets} total tweets`)
+  console.log(`✅ Backfill completed: ${pages} pages, ${totalTweets} total tweets`)
   return totalTweets
 }
 
 export default async function handler(req, res) {
-  // Verify this is a legitimate cron request
+  // Verify this is a legitimate cron request (optional security for Vercel cron)
   const authHeader = req.headers.authorization
   const cronSecret = process.env.CRON_SECRET
   
+  // Only check auth if CRON_SECRET is set (for testing, it might not be set)
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     console.log('⚠️ Unauthorized cron request - missing or invalid CRON_SECRET')
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
+  // Accept both GET and POST methods for Vercel cron compatibility
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed. Use GET or POST.' })
   }
@@ -345,12 +296,9 @@ export default async function handler(req, res) {
 
     let totalProcessed = 0
     let totalSmsSent = 0
-    let totalCallsMade = 0
-    let totalRulesScanned = 0
-    let totalTweetsReturned = 0
     const results = []
 
-    // Process each user sequentially (no Promise.all)
+    // Process each user
     for (const [userId, userData] of Object.entries(userRules)) {
       const { user, rules } = userData
       
@@ -376,177 +324,120 @@ export default async function handler(req, res) {
       // Check quiet hours - skip entire processing if user is in quiet hours
       const inQuietHours = isInQuietHours(user)
       if (inQuietHours) {
-        console.log(`😴 User ${user.x_user_id} is in quiet hours, skipping all processing`)
+        console.log(`😴 User ${user.x_user_id} is in quiet hours, skipping all processing (no API calls or SMS)`)
         continue
       }
 
-      // Try to acquire distributed lock for this user
-      const lockKey = `scan:${user.x_user_id}`
-      const lockAcquired = await acquireLock(lockKey, user.id, CONFIG.LOCK_TTL_SECONDS)
+      // Generate deterministic seed for current minute
+      const seed = generateSeed(userId)
       
-      if (!lockAcquired) {
-        console.log(`🔒 User ${user.x_user_id} is already being processed, skipping`)
-        continue
-      }
+      // Shuffle rules uniformly
+      const shuffledRules = shuffleWithSeed(rules, seed)
+      console.log(`🎲 Shuffled ${shuffledRules.length} rules for user ${user.x_user_id} (seed: ${seed})`)
 
-      try {
-        // Generate deterministic seed for current minute
-        const seed = generateSeed(userId)
-        
-        // Shuffle rules uniformly
-        const shuffledRules = shuffleWithSeed(rules, seed)
-        console.log(`🎲 Shuffled ${shuffledRules.length} rules for user ${user.x_user_id} (seed: ${seed})`)
+      // Calculate time window (5 minutes ago to now)
+      const now = new Date()
+      const fiveMinutesAgo = new Date(now.getTime() - CONFIG.TIME_WINDOW_MINUTES * 60 * 1000)
+      
+      let userProcessed = 0
+      let userSmsSent = 0
+      let foundMatch = false
 
-        let userProcessed = 0
-        let userSmsSent = 0
-        let userCallsMade = 0
-        let userRulesScanned = 0
-        let userTweetsReturned = 0
-        let foundMatch = false
-
-        // Process rules in shuffled order sequentially
-        for (const rule of shuffledRules) {
-          if (foundMatch) {
-            console.log(`⏹️ Stopping early for user ${user.x_user_id} - match found`)
-            break
-          }
-
-          try {
-            userRulesScanned++
-            totalRulesScanned++
-            
-            console.log(`🔍 Processing rule: "${rule.query}" for user ${user.x_user_id}`)
-            
-            // Get or create rule state for since_id tracking
-            const { data: ruleState } = await supabaseAdmin
-              .rpc('get_or_create_rule_state', { rule_uuid: rule.id })
-            
-            const sinceId = ruleState?.since_id
-            
-            // Build query with filters
-            const query = buildQuery(rule.query, rule.filters || {})
-            
-            // Search for tweets with since_id (single request, no retries)
-            const requestId = `${user.x_user_id}-${rule.id}-${Date.now()}`
-            const { data: tweetsData, error } = await searchTweetsWithSinceId(
-              query, 
-              sinceId, 
-              requestId, 
-              user.x_user_id, 
-              rule.id
-            )
-            
-            userCallsMade++
-            totalCallsMade++
-            
-            if (error) {
-              console.log(`📭 Error for rule "${rule.query}": ${error}`)
-              await logCost(rule.id, 0)
-              continue
-            }
-
-            if (!tweetsData || tweetsData.length === 0) {
-              console.log(`📭 No tweets found for rule "${rule.query}"`)
-              await logCost(rule.id, 0)
-              continue
-            }
-
-            userTweetsReturned += tweetsData.length
-            totalTweetsReturned += tweetsData.length
-
-            // Filter out already seen tweets
-            const newTweets = []
-            for (const tweet of tweetsData) {
-              const seen = await isTweetSeen(rule.id, tweet.id)
-              if (!seen) {
-                newTweets.push({
-                  ...tweet,
-                  keyword: rule.query
-                })
-                await markTweetSeen(rule.id, tweet.id)
-              }
-            }
-
-            if (newTweets.length === 0) {
-              console.log(`👁️ All tweets already seen for rule "${rule.query}"`)
-              await logCost(rule.id, tweetsData.length)
-              continue
-            }
-
-            console.log(`✅ Found ${newTweets.length} new tweets for rule "${rule.query}"`)
-            
-            // Update since_id to the highest tweet ID seen
-            const highestTweetId = Math.max(...tweetsData.map(t => parseInt(t.id)))
-            if (highestTweetId > (parseInt(sinceId) || 0)) {
-              await supabaseAdmin
-                .rpc('update_rule_state_since_id', { 
-                  rule_uuid: rule.id, 
-                  new_since_id: highestTweetId.toString() 
-                })
-              console.log(`📝 Updated since_id for rule ${rule.id} to ${highestTweetId}`)
-            }
-            
-            // Take the newest tweet for immediate alert
-            const newestTweet = newTweets[0]
-            
-            // Send immediate alert
-            const alertSent = await sendAlert(user, rule.id, newestTweet, user.delivery_mode || 'sms')
-            if (alertSent) {
-              userSmsSent++
-              totalSmsSent++
-            }
-
-            // Log the cost
-            await logCost(rule.id, tweetsData.length)
-
-            // Store results for backfill
-            results.push({
-              userId: user.x_user_id,
-              ruleId: rule.id,
-              ruleQuery: rule.query,
-              tweets: newTweets,
-              timestamp: new Date().toISOString()
-            })
-
-            // Start backfill worker (non-blocking) only if rule hit
-            const seenTweetIds = new Set(newTweets.map(t => t.id))
-            backfillWorker(user, rule.id, newTweets, seenTweetIds, highestTweetId.toString(), requestId).catch(error => {
-              console.error(`❌ Backfill worker error for rule ${rule.id}:`, error)
-            })
-
-            foundMatch = true
-            userProcessed++
-
-          } catch (error) {
-            console.error(`❌ Error processing rule "${rule.query}":`, error)
-            await logCost(rule.id, 0)
-          }
+      // Process rules in shuffled order
+      for (const rule of shuffledRules) {
+        if (foundMatch) {
+          console.log(`⏹️ Stopping early for user ${user.x_user_id} - match found`)
+          break
         }
 
-        totalProcessed += userProcessed
-        
-        // Log user summary
-        console.log(`✅ User ${user.x_user_id}: processed ${userProcessed} rules, sent ${userSmsSent} alerts, calls: ${userCallsMade}, tweets: ${userTweetsReturned}`)
-        
-      } finally {
-        // Always release the lock
-        await releaseLock(lockKey, user.id)
+        try {
+          console.log(`🔍 Processing rule: "${rule.query}" for user ${user.x_user_id}`)
+          
+          // Build query with filters
+          const query = buildQuery(rule.query, rule.filters || {})
+          
+          // Search for tweets in the 5-minute window
+          const tweetsData = await searchTweetsByMultipleKeywords(
+            [rule.query], 
+            fiveMinutesAgo.toISOString(), 
+            CONFIG.MAX_RESULTS_PER_CALL
+          )
+
+          if (!tweetsData.data || tweetsData.data.length === 0) {
+            console.log(`📭 No tweets found for rule "${rule.query}"`)
+            await logCost(rule.id, 0)
+            continue
+          }
+
+          // Filter out already seen tweets
+          const newTweets = []
+          for (const tweet of tweetsData.data) {
+            const seen = await isTweetSeen(rule.id, tweet.id)
+            if (!seen) {
+              newTweets.push({
+                ...tweet,
+                keyword: rule.query
+              })
+              await markTweetSeen(rule.id, tweet.id)
+            }
+          }
+
+          if (newTweets.length === 0) {
+            console.log(`👁️ All tweets already seen for rule "${rule.query}"`)
+            await logCost(rule.id, tweetsData.data.length)
+            continue
+          }
+
+          console.log(`✅ Found ${newTweets.length} new tweets for rule "${rule.query}"`)
+          
+          // Take the newest tweet for immediate alert
+          const newestTweet = newTweets[0]
+          
+          // Send immediate alert (quiet hours already checked above)
+          const alertSent = await sendAlert(user, rule.id, newestTweet, user.delivery_mode || 'sms')
+          if (alertSent) {
+            userSmsSent++
+            totalSmsSent++
+          }
+
+          // Log the cost
+          await logCost(rule.id, tweetsData.data.length)
+
+          // Store results for backfill
+          results.push({
+            userId: user.x_user_id,
+            ruleId: rule.id,
+            ruleQuery: rule.query,
+            tweets: newTweets,
+            timestamp: now.toISOString()
+          })
+
+          // Start backfill worker (non-blocking)
+          const seenTweetIds = new Set(newTweets.map(t => t.id))
+          backfillWorker(user, rule.id, newTweets, seenTweetIds).catch(error => {
+            console.error(`❌ Backfill worker error for rule ${rule.id}:`, error)
+          })
+
+          foundMatch = true
+          userProcessed++
+
+        } catch (error) {
+          console.error(`❌ Error processing rule "${rule.query}":`, error)
+          await logCost(rule.id, 0)
+        }
       }
+
+      totalProcessed += userProcessed
+      console.log(`✅ User ${user.x_user_id}: processed ${userProcessed} rules, sent ${userSmsSent} alerts`)
     }
 
-    // Log cycle summary
-    const estimatedCost = (totalTweetsReturned * CONFIG.CREDITS_PER_TWEET) / 100000
-    console.log(`🎯 Cron job completed: calls_made: ${totalCallsMade}, rules_scanned: ${totalRulesScanned}, tweets_returned_total: ${totalTweetsReturned}, $estimated: $${estimatedCost.toFixed(4)}`)
+    console.log(`🎯 Cron job completed: ${totalProcessed} rules processed, ${totalSmsSent} alerts sent`)
 
     return res.status(200).json({
       success: true,
       message: `Processed ${totalProcessed} rules, sent ${totalSmsSent} alerts`,
       totalProcessed,
       totalSmsSent,
-      totalCallsMade,
-      totalRulesScanned,
-      totalTweetsReturned,
-      estimatedCost: `$${estimatedCost.toFixed(4)}`,
       results,
       timestamp: new Date().toISOString()
     })
