@@ -122,16 +122,47 @@ export default async function handler(req, res) {
           const mappedPlan = planMapping[plan] || 'free'
           console.log('Plan mapping:', plan, '->', mappedPlan)
 
-          // Calculate SMS limits based on plan
-          const smsLimits = {
-            'free': 25,
-            'starter': 300,
-            'growth': 1000,
-            'pro': 3000
+          // Get keyword and SMS limits based on plan
+          function getKeywordLimit(plan) {
+            switch (plan) {
+              case 'free':
+                return 1
+              case 'starter':
+                return 3
+              case 'growth':
+                return 10
+              case 'pro':
+                return 30
+              default:
+                return 1
+            }
           }
 
-          const smsLimit = smsLimits[plan] || 25
-          console.log('SMS limit for plan:', plan, '=', smsLimit)
+          function getAlertsLimit(plan) {
+            switch (plan) {
+              case 'free':
+                return 10
+              case 'starter':
+                return 100
+              case 'growth':
+                return 300
+              case 'pro':
+                return 1000
+              default:
+                return 10
+            }
+          }
+
+          // Calculate alerts limits based on plan
+          const alertsLimits = {
+            'free': 10,
+            'starter': 100,
+            'growth': 300,
+            'pro': 1000
+          }
+
+          const alertsLimit = alertsLimits[plan] || 10
+          console.log('Alerts limit for plan:', plan, '=', alertsLimit)
 
           // Try to find user by x_user_id first, then by internal UUID id if needed
           let userData = null
@@ -148,7 +179,7 @@ export default async function handler(req, res) {
               .from('users')
               .update({
                 plan: mappedPlan,
-                sms_limit: smsLimit
+                alerts_limit: alertsLimit
               })
               .eq('x_user_id', userId)
               .select()
@@ -162,7 +193,7 @@ export default async function handler(req, res) {
               .from('users')
               .update({
                 plan: mappedPlan,
-                sms_limit: smsLimit
+                alerts_limit: alertsLimit
               })
               .eq('id', userId)
               .select()

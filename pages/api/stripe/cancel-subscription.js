@@ -182,7 +182,7 @@ export default async function handler(req, res) {
         .from('users')
         .update({
           plan: 'free',
-          sms_limit: 25,
+          alerts_limit: 10,
           subscription_status: 'canceled'
         })
         .eq('x_user_id', userId)

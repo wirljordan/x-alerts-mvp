@@ -143,7 +143,7 @@ export default function Dashboard() {
                   console.log('User plan updated to:', data.user.plan)
                   
                   // Update usage limits from database
-                  setUsage({ used: data.user.sms_used || 0, limit: data.user.sms_limit || 25 })
+                  setUsage({ used: data.user.alerts_used || 0, limit: data.user.alerts_limit || 10 })
                 }
               }
             }
@@ -192,7 +192,7 @@ export default function Dashboard() {
                     setCurrentPlan(data.user.plan || 'free')
                     
                     // Update usage limits from database
-                    setUsage({ used: data.user.sms_used || 0, limit: data.user.sms_limit || 25 })
+                    setUsage({ used: data.user.alerts_used || 0, limit: data.user.alerts_limit || 10 })
                     
                     // Fetch user's alerts/keywords
                     await fetchUserAlerts(sessionData.user.id)
@@ -418,7 +418,7 @@ export default function Dashboard() {
               console.log('User data refreshed, plan updated to:', data.user.plan)
               
               // Update usage limits from database
-              setUsage({ used: data.user.sms_used || 0, limit: data.user.sms_limit || 25 })
+              setUsage({ used: data.user.alerts_used || 0, limit: data.user.alerts_limit || 10 })
             }
           }
         }

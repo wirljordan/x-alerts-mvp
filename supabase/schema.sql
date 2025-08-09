@@ -8,9 +8,9 @@ CREATE TABLE users (
   handle TEXT NOT NULL,
   phone TEXT,
   email TEXT,
-  plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'starter', 'pro', 'team')),
-  sms_limit INTEGER DEFAULT 25,
-  sms_used INTEGER DEFAULT 0,
+  plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'starter', 'growth', 'pro')),
+  alerts_limit INTEGER DEFAULT 10,
+  alerts_used INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -46,7 +46,7 @@ CREATE OR REPLACE FUNCTION get_user_usage(user_uuid UUID)
 RETURNS TABLE(used INTEGER, limit_count INTEGER) AS $$
 BEGIN
   RETURN QUERY
-  SELECT u.sms_used, u.sms_limit
+  SELECT u.alerts_used, u.alerts_limit
   FROM users u
   WHERE u.id = user_uuid;
 END;

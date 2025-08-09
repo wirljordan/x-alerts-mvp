@@ -22,15 +22,15 @@ export default async function handler(req, res) {
 
     const mappedPlan = planMapping[plan] || 'free'
 
-    // Calculate SMS limits based on plan
-    const smsLimits = {
-      'free': 25,
-      'starter': 300,
-      'growth': 1000,
-      'pro': 3000
+    // Calculate alerts limits based on plan
+    const alertsLimits = {
+      'free': 10,
+      'starter': 100,
+      'growth': 300,
+      'pro': 1000
     }
 
-    const smsLimit = smsLimits[plan] || 25
+    const alertsLimit = alertsLimits[plan] || 10
 
     // Upsert user data
     const { data, error } = await supabaseAdmin
@@ -41,8 +41,8 @@ export default async function handler(req, res) {
         email: email || null,
         phone: phone || null,
         plan: mappedPlan,
-        sms_limit: smsLimit,
-        sms_used: 0
+        alerts_limit: alertsLimit,
+        alerts_used: 0
       }, {
         onConflict: 'x_user_id',
         ignoreDuplicates: false

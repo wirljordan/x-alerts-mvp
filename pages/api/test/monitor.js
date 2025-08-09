@@ -19,8 +19,8 @@ export default async function handler(req, res) {
           id,
           x_user_id,
           phone,
-          sms_used,
-          sms_limit,
+          alerts_used,
+          alerts_limit,
           plan
         )
       `)
@@ -48,8 +48,8 @@ export default async function handler(req, res) {
     const user = alerts[0].users // All alerts belong to the same user
 
     // Check if user has SMS credits remaining - STOP BEFORE QUERY to save credits
-    if (user.sms_used >= user.sms_limit) {
-      console.log(`⚠️ User ${user.x_user_id} has reached SMS limit (${user.sms_used}/${user.sms_limit}) - skipping API call to save credits`)
+    if (user.alerts_used >= user.alerts_limit) {
+      console.log(`⚠️ User ${user.x_user_id} has reached SMS limit (${user.alerts_used}/${user.alerts_limit}) - skipping API call to save credits`)
       return res.status(200).json({
         success: true,
         message: 'User has reached SMS limit - no API call made',
@@ -133,7 +133,7 @@ export default async function handler(req, res) {
             // Update SMS usage
             const { error: updateError } = await supabaseAdmin
               .from('users')
-              .update({ sms_used: user.sms_used + 1 })
+              .update({ alerts_used: user.alerts_used + 1 })
               .eq('id', user.id)
 
             if (updateError) {
