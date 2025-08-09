@@ -146,6 +146,15 @@ export default function Dashboard() {
                   const alertsUsed = data.user.alerts_used !== undefined ? data.user.alerts_used : (data.user.sms_used || 0)
                   let alertsLimit = data.user.alerts_limit
                   
+                  // Debug logging to see what values we're getting
+                  console.log('🔍 Debug SMS usage:', {
+                    alerts_used: data.user.alerts_used,
+                    sms_used: data.user.sms_used,
+                    final_alertsUsed: alertsUsed,
+                    alerts_limit: data.user.alerts_limit,
+                    plan: data.user.plan
+                  })
+                  
                   // If alerts_limit is not set (migration not run), calculate from plan
                   if (alertsLimit === undefined || alertsLimit === null) {
                     const planLimits = {
@@ -208,6 +217,15 @@ export default function Dashboard() {
                     // Update usage limits from database (handle both old SMS and new alerts fields)
                     const alertsUsed = data.user.alerts_used !== undefined ? data.user.alerts_used : (data.user.sms_used || 0)
                     let alertsLimit = data.user.alerts_limit
+                    
+                    // Debug logging to see what values we're getting
+                    console.log('🔍 Debug SMS usage:', {
+                      alerts_used: data.user.alerts_used,
+                      sms_used: data.user.sms_used,
+                      final_alertsUsed: alertsUsed,
+                      alerts_limit: data.user.alerts_limit,
+                      plan: data.user.plan
+                    })
                     
                     // If alerts_limit is not set (migration not run), calculate from plan
                     if (alertsLimit === undefined || alertsLimit === null) {
@@ -771,7 +789,16 @@ export default function Dashboard() {
             <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
               <div className="flex items-center justify-between mb-4 lg:mb-6">
                 <h2 className="text-lg lg:text-2xl font-semibold text-white">Usage</h2>
-                <span className="text-sm lg:text-base text-white/60">{usage.used} SMS sent</span>
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm lg:text-base text-white/60">{usage.used} SMS sent</span>
+                  <button
+                    onClick={refreshUserData}
+                    className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 text-white rounded transition-colors"
+                    title="Refresh usage data"
+                  >
+                    🔄
+                  </button>
+                </div>
               </div>
               
               {/* Progress Bar */}
