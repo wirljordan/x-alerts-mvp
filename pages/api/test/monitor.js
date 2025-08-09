@@ -94,7 +94,7 @@ export default async function handler(req, res) {
     const sinceId = lastMatchTimes.length > 0 ? lastMatchTimes[0] : null
     
     // Dynamic max_results based on previous performance
-    const maxResults = 5 // Default to 5, can be increased if needed
+    const maxResults = 20 // Increased to get more tweets since we filter by date
 
     // Single API call for all keywords with since_id
     console.log(`🚀 Making single API call for ${keywords.length} keywords with since_id: ${sinceId || 'none'}`)
