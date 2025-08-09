@@ -125,7 +125,7 @@ export default function Home() {
                 Be First to Reply
               </h1>
               <p className="text-xl lg:text-2xl xl:text-3xl text-white/90 mb-8 lg:mb-12 max-w-2xl lg:max-w-none">
-                Get SMS notifications within 5 minutes of important posts. Never miss an opportunity to engage early.
+                Get SMS notifications within seconds of important posts. Never miss an opportunity to engage early.
               </p>
 
         {error && (
@@ -192,7 +192,7 @@ export default function Home() {
                 <span className="text-[#16D9E3] text-2xl lg:text-3xl">⚡</span>
               </div>
               <h3 className="text-xl lg:text-2xl font-semibold text-white mb-3 lg:mb-4">Instant Alerts</h3>
-              <p className="text-white text-sm lg:text-base lg:text-lg font-medium">Get SMS notifications within 5 minutes of important posts</p>
+              <p className="text-white text-sm lg:text-base lg:text-lg font-medium">Get SMS notifications within seconds of important posts</p>
             </div>
             
             <div className="text-center p-6 lg:p-8 rounded-lg lg:rounded-xl bg-[#0F1C2E]/80 backdrop-blur-sm border border-white/20 hover:bg-[#0F1C2E] transition-all duration-300 hover:scale-105 shadow-lg">
