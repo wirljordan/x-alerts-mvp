@@ -234,7 +234,7 @@ export default function Home() {
                   <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">1</span> keyword tracked</div>
                 </div>
                 <div>
-                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">10</span> alerts / mo</div>
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">10</span> SMS / mo</div>
                 </div>
               </div>
               <button 
@@ -254,7 +254,7 @@ export default function Home() {
                   <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">3</span> keywords tracked</div>
                 </div>
                 <div>
-                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">100</span> alerts / mo</div>
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">100</span> SMS / mo</div>
                 </div>
               </div>
               <button 
@@ -275,7 +275,7 @@ export default function Home() {
                   <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">10</span> keywords tracked</div>
                 </div>
                 <div>
-                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">300</span> alerts / mo</div>
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">300</span> SMS / mo</div>
                 </div>
               </div>
               <button 
@@ -295,7 +295,7 @@ export default function Home() {
                   <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">30</span> keywords tracked</div>
                 </div>
                 <div>
-                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">1,000</span> alerts / mo</div>
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">1,000</span> SMS / mo</div>
                 </div>
               </div>
               <button 

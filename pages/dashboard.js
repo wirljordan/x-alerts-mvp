@@ -735,7 +735,7 @@ export default function Dashboard() {
             <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
               <div className="flex items-center justify-between mb-4 lg:mb-6">
                 <h2 className="text-lg lg:text-2xl font-semibold text-white">Usage</h2>
-                <span className="text-sm lg:text-base text-white/60">{usage.used} sent</span>
+                <span className="text-sm lg:text-base text-white/60">{usage.used} SMS sent</span>
               </div>
               
               {/* Progress Bar */}
@@ -757,7 +757,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <span className="text-sm lg:text-base text-white/80">
-                    {usage.used} / {usage.limit} texts sent
+                    {usage.used} / {usage.limit} SMS sent
                   </span>
                   
                   {/* Billing Cycle Information */}
