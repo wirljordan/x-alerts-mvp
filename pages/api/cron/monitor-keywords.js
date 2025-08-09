@@ -27,6 +27,8 @@ export default async function handler(req, res) {
           phone,
           alerts_used,
           alerts_limit,
+          sms_used,
+          sms_limit,
           plan
         )
       `)
@@ -46,9 +48,13 @@ export default async function handler(req, res) {
       try {
         const user = alert.users
         
-        // Check if user has SMS credits remaining
-        if (user.alerts_used >= user.alerts_limit) {
-          console.log(`⚠️ User ${user.x_user_id} has reached SMS limit (${user.alerts_used}/${user.alerts_limit})`)
+        // Handle both old SMS and new alerts fields during transition
+        const alertsUsed = user.alerts_used !== undefined ? user.alerts_used : (user.sms_used || 0)
+        const alertsLimit = user.alerts_limit !== undefined ? user.alerts_limit : (user.sms_limit || 10)
+        
+        // Check if user has alerts credits remaining
+        if (alertsUsed >= alertsLimit) {
+          console.log(`⚠️ User ${user.x_user_id} has reached alerts limit (${alertsUsed}/${alertsLimit})`)
           continue
         }
 
@@ -91,10 +97,15 @@ export default async function handler(req, res) {
             // Send SMS notification
             await sendSMSNotification(formattedPhone, smsMessage)
             
-            // Update SMS usage
+            // Update alerts usage (handle both old and new field names)
+            const newAlertsUsed = alertsUsed + 1
+            const updateData = user.alerts_used !== undefined 
+              ? { alerts_used: newAlertsUsed }
+              : { sms_used: newAlertsUsed }
+            
             const { error: updateError } = await supabaseAdmin
               .from('users')
-              .update({ alerts_used: user.alerts_used + 1 })
+              .update(updateData)
               .eq('id', user.id)
 
             if (updateError) {

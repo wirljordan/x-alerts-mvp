@@ -142,8 +142,10 @@ export default function Dashboard() {
                   setCurrentPlan(data.user.plan || 'free')
                   console.log('User plan updated to:', data.user.plan)
                   
-                  // Update usage limits from database
-                  setUsage({ used: data.user.alerts_used || 0, limit: data.user.alerts_limit || 10 })
+                  // Update usage limits from database (handle both old SMS and new alerts fields)
+                  const alertsUsed = data.user.alerts_used !== undefined ? data.user.alerts_used : (data.user.sms_used || 0)
+                  const alertsLimit = data.user.alerts_limit !== undefined ? data.user.alerts_limit : (data.user.sms_limit || 10)
+                  setUsage({ used: alertsUsed, limit: alertsLimit })
                 }
               }
             }
@@ -191,8 +193,10 @@ export default function Dashboard() {
                     console.log('Setting current plan to:', data.user.plan || 'free')
                     setCurrentPlan(data.user.plan || 'free')
                     
-                    // Update usage limits from database
-                    setUsage({ used: data.user.alerts_used || 0, limit: data.user.alerts_limit || 10 })
+                    // Update usage limits from database (handle both old SMS and new alerts fields)
+                    const alertsUsed = data.user.alerts_used !== undefined ? data.user.alerts_used : (data.user.sms_used || 0)
+                    const alertsLimit = data.user.alerts_limit !== undefined ? data.user.alerts_limit : (data.user.sms_limit || 10)
+                    setUsage({ used: alertsUsed, limit: alertsLimit })
                     
                     // Fetch user's alerts/keywords
                     await fetchUserAlerts(sessionData.user.id)
@@ -417,8 +421,10 @@ export default function Dashboard() {
               setCurrentPlan(data.user.plan || 'free')
               console.log('User data refreshed, plan updated to:', data.user.plan)
               
-              // Update usage limits from database
-              setUsage({ used: data.user.alerts_used || 0, limit: data.user.alerts_limit || 10 })
+              // Update usage limits from database (handle both old SMS and new alerts fields)
+              const alertsUsed = data.user.alerts_used !== undefined ? data.user.alerts_used : (data.user.sms_used || 0)
+              const alertsLimit = data.user.alerts_limit !== undefined ? data.user.alerts_limit : (data.user.sms_limit || 10)
+              setUsage({ used: alertsUsed, limit: alertsLimit })
             }
           }
         }

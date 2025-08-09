@@ -21,6 +21,8 @@ export default async function handler(req, res) {
           phone,
           alerts_used,
           alerts_limit,
+          sms_used,
+          sms_limit,
           plan
         )
       `)
@@ -47,12 +49,16 @@ export default async function handler(req, res) {
     const keywords = alerts.map(alert => alert.query_string)
     const user = alerts[0].users // All alerts belong to the same user
 
-    // Check if user has SMS credits remaining - STOP BEFORE QUERY to save credits
-    if (user.alerts_used >= user.alerts_limit) {
-      console.log(`⚠️ User ${user.x_user_id} has reached SMS limit (${user.alerts_used}/${user.alerts_limit}) - skipping API call to save credits`)
+    // Handle both old SMS and new alerts fields during transition
+    const alertsUsed = user.alerts_used !== undefined ? user.alerts_used : (user.sms_used || 0)
+    const alertsLimit = user.alerts_limit !== undefined ? user.alerts_limit : (user.sms_limit || 10)
+
+    // Check if user has alerts credits remaining - STOP BEFORE QUERY to save credits
+    if (alertsUsed >= alertsLimit) {
+      console.log(`⚠️ User ${user.x_user_id} has reached alerts limit (${alertsUsed}/${alertsLimit}) - skipping API call to save credits`)
       return res.status(200).json({
         success: true,
-        message: 'User has reached SMS limit - no API call made',
+        message: 'User has reached alerts limit - no API call made',
         totalProcessed: 0,
         totalSmsSent: 0,
         timestamp: new Date().toISOString()
@@ -130,10 +136,15 @@ export default async function handler(req, res) {
             // Send SMS notification immediately
             await sendSMSNotification(formattedPhone, smsMessage)
             
-            // Update SMS usage
+            // Update alerts usage (handle both old and new field names)
+            const newAlertsUsed = alertsUsed + 1
+            const updateData = user.alerts_used !== undefined 
+              ? { alerts_used: newAlertsUsed }
+              : { sms_used: newAlertsUsed }
+            
             const { error: updateError } = await supabaseAdmin
               .from('users')
-              .update({ alerts_used: user.alerts_used + 1 })
+              .update(updateData)
               .eq('id', user.id)
 
             if (updateError) {
