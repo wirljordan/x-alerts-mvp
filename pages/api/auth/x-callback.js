@@ -80,8 +80,8 @@ export default async function handler(req, res) {
 
       // Exchange code for token
       console.log('Exchanging code for token...')
-      const clientId = process.env.X_CLIENT_ID
-      const clientSecret = process.env.X_CLIENT_SECRET
+      const clientId = process.env.TWITTER_CLIENT_ID
+      const clientSecret = process.env.TWITTER_CLIENT_SECRET
       const redirectUri = process.env.X_REDIRECT_URI || 'https://earlyreply.app/api/auth/x-callback'
 
       console.log('Environment check:', {

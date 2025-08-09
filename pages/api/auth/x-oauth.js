@@ -3,10 +3,10 @@ import { redisSet, REDIS_TTLS } from '../../../lib/redis'
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
-    const clientId = process.env.X_CLIENT_ID
+    const clientId = process.env.TWITTER_CLIENT_ID
     
     if (!clientId) {
-      console.error('X_CLIENT_ID not configured')
+      console.error('TWITTER_CLIENT_ID not configured')
       return res.status(500).json({ error: 'OAuth not configured' })
     }
     
