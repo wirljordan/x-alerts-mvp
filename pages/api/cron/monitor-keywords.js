@@ -128,6 +128,8 @@ async function updateScoutState(userId, sinceAt) {
       user_id: userId,
       since_at: sinceAt,
       updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id'
     })
   
   if (error) {
@@ -159,6 +161,8 @@ async function updateRuleState(ruleId, sinceAt, userId) {
       user_id: userId,
       since_at: sinceAt,
       updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'rule_id'
     })
   
   if (error) {
