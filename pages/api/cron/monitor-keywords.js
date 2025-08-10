@@ -205,36 +205,82 @@ async function sendAlert(user, ruleId, tweet, channel = 'sms') {
 async function scoutPhase(keywords, userId) {
   if (keywords.length === 0) return { hasNewTweets: false, tweets: [] }
   
+  // Escape brackets and special characters in keywords
   const keywordQueries = keywords.map(keyword => {
     if (keyword.startsWith('@')) {
       return `from:${keyword.substring(1)}`
     }
-    return `"${keyword}"`
-  }).join(' OR ')
+    // Escape brackets and forward slashes for literal search
+    const escapedKeyword = keyword
+      .replace(/\[/g, '\\[')
+      .replace(/\]/g, '\\]')
+      .replace(/\//g, '\\/')
+    return `"${escapedKeyword}"`
+  })
   
-  const scoutQuery = `(${keywordQueries}) lang:en -is:retweet -is:quote -is:reply`
+  // Split into chunks if query gets too long (Twitter API limit ~1000 chars)
+  const MAX_QUERY_LENGTH = 800
+  const queryChunks = []
+  let currentChunk = []
+  let currentLength = 0
   
-  console.log(`🔍 Scout phase: searching for ${keywords.length} keywords`)
-  
-  try {
-    const tweetsData = await searchTweetsByMultipleKeywords(
-      keywords,
-      null, // No since_id for scout
-      CONFIG.SCOUT_MAX_RESULTS
-    )
-    
-    const hasNewTweets = tweetsData.data && tweetsData.data.length > 0
-    
-    await logCost(null, 'scout', { query: scoutQuery, maxResults: CONFIG.SCOUT_MAX_RESULTS }, tweetsData.data?.length || 0, userId)
-    
-    console.log(`🔍 Scout result: ${hasNewTweets ? 'HIT' : 'MISS'} (${tweetsData.data?.length || 0} tweets)`)
-    
-    return { hasNewTweets, tweets: tweetsData.data || [] }
-  } catch (error) {
-    console.error(`❌ Scout phase error:`, error)
-    await logCost(null, 'scout', { query: scoutQuery, maxResults: CONFIG.SCOUT_MAX_RESULTS }, 0, userId)
-    return { hasNewTweets: false, tweets: [] }
+  for (const query of keywordQueries) {
+    const queryLength = query.length + (currentChunk.length > 0 ? 4 : 0) // +4 for " OR "
+    if (currentLength + queryLength > MAX_QUERY_LENGTH && currentChunk.length > 0) {
+      queryChunks.push(currentChunk.join(' OR '))
+      currentChunk = [query]
+      currentLength = queryLength
+    } else {
+      currentChunk.push(query)
+      currentLength += queryLength
+    }
   }
+  if (currentChunk.length > 0) {
+    queryChunks.push(currentChunk.join(' OR '))
+  }
+  
+  console.log(`🔍 Scout phase: searching ${keywords.length} keywords in ${queryChunks.length} query chunk(s)`)
+  
+  // Try each query chunk
+  for (let i = 0; i < queryChunks.length; i++) {
+    const chunk = queryChunks[i]
+    const scoutQuery = `(${chunk}) lang:en -is:retweet -is:quote -is:reply`
+    
+    try {
+      const tweetsData = await searchTweetsByMultipleKeywords(
+        keywords, // Pass original keywords for the API call
+        null, // No since_id for scout
+        CONFIG.SCOUT_MAX_RESULTS
+      )
+      
+      const hasNewTweets = tweetsData.data && tweetsData.data.length > 0
+      
+      await logCost(null, 'scout', { 
+        query: scoutQuery, 
+        maxResults: CONFIG.SCOUT_MAX_RESULTS,
+        chunk: i + 1,
+        totalChunks: queryChunks.length
+      }, tweetsData.data?.length || 0, userId)
+      
+      console.log(`🔍 Scout chunk ${i + 1}/${queryChunks.length} result: ${hasNewTweets ? 'HIT' : 'MISS'} (${tweetsData.data?.length || 0} tweets)`)
+      
+      if (hasNewTweets) {
+        return { hasNewTweets: true, tweets: tweetsData.data || [] }
+      }
+    } catch (error) {
+      console.error(`❌ Scout phase error on chunk ${i + 1}:`, error)
+      await logCost(null, 'scout', { 
+        query: scoutQuery, 
+        maxResults: CONFIG.SCOUT_MAX_RESULTS,
+        chunk: i + 1,
+        totalChunks: queryChunks.length,
+        error: error.message
+      }, 0, userId)
+    }
+  }
+  
+  console.log(`🔍 Scout result: MISS (all ${queryChunks.length} chunks)`)
+  return { hasNewTweets: false, tweets: [] }
 }
 
 // Drill phase: Check individual rules
@@ -270,7 +316,7 @@ async function drillPhase(user, rules, userId) {
       const tweetsData = await searchTweetsByMultipleKeywords(
         [rule.query],
         sinceId,
-        20 // Use provider's default page size
+        3 // Keep drill phase small for efficiency
       )
       
       await logCost(rule.id, 'drill', params, tweetsData.data?.length || 0, userId)
@@ -360,7 +406,7 @@ async function backfillWorker(user, ruleId, initialTweets) {
       const tweetsData = await searchTweetsByMultipleKeywords(
         [initialTweets[0].keyword],
         sinceId,
-        20
+        3 // Keep backfill small for efficiency
       )
       
       if (!tweetsData.data || tweetsData.data.length === 0) {
