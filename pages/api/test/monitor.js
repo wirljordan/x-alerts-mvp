@@ -8,11 +8,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🧪 Starting optimized keyword monitoring...')
+    console.log('🧪 Starting cron job test...')
 
-    // Get all active keywords from the database
-    const { data: alerts, error: alertsError } = await supabaseAdmin
-      .from('alerts')
+    // Get all active keyword rules from the database
+    const { data: keywordRules, error: rulesError } = await supabaseAdmin
+      .from('keyword_rules')
       .select(`
         *,
         users!inner(
@@ -20,23 +20,23 @@ export default async function handler(req, res) {
           x_user_id,
           phone,
           plan,
-          sms_used,
-          sms_limit
+          alerts_used,
+          alerts_limit
         )
       `)
       .eq('status', 'active')
 
-    if (alertsError) {
-      console.error('❌ Error fetching alerts:', alertsError)
-      return res.status(500).json({ error: 'Failed to fetch alerts' })
+    if (rulesError) {
+      console.error('❌ Error fetching keyword rules:', rulesError)
+      return res.status(500).json({ error: 'Failed to fetch keyword rules' })
     }
 
-    console.log(`📊 Found ${alerts.length} active keywords to monitor`)
+    console.log(`📊 Found ${keywordRules.length} active keyword rules to monitor`)
 
-    if (alerts.length === 0) {
+    if (keywordRules.length === 0) {
       return res.status(200).json({
         success: true,
-        message: 'No active keywords to monitor',
+        message: 'No active keyword rules to monitor',
         totalProcessed: 0,
         totalSmsSent: 0,
         timestamp: new Date().toISOString()
@@ -44,11 +44,11 @@ export default async function handler(req, res) {
     }
 
     // Extract keywords and user info
-    const keywords = alerts.map(alert => alert.query_string)
-    const user = alerts[0].users // All alerts belong to the same user
+    const keywords = keywordRules.map(rule => rule.query)
+    const user = keywordRules[0].users // All rules belong to the same user
 
     // Handle both old SMS and new alerts fields during transition
-    const alertsUsed = user.sms_used || 0
+    const alertsUsed = user.alerts_used || 0
     let alertsLimit = 10 // Default to free plan
 
     // Calculate limits based on plan since alerts_limit column doesn't exist yet
@@ -84,23 +84,23 @@ export default async function handler(req, res) {
       })
     }
 
-    // Get the most recent last_match_at to use as since_id
-    const lastMatchTimes = alerts
-      .map(alert => alert.last_match_at)
+    // Get the most recent last_match_at to use as since timestamp
+    const lastMatchTimes = keywordRules
+      .map(rule => rule.last_match_at)
       .filter(time => time !== null)
       .sort()
       .reverse()
 
-    const sinceId = lastMatchTimes.length > 0 ? lastMatchTimes[0] : null
+    const sinceTimestamp = lastMatchTimes.length > 0 ? lastMatchTimes[0] : null
     
     // Dynamic max_results based on previous performance
     const maxResults = 20 // Increased to get more tweets since we filter by date
 
-    // Single API call for all keywords with since_id
-    console.log(`🚀 Making single API call for ${keywords.length} keywords with since_id: ${sinceId || 'none'}`)
+    // Single API call for all keywords with since timestamp
+    console.log(`🚀 Making single API call for ${keywords.length} keywords with since timestamp: ${sinceTimestamp || 'none'}`)
     
     try {
-      const tweetsData = await searchTweetsByMultipleKeywords(keywords, sinceId, maxResults)
+      const tweetsData = await searchTweetsByMultipleKeywords(keywords, sinceTimestamp, maxResults)
       
       if (!tweetsData.data || tweetsData.data.length === 0) {
         console.log(`🔍 No new tweets found for any keywords`)
@@ -145,7 +145,7 @@ export default async function handler(req, res) {
             
             // Update alerts usage (handle both old and new field names)
             const newAlertsUsed = alertsUsed + 1
-            const updateData = { sms_used: newAlertsUsed }
+            const updateData = { alerts_used: newAlertsUsed }
             
             const { error: updateError } = await supabaseAdmin
               .from('users')
@@ -157,15 +157,15 @@ export default async function handler(req, res) {
             }
 
             // Update last_match_at for the matching alert
-            const matchingAlert = alerts.find(alert => alert.query_string === matchingKeyword)
-            if (matchingAlert) {
-              const { error: alertUpdateError } = await supabaseAdmin
-                .from('alerts')
+            const matchingRule = keywordRules.find(rule => rule.query === matchingKeyword)
+            if (matchingRule) {
+              const { error: ruleUpdateError } = await supabaseAdmin
+                .from('keyword_rules')
                 .update({ last_match_at: new Date().toISOString() })
-                .eq('id', matchingAlert.id)
+                .eq('id', matchingRule.id)
 
-              if (alertUpdateError) {
-                console.error('❌ Error updating alert last_match_at:', alertUpdateError)
+              if (ruleUpdateError) {
+                console.error('❌ Error updating keyword rule last_match_at:', ruleUpdateError)
               }
             }
 
