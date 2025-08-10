@@ -115,17 +115,18 @@ async function isTweetSeen(ruleId, tweetId) {
 
 // Mark tweet as seen
 async function markTweetSeen(ruleId, tweetId) {
-  await supabaseAdmin
-    .from('seen_cache')
-    .insert({
-      rule_id: ruleId,
-      tweet_id: tweetId
-    })
-    .catch(error => {
-      if (error.code !== '23505') { // Ignore duplicate key errors
-        console.error(`❌ Error marking tweet as seen:`, error)
-      }
-    })
+  try {
+    await supabaseAdmin
+      .from('seen_cache')
+      .insert({
+        rule_id: ruleId,
+        tweet_id: tweetId
+      })
+  } catch (error) {
+    if (error.code !== '23505') { // Ignore duplicate key errors
+      console.error(`❌ Error marking tweet as seen:`, error)
+    }
+  }
 }
 
 // Log cost for observability
