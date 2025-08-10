@@ -134,19 +134,20 @@ async function logCost(ruleId, phase, paramsSent, tweetsReturned, userId) {
   
   console.log(`💰 Cost log: user=${userId}, rule=${ruleId}, phase=${phase}, params=${JSON.stringify(paramsSent)}, tweets=${tweetsReturned}, credits=${creditsUsed}`)
   
-  await supabaseAdmin
-    .from('cost_logs')
-    .insert({
-      rule_id: ruleId,
-      phase: phase,
-      params_sent: paramsSent,
-      tweets_returned: tweetsReturned,
-      credits_used: creditsUsed,
-      logged_at: new Date().toISOString()
-    })
-    .catch(error => {
-      console.error(`❌ Error logging cost:`, error)
-    })
+  try {
+    await supabaseAdmin
+      .from('cost_logs')
+      .insert({
+        rule_id: ruleId,
+        phase: phase,
+        params_sent: paramsSent,
+        tweets_returned: tweetsReturned,
+        credits_used: creditsUsed,
+        logged_at: new Date().toISOString()
+      })
+  } catch (error) {
+    console.error(`❌ Error logging cost:`, error)
+  }
 }
 
 // Send alert and update usage
