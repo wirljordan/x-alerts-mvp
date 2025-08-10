@@ -12,6 +12,10 @@ const CONFIG = {
   SCOUT_MAX_RESULTS: 1,
   SCOUT_MAX_QUERY_LENGTH: 1500,
   
+  // Drill phase
+  DRILL_MAX_RESULTS: 3,
+  MAX_TWEETS_PER_RULE_PER_CYCLE: 6,
+  
   // Backfill phase
   BACKFILL_MAX_PAGES: 2,
   BACKFILL_MAX_TWEETS: 6,
@@ -404,7 +408,7 @@ async function drillPhase(user, rules, userId, creditsTotal) {
       const tweetsData = await searchTweetsByMultipleKeywords(
         [rule.query],
         ruleSinceId,
-        3 // Keep drill phase small for efficiency
+        CONFIG.DRILL_MAX_RESULTS
       )
       
       const tweets = tweetsData.data || []
@@ -423,7 +427,7 @@ async function drillPhase(user, rules, userId, creditsTotal) {
         continue
       }
       
-      // Filter out already seen tweets
+      // Filter out already seen tweets and apply per-rule cap
       const newTweets = []
       for (const tweet of tweets) {
         const seen = await isTweetSeen(rule.id, tweet.id)
@@ -433,6 +437,12 @@ async function drillPhase(user, rules, userId, creditsTotal) {
             keyword: rule.query
           })
           await markTweetSeen(rule.id, tweet.id)
+          
+          // Apply per-rule tweet cap
+          if (newTweets.length >= CONFIG.MAX_TWEETS_PER_RULE_PER_CYCLE) {
+            console.log(`📊 Rule "${rule.query}" hit tweet cap (${CONFIG.MAX_TWEETS_PER_RULE_PER_CYCLE}), stopping`)
+            break
+          }
         }
       }
       
@@ -622,6 +632,8 @@ export default async function handler(req, res) {
       }
       userRules[userId].rules.push(rule)
     }
+    
+    console.log(`📊 Grouped ${keywordRules.length} rules into ${Object.keys(userRules).length} users`)
 
     let totalCallsMade = 0
     let totalRulesScanned = 0
