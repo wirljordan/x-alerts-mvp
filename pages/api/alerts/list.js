@@ -34,9 +34,9 @@ export default async function handler(req, res) {
     
     console.log('User found in database:', userData.id)
 
-    // Get all alerts for this user
+    // Get all keyword rules for this user
     const { data, error } = await supabaseAdmin
-      .from('alerts')
+      .from('keyword_rules')
       .select('*')
       .eq('user_id', userData.id)
       .order('created_at', { ascending: false })

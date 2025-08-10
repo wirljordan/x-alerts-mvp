@@ -35,9 +35,9 @@ export default async function handler(req, res) {
       })
     }
 
-    // Delete the alert (only if it belongs to this user)
+    // Delete the keyword rule (only if it belongs to this user)
     const { data, error } = await supabaseAdmin
-      .from('alerts')
+      .from('keyword_rules')
       .delete()
       .eq('id', alertId)
       .eq('user_id', userData.id)

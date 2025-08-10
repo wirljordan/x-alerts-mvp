@@ -33,13 +33,13 @@ export default async function handler(req, res) {
 
     console.log('User found in database:', userData.id)
 
-    // Create the alert using the correct schema
+    // Create the keyword rule using the new schema
     const { data, error } = await supabaseAdmin
-      .from('alerts')
+      .from('keyword_rules')
       .insert([
         {
           user_id: userData.id, // Use the internal UUID
-          query_string: query.trim(), // Map to correct column name
+          query: query.trim(), // Map to correct column name
           status: 'active'
         }
       ])

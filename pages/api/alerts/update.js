@@ -32,15 +32,15 @@ export default async function handler(req, res) {
     // Build update object
     const updateData = {}
     if (status) updateData.status = status
-    if (query) updateData.query_string = query
+    if (query) updateData.query = query
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ error: 'No valid fields to update' })
     }
 
-    // Update the alert (only if it belongs to this user)
+    // Update the keyword rule (only if it belongs to this user)
     const { data, error } = await supabaseAdmin
-      .from('alerts')
+      .from('keyword_rules')
       .update(updateData)
       .eq('id', alertId)
       .eq('user_id', userData.id)
