@@ -319,9 +319,30 @@ function findMatchingRule(tweetText, rules) {
         return rule
       }
     } else {
-      // Check for keyword match
-      if (lowerTweetText.includes(keyword)) {
-        return rule
+      // Check for exact keyword match (more precise)
+      // Split keyword into words and check if ALL words are present
+      const keywordWords = keyword.split(/\s+/).filter(word => word.length > 0)
+      
+      if (keywordWords.length === 1) {
+        // Single word - check for exact match
+        if (lowerTweetText.includes(keyword)) {
+          return rule
+        }
+      } else {
+        // Multiple words - check if ALL words are present in order
+        const tweetWords = lowerTweetText.split(/\s+/)
+        let allWordsFound = true
+        
+        for (const word of keywordWords) {
+          if (!tweetWords.some(tweetWord => tweetWord.includes(word))) {
+            allWordsFound = false
+            break
+          }
+        }
+        
+        if (allWordsFound) {
+          return rule
+        }
       }
     }
   }
@@ -418,35 +439,49 @@ async function scoutPhase(user, rules, userId, creditsTotal) {
     
     console.log(`🔍 Scout chunk ${i + 1}/${queryChunks.length} result: HIT (${tweets.length} tweets)`)
     
-    // Process each tweet and find matching rules
-    for (const tweet of tweets) {
-      const matchingRule = findMatchingRule(tweet.text, rules)
-      
-      if (matchingRule) {
-        // Check if tweet was already seen
-        const seen = await isTweetSeen(matchingRule.id, tweet.id)
-        if (!seen) {
-          await markTweetSeen(matchingRule.id, tweet.id)
-          
-          // Send alert directly from scout
-          const alertSent = await sendAlert(user, matchingRule.id, {
-            ...tweet,
-            keyword: matchingRule.query
-          }, user.delivery_mode || 'sms')
-          
-          if (alertSent) {
-            totalAlertsSent++
-            console.log(`✅ Alert sent for rule "${matchingRule.query}" from scout tweet`)
-          }
-        }
-      }
-      
-      // Track newest timestamp
-      const tweetTime = new Date(tweet.created_at)
-      if (!newestTimestamp || tweetTime > new Date(newestTimestamp)) {
-        newestTimestamp = tweet.created_at
-      }
-    }
+         // Process each tweet and find matching rules
+     for (const tweet of tweets) {
+       console.log(`🔍 Processing tweet: "${tweet.text.substring(0, 50)}..."`)
+       
+       const matchingRule = findMatchingRule(tweet.text, rules)
+       
+       if (matchingRule) {
+         console.log(`🎯 Tweet matches rule: "${matchingRule.query}"`)
+         
+         // Check if tweet was already seen
+         const seen = await isTweetSeen(matchingRule.id, tweet.id)
+         if (!seen) {
+           await markTweetSeen(matchingRule.id, tweet.id)
+           
+           // Safety check: don't send more than 3 alerts per cycle
+           if (totalAlertsSent >= 3) {
+             console.log(`🚫 Alert limit reached (3 per cycle), skipping remaining alerts`)
+             break
+           }
+           
+           // Send alert directly from scout
+           const alertSent = await sendAlert(user, matchingRule.id, {
+             ...tweet,
+             keyword: matchingRule.query
+           }, user.delivery_mode || 'sms')
+           
+           if (alertSent) {
+             totalAlertsSent++
+             console.log(`✅ Alert sent for rule "${matchingRule.query}" from scout tweet (${totalAlertsSent}/3)`)
+           }
+         } else {
+           console.log(`👁️ Tweet already seen for rule "${matchingRule.query}", skipping alert`)
+         }
+       } else {
+         console.log(`❌ Tweet doesn't match any rules`)
+       }
+       
+       // Track newest timestamp
+       const tweetTime = new Date(tweet.created_at)
+       if (!newestTimestamp || tweetTime > new Date(newestTimestamp)) {
+         newestTimestamp = tweet.created_at
+       }
+     }
   }
   
   // Update scout since_at to newest tweet + 1 second (avoid inclusive boundary)
