@@ -63,14 +63,18 @@ export default async function handler(req, res) {
       }
     })
 
-    console.log('📋 User details:', userDetails.map(u => ({
-      handle: u.handle,
-      x_user_id: u.x_user_id,
-      active_rules: u.active_rules,
-      total_rules: u.total_rules,
-      phone: u.phone ? 'Yes' : 'No',
-      plan: u.plan
-    })))
+    // Log detailed info
+    console.log('📋 User details:')
+    userDetails.forEach(u => {
+      console.log(`  👤 ${u.handle} (${u.x_user_id}):`)
+      console.log(`    - Active rules: ${u.active_rules}/${u.total_rules}`)
+      console.log(`    - Phone: ${u.phone ? 'Yes' : 'No'}`)
+      console.log(`    - Plan: ${u.plan}`)
+      console.log(`    - Quiet hours: ${u.quiet_hours_start} - ${u.quiet_hours_end}`)
+      if (u.rules.length > 0) {
+        console.log(`    - Rules: ${u.rules.map(r => `"${r.query}" (${r.status})`).join(', ')}`)
+      }
+    })
 
     return res.status(200).json({
       success: true,
