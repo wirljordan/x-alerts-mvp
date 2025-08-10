@@ -1225,7 +1225,7 @@ export default function Dashboard() {
                   className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
                 />
                 <p className="text-xs text-white/60 mt-1">
-                  Enter specific keywords or phrases. Use 3+ word phrases or brand names for best results. Short, common words like "hi" may generate too many low-quality matches.
+                  Enter specific keywords or phrases. Use 2+ word phrases or brand names for best results. Short, common words like "cars" may generate too many low-quality matches. If looking for specific user, put @name.
                 </p>
               </div>
             </div>
