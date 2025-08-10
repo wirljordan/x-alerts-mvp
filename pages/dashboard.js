@@ -15,7 +15,7 @@ function AlertItem({ alert, onToggle, onDelete }) {
           alert.status === 'active' ? 'bg-[#16D9E3]' : 'bg-yellow-500'
         }`}></div>
         <div>
-          <h3 className="font-medium text-white text-sm lg:text-base">{alert.query_string}</h3>
+          <h3 className="font-medium text-white text-sm lg:text-base">{alert.query}</h3>
         </div>
       </div>
       <div className="flex items-center space-x-2 lg:space-x-3">
