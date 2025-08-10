@@ -35,6 +35,28 @@ const CONFIG = {
   HUGE_PAGE_THRESHOLD: 20
 }
 
+// Format timestamp for twitterapi.io since: parameter
+function formatSinceTimestamp(date) {
+  if (!date) return null
+  
+  const d = new Date(date)
+  const year = d.getUTCFullYear()
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(d.getUTCDate()).padStart(2, '0')
+  const hours = String(d.getUTCHours()).padStart(2, '0')
+  const minutes = String(d.getUTCMinutes()).padStart(2, '0')
+  const seconds = String(d.getUTCSeconds()).padStart(2, '0')
+  
+  return `${year}-${month}-${day}_${hours}:${minutes}:${seconds}_UTC`
+}
+
+// Get current time minus 2 minutes for seeding
+function getSeedTimestamp() {
+  const now = new Date()
+  now.setMinutes(now.getMinutes() - 2)
+  return now.toISOString()
+}
+
 // Fisher-Yates shuffle with deterministic seed
 function shuffleWithSeed(array, seed) {
   const shuffled = [...array]
@@ -83,11 +105,11 @@ function isInQuietHours(user) {
   }
 }
 
-// Get scout state (since_id) from database
+// Get scout state (since_at) from database
 async function getScoutState(userId) {
   const { data, error } = await supabaseAdmin
     .from('scout_states')
-    .select('since_id')
+    .select('since_at')
     .eq('user_id', userId)
     .single()
   
@@ -95,16 +117,16 @@ async function getScoutState(userId) {
     console.error(`❌ Error getting scout state for user ${userId}:`, error)
   }
   
-  return data?.since_id || null
+  return data?.since_at || null
 }
 
-// Update scout state with new since_id
-async function updateScoutState(userId, sinceId) {
+// Update scout state with new since_at
+async function updateScoutState(userId, sinceAt) {
   const { error } = await supabaseAdmin
     .from('scout_states')
     .upsert({
       user_id: userId,
-      since_id: sinceId,
+      since_at: sinceAt,
       updated_at: new Date().toISOString()
     })
   
@@ -113,11 +135,11 @@ async function updateScoutState(userId, sinceId) {
   }
 }
 
-// Get rule state (since_id) from database
+// Get rule state (since_at) from database
 async function getRuleState(ruleId) {
   const { data, error } = await supabaseAdmin
     .from('rule_states')
-    .select('since_id')
+    .select('since_at')
     .eq('rule_id', ruleId)
     .single()
   
@@ -125,17 +147,17 @@ async function getRuleState(ruleId) {
     console.error(`❌ Error getting rule state for ${ruleId}:`, error)
   }
   
-  return data?.since_id || null
+  return data?.since_at || null
 }
 
-// Update rule state with new since_id
-async function updateRuleState(ruleId, sinceId, userId) {
+// Update rule state with new since_at
+async function updateRuleState(ruleId, sinceAt, userId) {
   const { error } = await supabaseAdmin
     .from('rule_states')
     .upsert({
       rule_id: ruleId,
       user_id: userId,
-      since_id: sinceId,
+      since_at: sinceAt,
       updated_at: new Date().toISOString()
     })
   
@@ -254,66 +276,56 @@ async function sendAlert(user, ruleId, tweet, channel = 'sms') {
   }
 }
 
-// Get newest tweet ID from response
-function getNewestTweetId(tweets) {
+// Get newest tweet timestamp from response
+function getNewestTweetTimestamp(tweets) {
   if (!tweets || tweets.length === 0) return null
   
-  // Sort by ID (treating as bigint) to ensure newest first
+  // Sort by createdAt to ensure newest first
   const sortedTweets = [...tweets].sort((a, b) => {
-    const idA = BigInt(a.id)
-    const idB = BigInt(b.id)
-    return idB > idA ? 1 : idB < idA ? -1 : 0
+    const dateA = new Date(a.created_at)
+    const dateB = new Date(b.created_at)
+    return dateB - dateA
   })
   
-  return sortedTweets[0].id
+  return sortedTweets[0].created_at
 }
 
-// Update since_id if needed (only if tweets returned)
-async function updateSinceIdIfNeeded(tweets, currentSinceId, updateFunction) {
+// Update since_at if needed (only if tweets returned)
+async function updateSinceAtIfNeeded(tweets, currentSinceAt, updateFunction) {
   if (!tweets || tweets.length === 0) {
-    console.log(`📭 No tweets returned, keeping since_id: ${currentSinceId}`)
+    console.log(`📭 No tweets returned, keeping since_at: ${currentSinceAt}`)
     return
   }
   
-  const newestId = getNewestTweetId(tweets)
-  if (!newestId) return
+  const newestTimestamp = getNewestTweetTimestamp(tweets)
+  if (!newestTimestamp) return
   
-  // Treat IDs as bigint for comparison
-  const currentBigInt = currentSinceId ? BigInt(currentSinceId) : BigInt(0)
-  const newestBigInt = BigInt(newestId)
+  // Compare timestamps
+  const currentDate = currentSinceAt ? new Date(currentSinceAt) : new Date(0)
+  const newestDate = new Date(newestTimestamp)
   
-  if (newestBigInt > currentBigInt) {
-    console.log(`📈 Updating since_id: ${currentSinceId} → ${newestId}`)
-    await updateFunction(newestId)
+  if (newestDate > currentDate) {
+    console.log(`📈 Updating since_at: ${currentSinceAt} → ${newestTimestamp}`)
+    await updateFunction(newestTimestamp)
   } else {
-    console.log(`📊 Newest tweet ID ${newestId} not newer than current ${currentSinceId}`)
+    console.log(`📊 Newest tweet timestamp ${newestTimestamp} not newer than current ${currentSinceAt}`)
   }
-}
-
-// Verify provider honors since_id
-function verifySinceIdHonored(tweets, sentSinceId) {
-  if (!sentSinceId || !tweets || tweets.length === 0) return true
-  
-  const sentBigInt = BigInt(sentSinceId)
-  
-  for (const tweet of tweets) {
-    const tweetBigInt = BigInt(tweet.id)
-    if (tweetBigInt <= sentBigInt) {
-      console.log(`⚠️ SINCE_IGNORED: Tweet ${tweet.id} <= sent since_id ${sentSinceId}`)
-      return false
-    }
-  }
-  
-  return true
 }
 
 // Scout phase: Check if any keywords have new tweets
 async function scoutPhase(keywords, userId, creditsTotal) {
   console.log(`🔍 Scout phase: searching ${keywords.length} keywords in 1 query chunk(s)`)
   
-  // Get scout state since_id
-  const scoutSinceId = await getScoutState(userId)
-  console.log(`🔍 Scout since_id: ${scoutSinceId || 'null (first run)'}`)
+  // Get scout state since_at
+  let scoutSinceAt = await getScoutState(userId)
+  
+  // Seed if first run
+  if (!scoutSinceAt) {
+    scoutSinceAt = getSeedTimestamp()
+    console.log(`🌱 Seeding scout since_at: ${scoutSinceAt} (first run)`)
+  }
+  
+  console.log(`🔍 Scout since_at: ${scoutSinceAt}`)
   
   // Build query with proper escaping
   const keywordQueries = keywords.map(keyword => {
@@ -351,35 +363,32 @@ async function scoutPhase(keywords, userId, creditsTotal) {
   
   for (let i = 0; i < queryChunks.length; i++) {
     const chunk = queryChunks[i]
-    const optimizedQuery = `(${chunk}) lang:en -is:retweet -is:quote -is:reply`
+    const sinceFormatted = formatSinceTimestamp(scoutSinceAt)
+    const optimizedQuery = `(${chunk}) since:${sinceFormatted} lang:en -is:retweet -is:quote -is:reply`
     
     console.log(`🔍 Searching for ${keywords.length} keywords with exact phrase query: ${keywords.join(', ')}`)
     console.log(`📊 Max results: ${CONFIG.SCOUT_MAX_RESULTS}`)
+    console.log(`📅 Using since: ${sinceFormatted}`)
     
     const tweetsData = await searchTweetsByMultipleKeywords(
       keywords,
-      scoutSinceId,
+      sinceFormatted,
       CONFIG.SCOUT_MAX_RESULTS
     )
     
     const tweets = tweetsData.data || []
     totalTweets += tweets.length
     
-    // Verify provider honors since_id
-    const sinceIdHonored = verifySinceIdHonored(tweets, scoutSinceId)
-    if (!sinceIdHonored) {
-      console.log(`⚠️ SINCE_IGNORED: Provider ignoring since_id in scout phase`)
-    }
-    
-    // Update scout since_id if tweets returned
-    await updateSinceIdIfNeeded(tweets, scoutSinceId, (newSinceId) => updateScoutState(userId, newSinceId))
+    // Update scout since_at if tweets returned
+    await updateSinceAtIfNeeded(tweets, scoutSinceAt, (newSinceAt) => updateScoutState(userId, newSinceAt))
     
     await logCost(null, 'scout', { 
       query: optimizedQuery,
       maxResults: CONFIG.SCOUT_MAX_RESULTS,
       chunk: i + 1,
       totalChunks: queryChunks.length,
-      since_id: scoutSinceId
+      sent_since_at: scoutSinceAt,
+      new_since_at: tweets.length > 0 ? getNewestTweetTimestamp(tweets) : null
     }, tweets.length, userId, creditsTotal)
     
     if (tweets.length > 0) {
@@ -422,20 +431,19 @@ async function drillPhase(user, rules, userId, creditsTotal) {
         break
       }
       
-      // Get rule state (since_id)
-      let ruleSinceId = await getRuleState(rule.id)
+      // Get rule state (since_at)
+      let ruleSinceAt = await getRuleState(rule.id)
       
-      // If rule has no since_id and scout hit, seed with scout since_id
-      if (!ruleSinceId) {
-        const scoutSinceId = await getScoutState(userId)
-        if (scoutSinceId) {
-          ruleSinceId = scoutSinceId
-          console.log(`🌱 Seeding rule "${rule.query}" with scout since_id: ${ruleSinceId}`)
-        } else if (CONFIG.SEED_TO_NOW) {
-          // Get current top tweet ID to avoid fetching history
-          console.log(`🌱 SEED_TO_NOW: Getting top tweet ID for rule "${rule.query}"`)
-          // For now, skip this rule once - could implement lightweight "top id" call here
-          continue
+      // If rule has no since_at and scout hit, seed with scout since_at
+      if (!ruleSinceAt) {
+        const scoutSinceAt = await getScoutState(userId)
+        if (scoutSinceAt) {
+          ruleSinceAt = scoutSinceAt
+          console.log(`🌱 Seeding rule "${rule.query}" with scout since_at: ${ruleSinceAt}`)
+        } else {
+          // Seed with current time minus 2 minutes
+          ruleSinceAt = getSeedTimestamp()
+          console.log(`🌱 Seeding rule "${rule.query}" with seed timestamp: ${ruleSinceAt}`)
         }
       }
       
@@ -445,18 +453,19 @@ async function drillPhase(user, rules, userId, creditsTotal) {
         query = `(${query}) AND ("looking for" OR "need" OR "recommend" OR "who can")`
       }
       
-      // Always include filters
+      // Always include filters with since: timestamp
+      const sinceFormatted = formatSinceTimestamp(ruleSinceAt)
       const finalQuery = query.startsWith('@') 
-        ? `from:${query.substring(1)} lang:en -is:retweet -is:quote -is:reply`
-        : `"${query}" lang:en -is:retweet -is:quote -is:reply`
+        ? `from:${query.substring(1)} since:${sinceFormatted} lang:en -is:retweet -is:quote -is:reply`
+        : `"${query}" since:${sinceFormatted} lang:en -is:retweet -is:quote -is:reply`
       
       console.log(`🔍 Drilling rule ${rulesScanned}/${shuffledRules.length}: "${rule.query}"`)
-      console.log(`📅 Using tweet ID cursor: ${ruleSinceId || 'null'}`)
+      console.log(`📅 Using since: ${sinceFormatted}`)
       
-      // Search with since_id
+      // Search with since: timestamp
       const tweetsData = await searchTweetsByMultipleKeywords(
         [rule.query],
-        ruleSinceId,
+        sinceFormatted,
         CONFIG.DRILL_MAX_RESULTS
       )
       
@@ -467,19 +476,14 @@ async function drillPhase(user, rules, userId, creditsTotal) {
         console.log(`⚠️ HUGE_PAGE_WARNING: ${tweets.length} tweets returned for rule "${rule.query}"`)
       }
       
-      // Verify provider honors since_id
-      const sinceIdHonored = verifySinceIdHonored(tweets, ruleSinceId)
-      if (!sinceIdHonored) {
-        console.log(`⚠️ SINCE_IGNORED: Provider ignoring since_id for rule "${rule.query}"`)
-      }
-      
       // Update credits total
       const newCredits = tweets.length * CONFIG.CREDITS_PER_TWEET
       creditsTotal += newCredits
       tweetsTotalUserCycle += tweets.length
       
       await logCost(rule.id, 'drill', { 
-        since_id: ruleSinceId,
+        sent_since_at: ruleSinceAt,
+        new_since_at: tweets.length > 0 ? getNewestTweetTimestamp(tweets) : null,
         query: rule.query
       }, tweets.length, userId, creditsTotal)
       
@@ -515,8 +519,8 @@ async function drillPhase(user, rules, userId, creditsTotal) {
       rulesHit++
       console.log(`✅ Rule HIT: "${rule.query}" - ${newTweets.length} new tweets`)
       
-      // Update rule since_id
-      await updateSinceIdIfNeeded(tweets, ruleSinceId, (newSinceId) => updateRuleState(rule.id, newSinceId, userId))
+      // Update rule since_at
+      await updateSinceAtIfNeeded(tweets, ruleSinceAt, (newSinceAt) => updateRuleState(rule.id, newSinceAt, userId))
       
       // Send alert with newest tweet
       const newestTweet = newTweets[0]
@@ -539,7 +543,7 @@ async function drillPhase(user, rules, userId, creditsTotal) {
       console.error(`❌ Error drilling rule "${rule.query}":`, error)
       await logCost(rule.id, 'drill', { 
         error: error.message,
-        since_id: await getRuleState(rule.id)
+        sent_since_at: await getRuleState(rule.id)
       }, 0, userId, creditsTotal)
     }
   }
@@ -556,8 +560,9 @@ async function backfillWorker(user, ruleId, initialTweets, creditsTotal) {
   console.log(`🔄 Starting backfill worker for rule ${ruleId}`)
   
   try {
-    // Get rule state for since_id
-    const ruleSinceId = await getRuleState(ruleId)
+    // Get rule state for since_at
+    const ruleSinceAt = await getRuleState(ruleId)
+    const sinceFormatted = formatSinceTimestamp(ruleSinceAt)
     
     while (pagesProcessed < CONFIG.BACKFILL_MAX_PAGES && 
            totalTweets < CONFIG.BACKFILL_MAX_TWEETS &&
@@ -567,7 +572,7 @@ async function backfillWorker(user, ruleId, initialTweets, creditsTotal) {
       
       const tweetsData = await searchTweetsByMultipleKeywords(
         [initialTweets[0].keyword],
-        ruleSinceId,
+        sinceFormatted,
         3 // Keep backfill small for efficiency
       )
       
@@ -581,12 +586,6 @@ async function backfillWorker(user, ruleId, initialTweets, creditsTotal) {
       // Check for huge page warning
       if (tweets.length > CONFIG.HUGE_PAGE_THRESHOLD) {
         console.log(`⚠️ HUGE_PAGE_WARNING: Backfill page ${pagesProcessed} returned ${tweets.length} tweets`)
-      }
-      
-      // Verify provider honors since_id
-      const sinceIdHonored = verifySinceIdHonored(tweets, ruleSinceId)
-      if (!sinceIdHonored) {
-        console.log(`⚠️ SINCE_IGNORED: Provider ignoring since_id in backfill`)
       }
       
       // Update credits total
@@ -606,13 +605,14 @@ async function backfillWorker(user, ruleId, initialTweets, creditsTotal) {
       
       await logCost(ruleId, 'backfill', { 
         page: pagesProcessed,
-        since_id: ruleSinceId
+        sent_since_at: ruleSinceAt,
+        new_since_at: tweets.length > 0 ? getNewestTweetTimestamp(tweets) : null
       }, tweets.length, user.x_user_id, creditsTotal)
       
       console.log(`📄 Backfill page ${pagesProcessed}: ${newTweetsFound} new tweets (${totalTweets}/${CONFIG.BACKFILL_MAX_TWEETS} total)`)
       
-      // Update rule since_id
-      await updateSinceIdIfNeeded(tweets, ruleSinceId, (newSinceId) => updateRuleState(ruleId, newSinceId, user.x_user_id))
+      // Update rule since_at
+      await updateSinceAtIfNeeded(tweets, ruleSinceAt, (newSinceAt) => updateRuleState(ruleId, newSinceAt, user.x_user_id))
       
       // Check if we've hit limits
       if (totalTweets >= CONFIG.BACKFILL_MAX_TWEETS) {
