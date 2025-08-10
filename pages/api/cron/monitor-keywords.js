@@ -121,11 +121,12 @@ async function getRuleState(ruleId) {
 }
 
 // Update rule state with new since_id
-async function updateRuleState(ruleId, sinceId) {
+async function updateRuleState(ruleId, sinceId, userId) {
   const { error } = await supabaseAdmin
     .from('rule_states')
     .upsert({
       rule_id: ruleId,
+      user_id: userId,
       since_id: sinceId,
       updated_at: new Date().toISOString()
     })
@@ -444,7 +445,7 @@ async function drillPhase(user, rules, userId, creditsTotal) {
       console.log(`✅ Rule HIT: "${rule.query}" - ${newTweets.length} new tweets`)
       
       // Update rule since_id
-      await updateSinceIdIfNeeded(tweets, ruleSinceId, (newSinceId) => updateRuleState(rule.id, newSinceId))
+      await updateSinceIdIfNeeded(tweets, ruleSinceId, (newSinceId) => updateRuleState(rule.id, newSinceId, userId))
       
       // Send alert with newest tweet
       const newestTweet = newTweets[0]
@@ -529,7 +530,7 @@ async function backfillWorker(user, ruleId, initialTweets, creditsTotal) {
       console.log(`📄 Backfill page ${pagesProcessed}: ${newTweetsFound} new tweets (${totalTweets}/${CONFIG.BACKFILL_MAX_TWEETS} total)`)
       
       // Update rule since_id
-      await updateSinceIdIfNeeded(tweets, ruleSinceId, (newSinceId) => updateRuleState(ruleId, newSinceId))
+      await updateSinceIdIfNeeded(tweets, ruleSinceId, (newSinceId) => updateRuleState(ruleId, newSinceId, user.x_user_id))
       
       // Check if we've hit limits
       if (totalTweets >= CONFIG.BACKFILL_MAX_TWEETS) {
