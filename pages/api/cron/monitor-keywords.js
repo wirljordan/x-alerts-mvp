@@ -453,9 +453,9 @@ async function scoutPhase(user, rules, userId, creditsTotal) {
          if (!seen) {
            await markTweetSeen(matchingRule.id, tweet.id)
            
-           // Safety check: don't send more than 3 alerts per cycle
-           if (totalAlertsSent >= 3) {
-             console.log(`🚫 Alert limit reached (3 per cycle), skipping remaining alerts`)
+           // Safety check: don't send more than 1 alert per cycle (conservative approach)
+           if (totalAlertsSent >= 1) {
+             console.log(`🚫 Alert limit reached (1 per cycle), skipping remaining alerts`)
              break
            }
            
@@ -467,7 +467,7 @@ async function scoutPhase(user, rules, userId, creditsTotal) {
            
            if (alertSent) {
              totalAlertsSent++
-             console.log(`✅ Alert sent for rule "${matchingRule.query}" from scout tweet (${totalAlertsSent}/3)`)
+             console.log(`✅ Alert sent for rule "${matchingRule.query}" from scout tweet (${totalAlertsSent}/1)`)
            }
          } else {
            console.log(`👁️ Tweet already seen for rule "${matchingRule.query}", skipping alert`)
