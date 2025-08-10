@@ -383,6 +383,10 @@ async function scoutPhase(keywords, userId, creditsTotal) {
     const tweets = tweetsData.data || []
     totalTweets += tweets.length
     
+    // Update credits total (always count API calls, regardless of tweet hits)
+    const newCredits = tweets.length * CONFIG.CREDITS_PER_TWEET
+    creditsTotal += newCredits
+    
     // Update scout since_at if tweets returned
     await updateSinceAtIfNeeded(tweets, scoutSinceAt, (newSinceAt) => updateScoutState(userId, newSinceAt))
     
@@ -438,7 +442,7 @@ async function drillPhase(user, rules, userId, creditsTotal) {
       // Get rule state (since_at)
       let ruleSinceAt = await getRuleState(rule.id)
       
-      // If rule has no since_at and scout hit, seed with scout since_at
+      // Only seed if rule has no since_at (first time running this rule)
       if (!ruleSinceAt) {
         const scoutSinceAt = await getScoutState(userId)
         if (scoutSinceAt) {
@@ -480,7 +484,7 @@ async function drillPhase(user, rules, userId, creditsTotal) {
         console.log(`⚠️ HUGE_PAGE_WARNING: ${tweets.length} tweets returned for rule "${rule.query}"`)
       }
       
-      // Update credits total
+      // Update credits total (always count API calls, regardless of tweet hits)
       const newCredits = tweets.length * CONFIG.CREDITS_PER_TWEET
       creditsTotal += newCredits
       tweetsTotalUserCycle += tweets.length
