@@ -7,6 +7,7 @@ const CONFIG = {
   // Server-side filtering
   USE_SINCE_PARAM: true,
   SINCE_PARAM_NAME: process.env.SINCE_PARAM_NAME || 'since_id',
+  SEED_TO_NOW: process.env.SEED_TO_NOW === 'true',
   
   // Scout phase
   SCOUT_MAX_RESULTS: 1,
@@ -14,21 +15,24 @@ const CONFIG = {
   
   // Drill phase
   DRILL_MAX_RESULTS: 3,
-  MAX_TWEETS_PER_RULE_PER_CYCLE: 6,
+  
+  // Cost caps
+  MAX_TWEETS_PER_USER_PER_CYCLE: parseInt(process.env.MAX_TWEETS_PER_USER_PER_CYCLE) || 10,
+  MAX_TWEETS_PER_RULE_PER_CYCLE: parseInt(process.env.MAX_TWEETS_PER_RULE_PER_CYCLE) || 6,
   
   // Backfill phase
   BACKFILL_MAX_PAGES: 2,
   BACKFILL_MAX_TWEETS: 6,
   BACKFILL_MAX_RUNTIME_MS: 6000,
   
-  // Time window fallback
-  TIME_WINDOW_MINUTES: 5,
-  
   // Cost tracking
   CREDITS_PER_TWEET: 15,
   
   // Dedupe cache TTL (48 hours)
-  DEDUPE_CACHE_TTL_HOURS: 48
+  DEDUPE_CACHE_TTL_HOURS: 48,
+  
+  // Provider verification
+  HUGE_PAGE_THRESHOLD: 20
 }
 
 // Fisher-Yates shuffle with deterministic seed
@@ -211,26 +215,33 @@ async function sendAlert(user, ruleId, tweet, channel = 'sms') {
     const formattedPhone = formatPhoneNumber(user.phone)
     
     const smsResult = await sendSMSNotification(formattedPhone, smsText)
-    
     if (smsResult && smsResult.sid) {
       console.log(`📱 SMS sent successfully: ${smsResult.sid}`)
       
       // Update user's alerts_used count
-      await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from('users')
         .update({ alerts_used: alertsUsed + 1 })
-        .eq('id', user.id)
+        .eq('x_user_id', user.x_user_id)
+      
+      if (updateError) {
+        console.error(`❌ Error updating alerts_used for user ${user.x_user_id}:`, updateError)
+      }
       
       // Log the alert
-      await supabaseAdmin
-        .from('alert_logs')
-        .insert({
-          user_id: user.id,
-          rule_id: ruleId,
-          tweet_id: tweet.id,
-          alerted_at: new Date().toISOString(),
-          channel: channel
-        })
+      try {
+        await supabaseAdmin
+          .from('alert_logs')
+          .insert({
+            user_id: user.x_user_id,
+            rule_id: ruleId,
+            tweet_id: tweet.id,
+            alerted_at: new Date().toISOString(),
+            channel: channel
+          })
+      } catch (error) {
+        console.error(`❌ Error logging alert:`, error)
+      }
       
       return true
     } else {
@@ -243,11 +254,11 @@ async function sendAlert(user, ruleId, tweet, channel = 'sms') {
   }
 }
 
-// Get newest tweet ID from response (ensuring newest→oldest order)
+// Get newest tweet ID from response
 function getNewestTweetId(tweets) {
   if (!tweets || tweets.length === 0) return null
   
-  // Ensure tweets are sorted newest→oldest (they should be from API, but double-check)
+  // Sort by ID (treating as bigint) to ensure newest first
   const sortedTweets = [...tweets].sort((a, b) => {
     const idA = BigInt(a.id)
     const idB = BigInt(b.id)
@@ -257,43 +268,58 @@ function getNewestTweetId(tweets) {
   return sortedTweets[0].id
 }
 
-// Update since_id if we have new tweets
+// Update since_id if needed (only if tweets returned)
 async function updateSinceIdIfNeeded(tweets, currentSinceId, updateFunction) {
   if (!tweets || tweets.length === 0) {
     console.log(`📭 No tweets returned, keeping since_id: ${currentSinceId}`)
-    return currentSinceId
+    return
   }
   
   const newestId = getNewestTweetId(tweets)
-  if (!newestId) return currentSinceId
+  if (!newestId) return
   
-  // Convert to BigInt for comparison
-  const newestBigInt = BigInt(newestId)
+  // Treat IDs as bigint for comparison
   const currentBigInt = currentSinceId ? BigInt(currentSinceId) : BigInt(0)
+  const newestBigInt = BigInt(newestId)
   
   if (newestBigInt > currentBigInt) {
     console.log(`📈 Updating since_id: ${currentSinceId} → ${newestId}`)
     await updateFunction(newestId)
-    return newestId
   } else {
-    console.log(`📭 Newest tweet (${newestId}) is older than current since_id (${currentSinceId}), skipping`)
-    return currentSinceId
+    console.log(`📊 Newest tweet ID ${newestId} not newer than current ${currentSinceId}`)
   }
+}
+
+// Verify provider honors since_id
+function verifySinceIdHonored(tweets, sentSinceId) {
+  if (!sentSinceId || !tweets || tweets.length === 0) return true
+  
+  const sentBigInt = BigInt(sentSinceId)
+  
+  for (const tweet of tweets) {
+    const tweetBigInt = BigInt(tweet.id)
+    if (tweetBigInt <= sentBigInt) {
+      console.log(`⚠️ SINCE_IGNORED: Tweet ${tweet.id} <= sent since_id ${sentSinceId}`)
+      return false
+    }
+  }
+  
+  return true
 }
 
 // Scout phase: Check if any keywords have new tweets
 async function scoutPhase(keywords, userId, creditsTotal) {
-  if (keywords.length === 0) return { hasNewTweets: false, tweets: [], creditsTotal }
+  console.log(`🔍 Scout phase: searching ${keywords.length} keywords in 1 query chunk(s)`)
   
-  // Get scout state (since_id)
+  // Get scout state since_id
   const scoutSinceId = await getScoutState(userId)
+  console.log(`🔍 Scout since_id: ${scoutSinceId || 'null (first run)'}`)
   
-  // Escape brackets and special characters in keywords
+  // Build query with proper escaping
   const keywordQueries = keywords.map(keyword => {
     if (keyword.startsWith('@')) {
       return `from:${keyword.substring(1)}`
     }
-    // Escape brackets and forward slashes for literal search
     const escapedKeyword = keyword
       .replace(/\[/g, '\\[')
       .replace(/\]/g, '\\]')
@@ -301,7 +327,6 @@ async function scoutPhase(keywords, userId, creditsTotal) {
     return `"${escapedKeyword}"`
   })
   
-  // Split into chunks if query gets too long
   const queryChunks = []
   let currentChunk = []
   let currentLength = 0
@@ -321,65 +346,61 @@ async function scoutPhase(keywords, userId, creditsTotal) {
     queryChunks.push(currentChunk.join(' OR '))
   }
   
-  console.log(`🔍 Scout phase: searching ${keywords.length} keywords in ${queryChunks.length} query chunk(s)`)
+  let totalTweets = 0
+  let hasNewTweets = false
   
-  // Try each query chunk
   for (let i = 0; i < queryChunks.length; i++) {
     const chunk = queryChunks[i]
-    const scoutQuery = `(${chunk}) lang:en -is:retweet -is:quote -is:reply`
+    const optimizedQuery = `(${chunk}) lang:en -is:retweet -is:quote -is:reply`
     
-    try {
-      // Build params with since_id
-      const params = CONFIG.USE_SINCE_PARAM && scoutSinceId 
-        ? { [CONFIG.SINCE_PARAM_NAME]: scoutSinceId }
-        : { start_time: new Date(Date.now() - CONFIG.TIME_WINDOW_MINUTES * 60 * 1000).toISOString() }
-      
-      const tweetsData = await searchTweetsByMultipleKeywords(
-        keywords, // Pass original keywords for the API call
-        scoutSinceId,
-        CONFIG.SCOUT_MAX_RESULTS
-      )
-      
-      const tweets = tweetsData.data || []
-      const hasNewTweets = tweets.length > 0
-      
-      // Update credits total
-      const newCredits = tweets.length * CONFIG.CREDITS_PER_TWEET
-      creditsTotal += newCredits
-      
-      await logCost(null, 'scout', { 
-        query: scoutQuery, 
-        maxResults: CONFIG.SCOUT_MAX_RESULTS,
-        chunk: i + 1,
-        totalChunks: queryChunks.length,
-        since_id: scoutSinceId
-      }, tweets.length, userId, creditsTotal)
-      
-      console.log(`🔍 Scout chunk ${i + 1}/${queryChunks.length} result: ${hasNewTweets ? 'HIT' : 'MISS'} (${tweets.length} tweets)`)
-      
-      if (hasNewTweets) {
-        // Update scout since_id
-        await updateSinceIdIfNeeded(tweets, scoutSinceId, (newSinceId) => updateScoutState(userId, newSinceId))
-        return { hasNewTweets: true, tweets, creditsTotal }
-      }
-    } catch (error) {
-      console.error(`❌ Scout phase error on chunk ${i + 1}:`, error)
-      await logCost(null, 'scout', { 
-        query: scoutQuery, 
-        maxResults: CONFIG.SCOUT_MAX_RESULTS,
-        chunk: i + 1,
-        totalChunks: queryChunks.length,
-        since_id: scoutSinceId,
-        error: error.message
-      }, 0, userId, creditsTotal)
+    console.log(`🔍 Searching for ${keywords.length} keywords with exact phrase query: ${keywords.join(', ')}`)
+    console.log(`📊 Max results: ${CONFIG.SCOUT_MAX_RESULTS}`)
+    
+    const tweetsData = await searchTweetsByMultipleKeywords(
+      keywords,
+      scoutSinceId,
+      CONFIG.SCOUT_MAX_RESULTS
+    )
+    
+    const tweets = tweetsData.data || []
+    totalTweets += tweets.length
+    
+    // Verify provider honors since_id
+    const sinceIdHonored = verifySinceIdHonored(tweets, scoutSinceId)
+    if (!sinceIdHonored) {
+      console.log(`⚠️ SINCE_IGNORED: Provider ignoring since_id in scout phase`)
+    }
+    
+    // Update scout since_id if tweets returned
+    await updateSinceIdIfNeeded(tweets, scoutSinceId, (newSinceId) => updateScoutState(userId, newSinceId))
+    
+    await logCost(null, 'scout', { 
+      query: optimizedQuery,
+      maxResults: CONFIG.SCOUT_MAX_RESULTS,
+      chunk: i + 1,
+      totalChunks: queryChunks.length,
+      since_id: scoutSinceId
+    }, tweets.length, userId, creditsTotal)
+    
+    if (tweets.length > 0) {
+      console.log(`🔍 Scout chunk ${i + 1}/${queryChunks.length} result: HIT (${tweets.length} tweets)`)
+      hasNewTweets = true
+      break // Early stop on first hit
+    } else {
+      console.log(`🔍 Scout chunk ${i + 1}/${queryChunks.length} result: MISS (${tweets.length} tweets)`)
     }
   }
   
-  console.log(`🔍 Scout result: MISS (all ${queryChunks.length} chunks)`)
-  return { hasNewTweets: false, tweets: [], creditsTotal }
+  if (hasNewTweets) {
+    console.log(`🔍 Scout result: HIT (${totalTweets} total tweets)`)
+  } else {
+    console.log(`🔍 Scout result: MISS (all ${queryChunks.length} chunks)`)
+  }
+  
+  return { hasNewTweets, tweets: [], creditsTotal }
 }
 
-// Drill phase: Check individual rules
+// Drill phase: Check individual rules with cost caps
 async function drillPhase(user, rules, userId, creditsTotal) {
   const seed = generateSeed(userId)
   const shuffledRules = shuffleWithSeed(rules, seed)
@@ -389,20 +410,48 @@ async function drillPhase(user, rules, userId, creditsTotal) {
   let rulesScanned = 0
   let rulesHit = 0
   let alertsSent = 0
+  let tweetsTotalUserCycle = 0
   
   for (const rule of shuffledRules) {
     rulesScanned++
     
     try {
-      // Get rule state (since_id)
-      const ruleSinceId = await getRuleState(rule.id)
+      // Check user-level cost cap
+      if (tweetsTotalUserCycle >= CONFIG.MAX_TWEETS_PER_USER_PER_CYCLE) {
+        console.log(`🚫 COST_CAP_HIT: User ${userId} hit MAX_TWEETS_PER_USER_PER_CYCLE (${CONFIG.MAX_TWEETS_PER_USER_PER_CYCLE})`)
+        break
+      }
       
-      // Build query
-      const query = rule.query.startsWith('@') 
-        ? `from:${rule.query.substring(1)}`
-        : `"${rule.query}" lang:en -is:retweet -is:quote -is:reply`
+      // Get rule state (since_id)
+      let ruleSinceId = await getRuleState(rule.id)
+      
+      // If rule has no since_id and scout hit, seed with scout since_id
+      if (!ruleSinceId) {
+        const scoutSinceId = await getScoutState(userId)
+        if (scoutSinceId) {
+          ruleSinceId = scoutSinceId
+          console.log(`🌱 Seeding rule "${rule.query}" with scout since_id: ${ruleSinceId}`)
+        } else if (CONFIG.SEED_TO_NOW) {
+          // Get current top tweet ID to avoid fetching history
+          console.log(`🌱 SEED_TO_NOW: Getting top tweet ID for rule "${rule.query}"`)
+          // For now, skip this rule once - could implement lightweight "top id" call here
+          continue
+        }
+      }
+      
+      // Build query with intent bundle for broad terms (unless disabled)
+      let query = rule.query
+      if (!rule.intent_strict && query.length < 10) { // Simple heuristic for broad terms
+        query = `(${query}) AND ("looking for" OR "need" OR "recommend" OR "who can")`
+      }
+      
+      // Always include filters
+      const finalQuery = query.startsWith('@') 
+        ? `from:${query.substring(1)} lang:en -is:retweet -is:quote -is:reply`
+        : `"${query}" lang:en -is:retweet -is:quote -is:reply`
       
       console.log(`🔍 Drilling rule ${rulesScanned}/${shuffledRules.length}: "${rule.query}"`)
+      console.log(`📅 Using tweet ID cursor: ${ruleSinceId || 'null'}`)
       
       // Search with since_id
       const tweetsData = await searchTweetsByMultipleKeywords(
@@ -413,9 +462,21 @@ async function drillPhase(user, rules, userId, creditsTotal) {
       
       const tweets = tweetsData.data || []
       
+      // Check for huge page warning
+      if (tweets.length > CONFIG.HUGE_PAGE_THRESHOLD) {
+        console.log(`⚠️ HUGE_PAGE_WARNING: ${tweets.length} tweets returned for rule "${rule.query}"`)
+      }
+      
+      // Verify provider honors since_id
+      const sinceIdHonored = verifySinceIdHonored(tweets, ruleSinceId)
+      if (!sinceIdHonored) {
+        console.log(`⚠️ SINCE_IGNORED: Provider ignoring since_id for rule "${rule.query}"`)
+      }
+      
       // Update credits total
       const newCredits = tweets.length * CONFIG.CREDITS_PER_TWEET
       creditsTotal += newCredits
+      tweetsTotalUserCycle += tweets.length
       
       await logCost(rule.id, 'drill', { 
         since_id: ruleSinceId,
@@ -483,7 +544,7 @@ async function drillPhase(user, rules, userId, creditsTotal) {
     }
   }
   
-  return { rulesScanned, rulesHit, alertsSent, creditsTotal }
+  return { rulesScanned, rulesHit, alertsSent, creditsTotal, tweetsTotalUserCycle }
 }
 
 // Backfill worker with proper caps
@@ -515,6 +576,17 @@ async function backfillWorker(user, ruleId, initialTweets, creditsTotal) {
       if (tweets.length === 0) {
         console.log(`📭 Backfill page ${pagesProcessed}: no more tweets`)
         break
+      }
+      
+      // Check for huge page warning
+      if (tweets.length > CONFIG.HUGE_PAGE_THRESHOLD) {
+        console.log(`⚠️ HUGE_PAGE_WARNING: Backfill page ${pagesProcessed} returned ${tweets.length} tweets`)
+      }
+      
+      // Verify provider honors since_id
+      const sinceIdHonored = verifySinceIdHonored(tweets, ruleSinceId)
+      if (!sinceIdHonored) {
+        console.log(`⚠️ SINCE_IGNORED: Provider ignoring since_id in backfill`)
       }
       
       // Update credits total
@@ -552,9 +624,12 @@ async function backfillWorker(user, ruleId, initialTweets, creditsTotal) {
         console.log(`⏰ Backfill stopped: reached time limit (${Date.now() - startTime}ms/${CONFIG.BACKFILL_MAX_RUNTIME_MS}ms)`)
         break
       }
+      
+      // Small delay between backfill pages
+      await new Promise(resolve => setTimeout(resolve, 1000))
     }
     
-    console.log(`✅ Backfill completed: ${pagesProcessed} pages, ${totalTweets} total tweets`)
+    console.log(`✅ Backfill worker completed: ${pagesProcessed} pages, ${totalTweets} total tweets`)
     
   } catch (error) {
     console.error(`❌ Backfill worker error:`, error)
@@ -672,69 +747,64 @@ export default async function handler(req, res) {
         continue
       }
 
-      // Scout phase: Check if any keywords have new tweets
-      const keywords = rules.map(rule => rule.query)
-      const scoutResult = await scoutPhase(keywords, user.x_user_id, creditsTotal)
-      totalCallsMade++
-      creditsTotal = scoutResult.creditsTotal
-      
-      if (!scoutResult.hasNewTweets) {
-        console.log(`📭 Scout phase: no new tweets found, skipping drill phase for user ${user.x_user_id}`)
-        continue
+      try {
+        // Scout phase: Check if any keywords have new tweets
+        const scoutResult = await scoutPhase(
+          rules.map(rule => rule.query),
+          user.x_user_id,
+          creditsTotal
+        )
+        
+        if (!scoutResult.hasNewTweets) {
+          console.log(`📭 Scout phase: no new tweets found, skipping drill phase for user ${user.x_user_id}`)
+          continue
+        }
+
+        // Drill phase: Check individual rules
+        const drillResult = await drillPhase(user, rules, user.x_user_id, creditsTotal)
+        
+        totalCallsMade += drillResult.rulesScanned + 1 // +1 for scout
+        totalRulesScanned += drillResult.rulesScanned
+        totalRulesHit += drillResult.rulesHit
+        totalSmsSent += drillResult.alertsSent
+        creditsTotal = drillResult.creditsTotal
+        
+        // Log user cycle summary
+        const usdCost = (creditsTotal / 100000).toFixed(6)
+        console.log(`📊 User ${user.x_user_id} cycle summary: rules_considered=${rules.length}, rules_scanned=${drillResult.rulesScanned}, rules_hit=${drillResult.rulesHit}, credits_total=${creditsTotal}, usd=${usdCost}`)
+        
+        if (drillResult.tweetsTotalUserCycle >= CONFIG.MAX_TWEETS_PER_USER_PER_CYCLE) {
+          console.log(`🚫 COST_CAP_HIT: User ${user.x_user_id} hit MAX_TWEETS_PER_USER_PER_CYCLE`)
+        }
+        
+      } catch (error) {
+        console.error(`❌ Error processing user ${user.x_user_id}:`, error)
       }
-
-      // Drill phase: Check individual rules
-      const drillResult = await drillPhase(user, rules, user.x_user_id, creditsTotal)
-      totalCallsMade += drillResult.rulesScanned
-      totalRulesScanned += drillResult.rulesScanned
-      totalRulesHit += drillResult.rulesHit
-      totalSmsSent += drillResult.alertsSent
-      creditsTotal = drillResult.creditsTotal
-
-      results.push({
-        userId: user.x_user_id,
-        rulesScanned: drillResult.rulesScanned,
-        rulesHit: drillResult.rulesHit,
-        alertsSent: drillResult.alertsSent
-      })
     }
 
-    // Calculate cost estimate with precise USD tracking
-    const costEstimate = (creditsTotal / 100000).toFixed(6)
-
+    // Final summary
+    const usdCost = (creditsTotal / 100000).toFixed(6)
     console.log(`🎯 Cron job completed:`)
-    console.log(`  📊 Calls made: ${totalCallsMade}`)
-    console.log(`  🔍 Rules scanned: ${totalRulesScanned}`)
-    console.log(`  ✅ Rules hit: ${totalRulesHit}`)
-    console.log(`  📱 SMS sent: ${totalSmsSent}`)
-    console.log(`  💰 Credits total: ${creditsTotal}`)
-    console.log(`  💵 Cost estimate: $${costEstimate}`)
+    console.log(`📊 Calls made: ${totalCallsMade}`)
+    console.log(`🔍 Rules scanned: ${totalRulesScanned}`)
+    console.log(`✅ Rules hit: ${totalRulesHit}`)
+    console.log(`📱 SMS sent: ${totalSmsSent}`)
+    console.log(`💰 Credits total: ${creditsTotal}`)
+    console.log(`💵 Cost estimate: $${usdCost}`)
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: `Processed ${totalRulesScanned} rules, hit ${totalRulesHit}, sent ${totalSmsSent} alerts`,
       callsMade: totalCallsMade,
       rulesScanned: totalRulesScanned,
       rulesHit: totalRulesHit,
-      totalSmsSent,
-      creditsTotal,
-      costEstimate: parseFloat(costEstimate),
-      results,
+      totalSmsSent: totalSmsSent,
+      creditsTotal: creditsTotal,
+      costEstimate: parseFloat(usdCost),
       timestamp: new Date().toISOString()
     })
 
   } catch (error) {
-    console.error('❌ Error in cron job:', error)
-    return res.status(500).json({
-      success: false,
-      error: error.message,
-      callsMade: 0,
-      rulesScanned: 0,
-      rulesHit: 0,
-      totalSmsSent: 0,
-      creditsTotal: 0,
-      costEstimate: 0,
-      timestamp: new Date().toISOString()
-    })
+    console.error('❌ Cron job error:', error)
+    res.status(500).json({ error: 'Internal server error' })
   }
 } 
