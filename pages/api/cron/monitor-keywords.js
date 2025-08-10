@@ -171,8 +171,8 @@ async function sendAlert(user, ruleId, tweet, channel = 'sms') {
     
     const smsResult = await sendSMSNotification(formattedPhone, smsText)
     
-    if (smsResult.success) {
-      console.log(`📱 SMS sent successfully: ${smsResult.messageId}`)
+    if (smsResult && smsResult.sid) {
+      console.log(`📱 SMS sent successfully: ${smsResult.sid}`)
       
       // Update user's alerts_used count
       await supabaseAdmin
@@ -193,7 +193,7 @@ async function sendAlert(user, ruleId, tweet, channel = 'sms') {
       
       return true
     } else {
-      console.error(`❌ SMS failed: ${smsResult.error}`)
+      console.error(`❌ SMS failed: no message ID returned`)
       return false
     }
   } catch (error) {
