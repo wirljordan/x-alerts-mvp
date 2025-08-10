@@ -104,7 +104,7 @@ BEGIN
   FROM users u
   WHERE u.id = user_uuid;
 END;
-$$ LANGUAGE plpgsql; 
+$$ LANGUAGE plpgsql;
 
 -- Function to clean up old seen_cache entries (48h TTL)
 CREATE OR REPLACE FUNCTION cleanup_seen_cache()

@@ -123,8 +123,8 @@ export default function CreateAlert() {
       const data = await response.json()
 
       if (response.ok && data.success) {
-      // Redirect to dashboard with success message
-      router.push('/dashboard?alert_created=true')
+        // Redirect to dashboard with success message
+        router.push('/dashboard?alert_created=true')
       } else {
         throw new Error(data.error || 'Failed to create alert')
       }
