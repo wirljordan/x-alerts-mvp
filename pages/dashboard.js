@@ -626,6 +626,27 @@ export default function Dashboard() {
     }
   }
 
+  // Check if user is in quiet hours
+  const isInQuietHours = (user) => {
+    if (!user?.timezone || !user?.quiet_hours_start || !user?.quiet_hours_end) {
+      return false
+    }
+    
+    const now = new Date()
+    const userTime = new Date(now.toLocaleString('en-US', { timeZone: user.timezone }))
+    const currentTime = userTime.toTimeString().slice(0, 8)
+    
+    const start = user.quiet_hours_start
+    const end = user.quiet_hours_end
+    
+    if (start <= end) {
+      return currentTime >= start && currentTime <= end
+    } else {
+      // Handles overnight quiet hours (e.g., 22:00 to 08:00)
+      return currentTime >= start || currentTime <= end
+    }
+  }
+
   const handleUpdateUserSetting = async (key, value) => {
     if (!user?.id) return
 
@@ -881,9 +902,10 @@ export default function Dashboard() {
               
               {/* Show settings if columns exist */}
               {user?.timezone && (
-                <div className="space-y-4">
+                <div className="space-y-6">
+                  {/* Timezone Selection */}
                   <div>
-                    <label className="block text-white font-medium mb-2">Timezone</label>
+                    <label className="block text-white font-medium mb-3">Timezone</label>
                     <select
                       value={user?.timezone || 'UTC'}
                       onChange={(e) => handleUpdateUserSetting('timezone', e.target.value)}
@@ -901,28 +923,125 @@ export default function Dashboard() {
                     </select>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-white font-medium mb-2">Quiet Hours Start</label>
-                      <input
-                        type="time"
-                        value={user?.quiet_hours_start || '22:00'}
-                        onChange={(e) => handleUpdateUserSetting('quiet_hours_start', e.target.value)}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-white font-medium mb-2">Quiet Hours End</label>
-                      <input
-                        type="time"
-                        value={user?.quiet_hours_end || '08:00'}
-                        onChange={(e) => handleUpdateUserSetting('quiet_hours_end', e.target.value)}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
-                      />
+                  {/* Quick Time Presets */}
+                  <div>
+                    <label className="block text-white font-medium mb-3">Quick Presets</label>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                      <button
+                        onClick={() => {
+                          handleUpdateUserSetting('quiet_hours_start', '22:00')
+                          handleUpdateUserSetting('quiet_hours_end', '08:00')
+                        }}
+                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                          user?.quiet_hours_start === '22:00' && user?.quiet_hours_end === '08:00'
+                            ? 'bg-[#16D9E3] text-[#0F1C2E]'
+                            : 'bg-white/10 text-white hover:bg-white/20'
+                        }`}
+                      >
+                        10 PM - 8 AM
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleUpdateUserSetting('quiet_hours_start', '23:00')
+                          handleUpdateUserSetting('quiet_hours_end', '07:00')
+                        }}
+                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                          user?.quiet_hours_start === '23:00' && user?.quiet_hours_end === '07:00'
+                            ? 'bg-[#16D9E3] text-[#0F1C2E]'
+                            : 'bg-white/10 text-white hover:bg-white/20'
+                        }`}
+                      >
+                        11 PM - 7 AM
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleUpdateUserSetting('quiet_hours_start', '00:00')
+                          handleUpdateUserSetting('quiet_hours_end', '06:00')
+                        }}
+                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                          user?.quiet_hours_start === '00:00' && user?.quiet_hours_end === '06:00'
+                            ? 'bg-[#16D9E3] text-[#0F1C2E]'
+                            : 'bg-white/10 text-white hover:bg-white/20'
+                        }`}
+                      >
+                        12 AM - 6 AM
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleUpdateUserSetting('quiet_hours_start', '01:00')
+                          handleUpdateUserSetting('quiet_hours_end', '09:00')
+                        }}
+                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                          user?.quiet_hours_start === '01:00' && user?.quiet_hours_end === '09:00'
+                            ? 'bg-[#16D9E3] text-[#0F1C2E]'
+                            : 'bg-white/10 text-white hover:bg-white/20'
+                        }`}
+                      >
+                        1 AM - 9 AM
+                      </button>
                     </div>
                   </div>
                   
-                  <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  {/* Custom Time Inputs */}
+                  <div>
+                    <label className="block text-white font-medium mb-3">Custom Times</label>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-white/80 text-sm mb-2">Start Time</label>
+                        <div className="relative">
+                          <input
+                            type="time"
+                            value={user?.quiet_hours_start || '22:00'}
+                            onChange={(e) => handleUpdateUserSetting('quiet_hours_start', e.target.value)}
+                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
+                          />
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/40">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-white/80 text-sm mb-2">End Time</label>
+                        <div className="relative">
+                          <input
+                            type="time"
+                            value={user?.quiet_hours_end || '08:00'}
+                            onChange={(e) => handleUpdateUserSetting('quiet_hours_end', e.target.value)}
+                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
+                          />
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/40">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Current Status */}
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-medium">Current Quiet Hours</p>
+                        <p className="text-white/60 text-sm">
+                          {user?.quiet_hours_start || '22:00'} - {user?.quiet_hours_end || '08:00'} ({user?.timezone || 'UTC'})
+                        </p>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        isInQuietHours(user) 
+                          ? 'bg-orange-500/20 text-orange-400' 
+                          : 'bg-green-500/20 text-green-400'
+                      }`}>
+                        {isInQuietHours(user) ? '🔕 Quiet Hours Active' : '🔔 Notifications Active'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Information */}
+                  <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                     <p className="text-blue-400 text-sm">
                       💡 During quiet hours, you'll still receive notifications but they won't be sent via SMS to avoid disturbing you.
                     </p>
