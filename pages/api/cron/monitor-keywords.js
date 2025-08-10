@@ -236,8 +236,8 @@ async function logCost(ruleId, phase, paramsSent, tweetsReturned, userId, credit
 // Send alert and update usage
 async function sendAlert(user, ruleId, tweet, channel = 'sms') {
   try {
-    // Check if user has alerts remaining
-    const alertsUsed = user.alerts_used || 0
+    // Check if user has alerts remaining - use sms_used for consistency with dashboard
+    const alertsUsed = user.sms_used || 0
     let alertsLimit = 10
     const planLimits = { 'free': 10, 'starter': 100, 'growth': 300, 'pro': 1000 }
     alertsLimit = planLimits[user.plan] || 10
@@ -255,14 +255,14 @@ async function sendAlert(user, ruleId, tweet, channel = 'sms') {
     if (smsResult && smsResult.sid) {
       console.log(`📱 SMS sent successfully: ${smsResult.sid}`)
       
-      // Update user's alerts_used count
+      // Update user's sms_used count (to match dashboard display)
       const { error: updateError } = await supabaseAdmin
         .from('users')
-        .update({ alerts_used: alertsUsed + 1 })
+        .update({ sms_used: alertsUsed + 1 })
         .eq('x_user_id', user.x_user_id)
       
       if (updateError) {
-        console.error(`❌ Error updating alerts_used for user ${user.x_user_id}:`, updateError)
+        console.error(`❌ Error updating sms_used for user ${user.x_user_id}:`, updateError)
       }
       
       // Log the alert
@@ -601,7 +601,7 @@ export default async function handler(req, res) {
           x_user_id,
           phone,
           plan,
-          alerts_used,
+          sms_used,
           alerts_limit,
           timezone,
           quiet_hours_start,
@@ -660,8 +660,8 @@ export default async function handler(req, res) {
       
       console.log(`👤 Processing user ${user.x_user_id} with ${rules.length} rules`)
       
-      // Check if user has alerts credits remaining
-      const alertsUsed = user.alerts_used || 0
+      // Check if user has alerts credits remaining - use sms_used for consistency
+      const alertsUsed = user.sms_used || 0
       let alertsLimit = 10
       const planLimits = { 'free': 10, 'starter': 100, 'growth': 300, 'pro': 1000 }
       alertsLimit = planLimits[user.plan] || 10
