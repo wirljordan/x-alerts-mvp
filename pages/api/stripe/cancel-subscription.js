@@ -22,7 +22,7 @@ async function handleKeywordOverflow(userId, targetPlan) {
   
   // Get user's current keywords
   const { data: alerts, error: alertsError } = await supabaseAdmin
-    .from('alerts')
+    .from('keyword_rules')
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: true }) // Keep oldest keywords first
@@ -50,7 +50,7 @@ async function handleKeywordOverflow(userId, targetPlan) {
   
   if (keywordIdsToDelete.length > 0) {
     const { error: deleteError } = await supabaseAdmin
-      .from('alerts')
+      .from('keyword_rules')
       .delete()
       .in('id', keywordIdsToDelete)
     
@@ -62,7 +62,7 @@ async function handleKeywordOverflow(userId, targetPlan) {
     console.log(`Successfully removed ${keywordsToDelete.length} keywords`)
     return { 
       removedCount: keywordsToDelete.length, 
-      removedKeywords: keywordsToDelete.map(k => k.query_string)
+      removedKeywords: keywordsToDelete.map(k => k.query)
     }
   }
   
