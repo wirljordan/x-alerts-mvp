@@ -5,6 +5,12 @@ import { supabaseAdmin } from '../../../lib/supabase'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
+// Debug environment variables
+console.log('=== ENVIRONMENT CHECK ===')
+console.log('STRIPE_SECRET_KEY configured:', !!process.env.STRIPE_SECRET_KEY)
+console.log('STRIPE_WEBHOOK_SECRET configured:', !!process.env.STRIPE_WEBHOOK_SECRET)
+console.log('Webhook secret length:', webhookSecret ? webhookSecret.length : 0)
+
 // Function to get keyword limits for each plan
 function getKeywordLimit(plan) {
   const limits = {
@@ -82,15 +88,31 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  // Enhanced debugging for webhook signature issues
+  console.log('=== WEBHOOK DEBUG INFO ===')
+  console.log('Request headers:', Object.keys(req.headers))
+  console.log('Content-Type:', req.headers['content-type'])
+  console.log('User-Agent:', req.headers['user-agent'])
+  console.log('Stripe-Signature present:', !!req.headers['stripe-signature'])
+  console.log('Webhook secret configured:', !!webhookSecret)
+  
   const buf = await buffer(req)
   const sig = req.headers['stripe-signature']
+
+  console.log('Request body length:', buf.length)
+  console.log('Signature header value:', sig ? `${sig.substring(0, 20)}...` : 'MISSING')
 
   let event
 
   try {
     event = stripe.webhooks.constructEvent(buf, sig, webhookSecret)
+    console.log('✅ Webhook signature verification successful')
+    console.log('Event type:', event.type)
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message)
+    console.error('❌ Webhook signature verification failed:', err.message)
+    console.error('Error type:', err.type)
+    console.error('Error code:', err.code)
+    console.error('Full error:', err)
     return res.status(400).send(`Webhook Error: ${err.message}`)
   }
 
