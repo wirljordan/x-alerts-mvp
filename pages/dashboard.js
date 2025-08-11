@@ -1085,7 +1085,7 @@ export default function Dashboard() {
               {currentPlan !== 'free' && (
                 <div className="mt-3 p-3 bg-[#16D9E3]/10 border border-[#16D9E3]/20 rounded-lg">
                   <p className="text-[#16D9E3] text-sm text-center">
-                    💡 <strong>Fair Upgrade:</strong> When you upgrade, we'll credit you for any remaining days on your current plan!
+                    💡 <strong>Upgrade anytime</strong> — we'll credit you for unused days!
                   </p>
                 </div>
               )}
@@ -1104,6 +1104,7 @@ export default function Dashboard() {
                   <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
                     <p>1 keyword tracked</p>
                     <p>10 SMS / mo</p>
+                    <p className="text-[#16D9E3] font-medium">Try it out, risk-free.</p>
                   </div>
                   <button
                     onClick={() => handleUpgrade('free')}
@@ -1131,6 +1132,7 @@ export default function Dashboard() {
                   <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
                     <p>3 keywords tracked</p>
                     <p>100 SMS / mo</p>
+                    <p className="text-[#16D9E3] font-medium">Perfect for solopreneurs.</p>
                   </div>
                   <button
                     onClick={() => handleUpgrade('starter')}
@@ -1161,6 +1163,7 @@ export default function Dashboard() {
                   <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
                     <p>10 keywords tracked</p>
                     <p>300 SMS / mo</p>
+                    <p className="text-[#16D9E3] font-medium">Get alerts fast, win more customers.</p>
                   </div>
                   <button
                     onClick={() => handleUpgrade('growth')}
@@ -1190,6 +1193,7 @@ export default function Dashboard() {
                   <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
                     <p>30 keywords tracked</p>
                     <p>1,000 SMS / mo</p>
+                    <p className="text-[#16D9E3] font-medium">For serious lead hunters.</p>
                   </div>
                   <button
                     onClick={() => handleUpgrade('pro')}
