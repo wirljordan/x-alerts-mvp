@@ -93,6 +93,9 @@ export default async function handler(req, res) {
   console.log('Request headers:', Object.keys(req.headers))
   console.log('Content-Type:', req.headers['content-type'])
   console.log('User-Agent:', req.headers['user-agent'])
+  console.log('Referer:', req.headers['referer'])
+  console.log('Origin:', req.headers['origin'])
+  console.log('X-Forwarded-For:', req.headers['x-forwarded-for'])
   console.log('Stripe-Signature present:', !!req.headers['stripe-signature'])
   console.log('Webhook secret configured:', !!webhookSecret)
   
