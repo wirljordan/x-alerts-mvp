@@ -932,6 +932,39 @@ export default function Dashboard() {
                   
 
                   
+                  {/* Quick Time Presets */}
+                  <div>
+                    <label className="block text-white font-medium mb-3">Quick Presets</label>
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      <button
+                        onClick={() => {
+                          handleUpdateUserSetting('quiet_hours_start', '22:00')
+                          handleUpdateUserSetting('quiet_hours_end', '08:00')
+                        }}
+                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                          user?.quiet_hours_start === '22:00' && user?.quiet_hours_end === '08:00'
+                            ? 'bg-[#16D9E3] text-[#0F1C2E]'
+                            : 'bg-white/10 text-white hover:bg-white/20'
+                        }`}
+                      >
+                        10 PM - 8 AM
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleUpdateUserSetting('quiet_hours_start', '23:00')
+                          handleUpdateUserSetting('quiet_hours_end', '07:00')
+                        }}
+                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                          user?.quiet_hours_start === '23:00' && user?.quiet_hours_end === '07:00'
+                            ? 'bg-[#16D9E3] text-[#0F1C2E]'
+                            : 'bg-white/10 text-white hover:bg-white/20'
+                        }`}
+                      >
+                        11 PM - 7 AM
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Custom Time Inputs */}
                   <div>
                     <label className="block text-white font-medium mb-3">Custom Times</label>
