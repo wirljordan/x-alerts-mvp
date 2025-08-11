@@ -914,15 +914,15 @@ export default function Dashboard() {
                   <div>
                     <label className="block text-white font-medium mb-3">Timezone</label>
                     <select
-                      value={user?.timezone || 'UTC'}
+                      value={user?.timezone || 'America/New_York'}
                       onChange={(e) => handleUpdateUserSetting('timezone', e.target.value)}
                       className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
                     >
-                      <option value="UTC">UTC</option>
                       <option value="America/New_York">Eastern Time (ET)</option>
                       <option value="America/Chicago">Central Time (CT)</option>
                       <option value="America/Denver">Mountain Time (MT)</option>
                       <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                      <option value="UTC">UTC</option>
                       <option value="Europe/London">London (GMT)</option>
                       <option value="Europe/Paris">Paris (CET)</option>
                       <option value="Asia/Tokyo">Tokyo (JST)</option>
@@ -941,13 +941,43 @@ export default function Dashboard() {
                         <div className="relative">
                           <input
                             type="time"
-                            value={user?.quiet_hours_start || '22:00'}
+                            value={user?.quiet_hours_start || '20:00'}
                             onChange={(e) => handleUpdateUserSetting('quiet_hours_start', e.target.value)}
                             className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors [&::-webkit-calendar-picker-indicator]:bg-white/20 [&::-webkit-calendar-picker-indicator]:rounded [&::-webkit-calendar-picker-indicator]:p-1 [&::-webkit-calendar-picker-indicator]:hover:bg-white/30"
                           />
                         </div>
                         {/* Quick Start Time Bubbles */}
                         <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => handleUpdateUserSetting('quiet_hours_start', '16:00')}
+                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                              user?.quiet_hours_start === '16:00'
+                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            4 PM
+                          </button>
+                          <button
+                            onClick={() => handleUpdateUserSetting('quiet_hours_start', '18:00')}
+                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                              user?.quiet_hours_start === '18:00'
+                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            6 PM
+                          </button>
+                          <button
+                            onClick={() => handleUpdateUserSetting('quiet_hours_start', '20:00')}
+                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                              user?.quiet_hours_start === '20:00'
+                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            8 PM
+                          </button>
                           <button
                             onClick={() => handleUpdateUserSetting('quiet_hours_start', '22:00')}
                             className={`px-2 py-1 text-xs rounded-full transition-colors ${
@@ -957,26 +987,6 @@ export default function Dashboard() {
                             }`}
                           >
                             10 PM
-                          </button>
-                          <button
-                            onClick={() => handleUpdateUserSetting('quiet_hours_start', '23:00')}
-                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                              user?.quiet_hours_start === '23:00'
-                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            11 PM
-                          </button>
-                          <button
-                            onClick={() => handleUpdateUserSetting('quiet_hours_start', '00:00')}
-                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                              user?.quiet_hours_start === '00:00'
-                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            12 AM
                           </button>
                         </div>
                       </div>
@@ -993,6 +1003,16 @@ export default function Dashboard() {
                         {/* Quick End Time Bubbles */}
                         <div className="flex gap-2 mt-2">
                           <button
+                            onClick={() => handleUpdateUserSetting('quiet_hours_end', '04:00')}
+                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                              user?.quiet_hours_end === '04:00'
+                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            4 AM
+                          </button>
+                          <button
                             onClick={() => handleUpdateUserSetting('quiet_hours_end', '06:00')}
                             className={`px-2 py-1 text-xs rounded-full transition-colors ${
                               user?.quiet_hours_end === '06:00'
@@ -1003,16 +1023,6 @@ export default function Dashboard() {
                             6 AM
                           </button>
                           <button
-                            onClick={() => handleUpdateUserSetting('quiet_hours_end', '07:00')}
-                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                              user?.quiet_hours_end === '07:00'
-                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            7 AM
-                          </button>
-                          <button
                             onClick={() => handleUpdateUserSetting('quiet_hours_end', '08:00')}
                             className={`px-2 py-1 text-xs rounded-full transition-colors ${
                               user?.quiet_hours_end === '08:00'
@@ -1021,6 +1031,16 @@ export default function Dashboard() {
                             }`}
                           >
                             8 AM
+                          </button>
+                          <button
+                            onClick={() => handleUpdateUserSetting('quiet_hours_end', '10:00')}
+                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                              user?.quiet_hours_end === '10:00'
+                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            10 AM
                           </button>
                         </div>
                       </div>
