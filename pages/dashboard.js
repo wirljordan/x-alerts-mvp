@@ -935,34 +935,20 @@ export default function Dashboard() {
                   {/* Quick Time Presets */}
                   <div>
                     <label className="block text-white font-medium mb-3">Quick Presets</label>
-                    <div className="grid grid-cols-2 gap-2 mb-4">
-                      <button
-                        onClick={() => {
-                          handleUpdateUserSetting('quiet_hours_start', '22:00')
-                          handleUpdateUserSetting('quiet_hours_end', '08:00')
-                        }}
-                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                          user?.quiet_hours_start === '22:00' && user?.quiet_hours_end === '08:00'
-                            ? 'bg-[#16D9E3] text-[#0F1C2E]'
-                            : 'bg-white/10 text-white hover:bg-white/20'
-                        }`}
-                      >
-                        10 PM - 8 AM
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleUpdateUserSetting('quiet_hours_start', '23:00')
-                          handleUpdateUserSetting('quiet_hours_end', '07:00')
-                        }}
-                        className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                          user?.quiet_hours_start === '23:00' && user?.quiet_hours_end === '07:00'
-                            ? 'bg-[#16D9E3] text-[#0F1C2E]'
-                            : 'bg-white/10 text-white hover:bg-white/20'
-                        }`}
-                      >
-                        11 PM - 7 AM
-                      </button>
-                    </div>
+                    <select
+                      value={`${user?.quiet_hours_start || '22:00'}-${user?.quiet_hours_end || '08:00'}`}
+                      onChange={(e) => {
+                        const [start, end] = e.target.value.split('-')
+                        handleUpdateUserSetting('quiet_hours_start', start)
+                        handleUpdateUserSetting('quiet_hours_end', end)
+                      }}
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
+                    >
+                      <option value="22:00-08:00">10 PM - 8 AM</option>
+                      <option value="23:00-07:00">11 PM - 7 AM</option>
+                      <option value="00:00-06:00">12 AM - 6 AM</option>
+                      <option value="custom">Custom Times</option>
+                    </select>
                   </div>
 
                   {/* Custom Time Inputs */}
