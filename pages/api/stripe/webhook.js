@@ -103,12 +103,18 @@ export default async function handler(req, res) {
         
         // Update user's subscription status in Supabase
         try {
-          const { userId, plan } = session.metadata
-          console.log('Processing webhook for user:', userId, 'plan:', plan)
+          const { userId, plan, isUpgrade, prorationAmount } = session.metadata
+          console.log('Processing webhook for user:', userId, 'plan:', plan, 'isUpgrade:', isUpgrade)
           
           if (!userId || !plan) {
             console.error('Missing userId or plan in session metadata')
             break
+          }
+          
+          // Handle prorated upgrade
+          if (isUpgrade === 'true' && prorationAmount) {
+            const prorationDollars = (parseInt(prorationAmount) / 100).toFixed(2)
+            console.log(`Prorated upgrade detected: $${prorationDollars} credit applied`)
           }
           
           // Map plan names to match our schema

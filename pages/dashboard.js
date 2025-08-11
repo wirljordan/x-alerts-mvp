@@ -591,6 +591,13 @@ export default function Dashboard() {
         throw new Error(data.error || 'Failed to create checkout session')
       }
 
+      // Show proration info if it's an upgrade
+      if (data.isUpgrade && data.prorationAmount > 0) {
+        const prorationDollars = (data.prorationAmount / 100).toFixed(2)
+        const remainingDays = data.remainingDays || 0
+        console.log(`Upgrade with proration: $${prorationDollars} credit for ${remainingDays} remaining days`)
+      }
+
       // Wait for Stripe to load if not already loaded
       if (typeof window !== 'undefined' && !window.Stripe) {
         await new Promise(resolve => {
@@ -1075,6 +1082,13 @@ export default function Dashboard() {
 
             <div className="mb-6">
               <p className="text-white/60 text-center">Current: {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}</p>
+              {currentPlan !== 'free' && (
+                <div className="mt-3 p-3 bg-[#16D9E3]/10 border border-[#16D9E3]/20 rounded-lg">
+                  <p className="text-[#16D9E3] text-sm text-center">
+                    💡 <strong>Fair Upgrade:</strong> When you upgrade, we'll credit you for any remaining days on your current plan!
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="grid md:grid-cols-4 gap-4 lg:gap-6">
