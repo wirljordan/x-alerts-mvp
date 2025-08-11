@@ -943,13 +943,8 @@ export default function Dashboard() {
                             type="time"
                             value={user?.quiet_hours_start || '22:00'}
                             onChange={(e) => handleUpdateUserSetting('quiet_hours_start', e.target.value)}
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
+                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors [&::-webkit-calendar-picker-indicator]:bg-white/20 [&::-webkit-calendar-picker-indicator]:rounded [&::-webkit-calendar-picker-indicator]:p-1 [&::-webkit-calendar-picker-indicator]:hover:bg-white/30"
                           />
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/40">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
                         </div>
                       </div>
                       <div>
@@ -959,13 +954,8 @@ export default function Dashboard() {
                             type="time"
                             value={user?.quiet_hours_end || '08:00'}
                             onChange={(e) => handleUpdateUserSetting('quiet_hours_end', e.target.value)}
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
+                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors [&::-webkit-calendar-picker-indicator]:bg-white/20 [&::-webkit-calendar-picker-indicator]:rounded [&::-webkit-calendar-picker-indicator]:p-1 [&::-webkit-calendar-picker-indicator]:hover:bg-white/30"
                           />
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/40">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
                         </div>
                       </div>
                     </div>
