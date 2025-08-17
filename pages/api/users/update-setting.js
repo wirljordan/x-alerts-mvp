@@ -56,11 +56,18 @@ export default async function handler(req, res) {
       }
     }
 
+    // Map API setting keys to database column names
+    const columnMapping = {
+      'aiLeadFinderEnabled': 'ai_lead_finder_enabled'
+    }
+    
+    const dbColumn = columnMapping[settingKey] || settingKey
+    
     // Update the user setting
     const { data, error } = await supabaseAdmin
       .from('users')
       .update({ 
-        [settingKey]: settingValue,
+        [dbColumn]: settingValue,
         updated_at: new Date().toISOString()
       })
       .eq('id', userId)
