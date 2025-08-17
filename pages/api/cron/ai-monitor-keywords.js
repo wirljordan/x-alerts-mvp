@@ -306,9 +306,9 @@ export default async function handler(req, res) {
           plan,
           timezone,
           quiet_hours_start,
-          quiet_hours_end
-        ),
-        business_profiles!inner(*)
+          quiet_hours_end,
+          business_profiles(*)
+        )
       `)
       .eq('status', 'active')
 
@@ -340,7 +340,7 @@ export default async function handler(req, res) {
       if (!userRules[userId]) {
         userRules[userId] = {
           user: rule.users,
-          businessProfile: rule.business_profiles,
+          businessProfile: rule.users.business_profiles?.[0] || null,
           rules: []
         }
       }
@@ -348,13 +348,24 @@ export default async function handler(req, res) {
     }
 
     let totalCallsMade = 0
+    
+    // Filter out users without business profiles
+    const usersWithProfiles = Object.values(userRules).filter(userData => {
+      if (!userData.businessProfile) {
+        console.log(`⚠️ Skipping user ${userData.user.x_user_id} - no business profile found`)
+        return false
+      }
+      return true
+    })
+    
+    console.log(`📊 Processing ${usersWithProfiles.length} users with business profiles`)
     let totalRulesScanned = 0
     let totalRulesHit = 0
     let totalRepliesPosted = 0
     let creditsTotal = 0
 
-    // Process each user
-    for (const [userId, userData] of Object.entries(userRules)) {
+    // Process each user with business profiles
+    for (const userData of usersWithProfiles) {
       const { user, businessProfile, rules } = userData
       totalRulesScanned += rules.length
 
