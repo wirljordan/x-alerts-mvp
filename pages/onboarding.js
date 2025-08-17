@@ -22,7 +22,9 @@ export default function Onboarding() {
   const [formData, setFormData] = useState({
     goal: 'leads', // Pre-select first option
     plan: 'free',
-    businessDescription: ''
+    companyName: '',
+    businessDescription: '',
+    websiteUrl: ''
   })
   const [validationErrors, setValidationErrors] = useState({})
   const [touchedFields, setTouchedFields] = useState({})
@@ -101,18 +103,21 @@ export default function Onboarding() {
 
       console.log('User data saved to Supabase:', data)
 
-      // Create business profile if description is provided
-      if (formData.businessDescription.trim()) {
-        setIsCreatingBusinessProfile(true)
-        try {
-          const businessResponse = await fetch('/api/business-profile/create', {
+              // Create business profile if company name is provided
+        if (formData.companyName.trim()) {
+          setIsCreatingBusinessProfile(true)
+          try {
+          
+          const businessResponse = await fetch('/api/business-profile/create-enhanced', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               userId: user?.id || 'unknown',
-              siteText: formData.businessDescription
+              companyName: formData.companyName,
+              websiteUrl: formData.websiteUrl,
+              businessDescription: formData.businessDescription
             })
           })
 
@@ -229,7 +234,7 @@ export default function Onboarding() {
       case 1:
         return formData.goal !== ''
       case 2:
-        return true // Business description is optional
+        return formData.companyName.trim() !== '' // Company name is required
       case 3:
         return formData.plan !== ''
       default:
@@ -299,7 +304,7 @@ export default function Onboarding() {
             ></div>
           </div>
           <div className="text-xs text-white/40 mt-2 text-center">
-            Goal → Business → Plan
+            Goal → Company → Plan
           </div>
         </div>
 
@@ -352,6 +357,34 @@ export default function Onboarding() {
               
               <div className="space-y-6">
                 <div>
+                  <label className="block text-white font-medium mb-2">Company Name *</label>
+                  <input
+                    type="text"
+                    value={formData.companyName}
+                    onChange={(e) => updateFormData('companyName', e.target.value)}
+                    placeholder="Your Company Name"
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
+                  />
+                  <p className="text-xs text-white/60 mt-1">
+                    Your company name will be used in AI-generated replies and business profile.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-white font-medium mb-2">Website URL</label>
+                  <input
+                    type="url"
+                    value={formData.websiteUrl}
+                    onChange={(e) => updateFormData('websiteUrl', e.target.value)}
+                    placeholder="https://yourcompany.com"
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
+                  />
+                  <p className="text-xs text-white/60 mt-1">
+                    Optional: Our AI can analyze your website to better understand your business and generate more relevant replies.
+                  </p>
+                </div>
+                
+                <div>
                   <label className="block text-white font-medium mb-2">Business Description</label>
                   <textarea
                     value={formData.businessDescription}
@@ -365,9 +398,9 @@ export default function Onboarding() {
                   </p>
                 </div>
                 
-                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                  <p className="text-green-400 text-sm">
-                    💡 The more specific you are, the better our AI can help you engage with potential customers.
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-blue-400 text-sm">
+                    🤖 Our AI will analyze your website and business description to create a comprehensive profile for generating personalized, helpful replies.
                   </p>
                 </div>
               </div>
