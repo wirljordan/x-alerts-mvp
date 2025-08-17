@@ -85,6 +85,11 @@ export default function Dashboard() {
   const [currentPlan, setCurrentPlan] = useState('free') // free, starter, growth, pro
   const [keywordForm, setKeywordForm] = useState({ keyword: '' })
   const [isCreatingKeyword, setIsCreatingKeyword] = useState(false)
+  
+  // Website management state
+  const [websiteUrl, setWebsiteUrl] = useState('')
+  const [isSavingWebsite, setIsSavingWebsite] = useState(false)
+  const [isRefreshingWebsite, setIsRefreshingWebsite] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -208,6 +213,9 @@ export default function Dashboard() {
                   
                   // Fetch user's alerts/keywords
                   await fetchUserAlerts(sessionData.user.id)
+                  
+                  // Fetch business profile to get website URL
+                  await fetchBusinessProfile(sessionData.user.id)
                 } else {
                   // User doesn't exist in database, redirect to onboarding
                   console.log('User not found in database, redirecting to onboarding')
@@ -282,6 +290,20 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('Error fetching alerts:', error)
+    }
+  }
+
+  const fetchBusinessProfile = async (userId) => {
+    try {
+      const response = await fetch(`/api/business-profile/get?userId=${userId}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.businessProfile) {
+          setWebsiteUrl(data.businessProfile.website_url || '')
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching business profile:', error)
     }
   }
 
@@ -705,6 +727,70 @@ export default function Dashboard() {
     }
   }
 
+  const handleSaveWebsite = async () => {
+    if (!user?.id || !websiteUrl.trim()) return
+
+    setIsSavingWebsite(true)
+    try {
+      const response = await fetch('/api/business-profile/update-website', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          websiteUrl: websiteUrl.trim()
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setSuccessMessage('Website URL saved successfully!')
+        setShowSuccessModal(true)
+      } else {
+        throw new Error(data.error || 'Failed to save website URL')
+      }
+    } catch (error) {
+      console.error('Error saving website URL:', error)
+      alert(`Failed to save website URL: ${error.message}`)
+    } finally {
+      setIsSavingWebsite(false)
+    }
+  }
+
+  const handleRefreshWebsite = async () => {
+    if (!user?.id || !websiteUrl.trim()) return
+
+    setIsRefreshingWebsite(true)
+    try {
+      const response = await fetch('/api/business-profile/refresh-website', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          websiteUrl: websiteUrl.trim()
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setSuccessMessage('Website content refreshed successfully! AI will now use the updated information.')
+        setShowSuccessModal(true)
+      } else {
+        throw new Error(data.error || 'Failed to refresh website content')
+      }
+    } catch (error) {
+      console.error('Error refreshing website:', error)
+      alert(`Failed to refresh website: ${error.message}`)
+    } finally {
+      setIsRefreshingWebsite(false)
+    }
+  }
+
 
 
   if (isLoading) {
@@ -834,25 +920,7 @@ export default function Dashboard() {
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-                  <div>
-                    <p className="text-white font-medium">AI-Powered Lead Generation</p>
-                    <p className="text-white/60 text-sm">
-                      {user?.ai_lead_finder_enabled 
-                        ? 'Automatically finding and engaging with potential leads'
-                        : 'AI lead finder is currently disabled'
-                      }
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-semibold ${user?.ai_lead_finder_enabled ? 'text-[#16D9E3]' : 'text-white/40'}`}>
-                      {user?.ai_lead_finder_enabled ? 'Active' : 'Inactive'}
-                    </p>
-                    <p className="text-white/40 text-xs">
-                      {user?.ai_lead_finder_enabled ? 'Every 5 minutes' : 'Turn on to start'}
-                    </p>
-                  </div>
-                </div>
+
                 
                 {user?.ai_lead_finder_enabled ? (
                   <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
@@ -864,6 +932,84 @@ export default function Dashboard() {
                   <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                     <p className="text-yellow-400 text-sm">
                       ⚠️ AI lead finder is disabled. Turn it on to start automatically engaging with potential customers.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Website Management Section */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
+              <div className="flex items-center justify-between mb-4 lg:mb-6">
+                <h2 className="text-lg lg:text-2xl font-semibold text-white">Website Information</h2>
+                <button
+                  onClick={() => handleRefreshWebsite()}
+                  disabled={isRefreshingWebsite}
+                  className="px-4 py-2 lg:px-6 lg:py-3 font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] disabled:bg-white/20 disabled:cursor-not-allowed"
+                >
+                  {isRefreshingWebsite ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0F1C2E] mr-2 inline"></div>
+                      Refreshing...
+                    </>
+                  ) : (
+                    <>
+                      <span className="mr-2">🔄</span>
+                      Refresh Website
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-white font-medium mb-2">Your Website URL</label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="url"
+                      value={websiteUrl}
+                      onChange={(e) => setWebsiteUrl(e.target.value)}
+                      placeholder="https://yourwebsite.com"
+                      className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
+                    />
+                    <button
+                      onClick={() => handleSaveWebsite()}
+                      disabled={isSavingWebsite}
+                      className="px-4 py-3 bg-[#16D9E3] hover:bg-[#16D9E3]/90 disabled:bg-white/20 disabled:cursor-not-allowed text-[#0F1C2E] font-semibold rounded-lg transition-colors"
+                    >
+                      {isSavingWebsite ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0F1C2E] mr-2 inline"></div>
+                          Saving...
+                        </>
+                      ) : (
+                        'Save'
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-white/60 mt-2">
+                    Update your website URL so AI can get the latest information for better replies. 
+                    {websiteUrl && ' Click "Refresh Website" to fetch updated content.'}
+                  </p>
+                </div>
+
+                {websiteUrl && (
+                  <div className="p-4 bg-white/5 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-white font-medium">Website Status</span>
+                      <span className="text-green-400 text-sm">✓ Connected</span>
+                    </div>
+                    <p className="text-white/60 text-sm">
+                      AI will use your website content to generate personalized replies. 
+                      Keep your website updated for the best results.
+                    </p>
+                  </div>
+                )}
+
+                {!websiteUrl && (
+                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                    <p className="text-yellow-400 text-sm">
+                      ⚠️ No website URL set. Add your website URL to help AI generate better, more personalized replies.
                     </p>
                   </div>
                 )}

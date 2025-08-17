@@ -12,7 +12,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing userId parameter' })
     }
 
-    // Get business profile from database
+    // Get the business profile for the user
     const { data, error } = await supabaseAdmin
       .from('business_profiles')
       .select('*')
@@ -22,19 +22,26 @@ export default async function handler(req, res) {
     if (error) {
       if (error.code === 'PGRST116') {
         // No business profile found
-        return res.status(404).json({ error: 'Business profile not found' })
+        return res.status(200).json({ 
+          success: true, 
+          businessProfile: null,
+          message: 'No business profile found' 
+        })
       }
-      console.error('Error fetching business profile:', error)
+      console.error('Supabase error:', error)
       return res.status(500).json({ error: 'Failed to fetch business profile' })
     }
 
-    res.status(200).json({
-      success: true,
-      businessProfile: data
+    console.log('Business profile fetched successfully:', data)
+
+    res.status(200).json({ 
+      success: true, 
+      businessProfile: data,
+      message: 'Business profile fetched successfully' 
     })
 
   } catch (error) {
-    console.error('Error getting business profile:', error)
+    console.error('API error:', error)
     res.status(500).json({ error: 'Internal server error' })
   }
 } 
