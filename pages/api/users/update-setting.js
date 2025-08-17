@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     }
 
     // Validate setting key
-    const allowedSettings = ['timezone', 'quiet_hours_start', 'quiet_hours_end', 'delivery_mode']
+    const allowedSettings = ['timezone', 'quiet_hours_start', 'quiet_hours_end', 'delivery_mode', 'aiLeadFinderEnabled']
     if (!allowedSettings.includes(settingKey)) {
       return res.status(400).json({ error: `Invalid setting key. Allowed: ${allowedSettings.join(', ')}` })
     }
@@ -46,6 +46,13 @@ export default async function handler(req, res) {
       const validModes = ['sms', 'push', 'inapp']
       if (!validModes.includes(settingValue)) {
         return res.status(400).json({ error: 'Invalid delivery mode. Allowed: sms, push, inapp' })
+      }
+    }
+
+    // Validate aiLeadFinderEnabled if provided
+    if (settingKey === 'aiLeadFinderEnabled') {
+      if (typeof settingValue !== 'boolean') {
+        return res.status(400).json({ error: 'aiLeadFinderEnabled must be a boolean value (true/false)' })
       }
     }
 

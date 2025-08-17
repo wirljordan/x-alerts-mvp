@@ -672,7 +672,7 @@ export default function Dashboard() {
   const handleToggleAILeadFinder = async () => {
     if (!user?.id) return
 
-    const newValue = !user?.aiLeadFinderEnabled
+    const newValue = !user?.ai_lead_finder_enabled
 
     try {
       const response = await fetch('/api/users/update-setting', {
@@ -692,7 +692,7 @@ export default function Dashboard() {
       if (response.ok && data.success) {
         setUser(prevUser => ({
           ...prevUser,
-          aiLeadFinderEnabled: newValue
+          ai_lead_finder_enabled: newValue
         }))
         setSuccessMessage(`AI Lead Finder ${newValue ? 'enabled' : 'disabled'} successfully!`)
         setShowSuccessModal(true)
@@ -798,12 +798,12 @@ export default function Dashboard() {
                   <button
                     onClick={() => handleToggleAILeadFinder()}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#16D9E3] focus:ring-offset-2 focus:ring-offset-[#0F1C2E] ${
-                      user?.aiLeadFinderEnabled ? 'bg-[#16D9E3]' : 'bg-white/20'
+                      user?.ai_lead_finder_enabled ? 'bg-[#16D9E3]' : 'bg-white/20'
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        user?.aiLeadFinderEnabled ? 'translate-x-6' : 'translate-x-1'
+                        user?.ai_lead_finder_enabled ? 'translate-x-6' : 'translate-x-1'
                       }`}
                     />
                   </button>
@@ -838,23 +838,23 @@ export default function Dashboard() {
                   <div>
                     <p className="text-white font-medium">AI-Powered Lead Generation</p>
                     <p className="text-white/60 text-sm">
-                      {user?.aiLeadFinderEnabled 
+                      {user?.ai_lead_finder_enabled 
                         ? 'Automatically finding and engaging with potential leads'
                         : 'AI lead finder is currently disabled'
                       }
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className={`font-semibold ${user?.aiLeadFinderEnabled ? 'text-[#16D9E3]' : 'text-white/40'}`}>
-                      {user?.aiLeadFinderEnabled ? 'Active' : 'Inactive'}
+                    <p className={`font-semibold ${user?.ai_lead_finder_enabled ? 'text-[#16D9E3]' : 'text-white/40'}`}>
+                      {user?.ai_lead_finder_enabled ? 'Active' : 'Inactive'}
                     </p>
                     <p className="text-white/40 text-xs">
-                      {user?.aiLeadFinderEnabled ? 'Every 5 minutes' : 'Turn on to start'}
+                      {user?.ai_lead_finder_enabled ? 'Every 5 minutes' : 'Turn on to start'}
                     </p>
                   </div>
                 </div>
                 
-                {user?.aiLeadFinderEnabled ? (
+                {user?.ai_lead_finder_enabled ? (
                   <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
                     <p className="text-green-400 text-sm">
                       ✅ AI is actively monitoring your keywords and engaging with potential leads using personalized replies.
