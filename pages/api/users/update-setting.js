@@ -58,10 +58,16 @@ export default async function handler(req, res) {
 
     // Map API setting keys to database column names
     const columnMapping = {
-      'aiLeadFinderEnabled': 'ai_lead_finder_enabled'
+      'aiLeadFinderEnabled': 'ai_lead_finder_enabled',
+      'timezone': 'timezone',
+      'quiet_hours_start': 'quiet_hours_start',
+      'quiet_hours_end': 'quiet_hours_end',
+      'delivery_mode': 'delivery_mode'
     }
     
     const dbColumn = columnMapping[settingKey] || settingKey
+    
+    console.log(`🔧 Updating user setting: ${settingKey} -> ${dbColumn} = ${settingValue}`)
     
     // Update the user setting
     const { data, error } = await supabaseAdmin
