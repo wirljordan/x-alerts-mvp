@@ -81,6 +81,8 @@ export default function Dashboard() {
   const [downgradeInfo, setDowngradeInfo] = useState({ plan: '', message: '' })
   const [usage, setUsage] = useState({ used: 0, limit: 25 }) // Default to free plan limits
   const [alerts, setAlerts] = useState([])
+  const [twitterAPIKey, setTwitterAPIKey] = useState('')
+  const [isAddingTwitterAPI, setIsAddingTwitterAPI] = useState(false)
   const [currentPlan, setCurrentPlan] = useState('free') // free, starter, growth, pro
   const [keywordForm, setKeywordForm] = useState({ keyword: '' })
   const [isCreatingKeyword, setIsCreatingKeyword] = useState(false)
@@ -162,19 +164,24 @@ export default function Dashboard() {
           const sessionData = JSON.parse(cookies.x_session)
           setUser(sessionData.user)
           
-          // Fetch user data from Supabase to check if they exist (database is source of truth)
-          if (sessionData.user?.id) {
-            try {
-              const response = await fetch(`/api/users/get?userId=${sessionData.user.id}`)
-              if (response.ok) {
-                const data = await response.json()
-                if (data.success && data.user) {
-                  // User exists in database, they have completed onboarding
-                  console.log('User found in database:', data.user)
-                  setUser(prevUser => ({
-                    ...prevUser,
-                    ...data.user
-                  }))
+                            // Fetch user data from Supabase to check if they exist (database is source of truth)
+                  if (sessionData.user?.id) {
+                    try {
+                      const response = await fetch(`/api/users/get?userId=${sessionData.user.id}`)
+                      if (response.ok) {
+                        const data = await response.json()
+                        if (data.success && data.user) {
+                          // User exists in database, they have completed onboarding
+                          console.log('User found in database:', data.user)
+                          
+                          // Check if user has TwitterAPI.io credentials
+                          const hasTwitterAPI = await checkTwitterAPICredentials(sessionData.user.id)
+                          
+                          setUser(prevUser => ({
+                            ...prevUser,
+                            ...data.user,
+                            hasTwitterAPI
+                          }))
                   
                   // Set current plan from Supabase
                   console.log('Setting current plan to:', data.user.plan || 'free')
@@ -268,6 +275,19 @@ export default function Dashboard() {
     document.cookie = 'x_session_secure=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
     document.cookie = 'x_user_id=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
     router.push('/')
+  }
+
+  const checkTwitterAPICredentials = async (userId) => {
+    try {
+      const response = await fetch(`/api/auth/check-twitterapi?userId=${userId}`)
+      if (response.ok) {
+        const data = await response.json()
+        return data.hasCredentials
+      }
+    } catch (error) {
+      console.error('Error checking TwitterAPI.io credentials:', error)
+    }
+    return false
   }
 
   const fetchUserAlerts = async (userId) => {
@@ -688,6 +708,79 @@ export default function Dashboard() {
     }
   }
 
+  const handleAddTwitterAPIKey = async () => {
+    if (!twitterAPIKey.trim() || !user?.id) return
+
+    setIsAddingTwitterAPI(true)
+    try {
+      const response = await fetch('/api/auth/twitterapi-setup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          apiKey: twitterAPIKey.trim()
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setUser(prevUser => ({
+          ...prevUser,
+          hasTwitterAPI: true
+        }))
+        setTwitterAPIKey('')
+        setSuccessMessage('TwitterAPI.io key added successfully! AI auto-replies are now enabled.')
+        setShowSuccessModal(true)
+      } else {
+        throw new Error(data.error || 'Failed to add TwitterAPI.io key')
+      }
+    } catch (error) {
+      console.error('Error adding TwitterAPI.io key:', error)
+      alert(`Failed to add TwitterAPI.io key: ${error.message}`)
+    } finally {
+      setIsAddingTwitterAPI(false)
+    }
+  }
+
+  const handleRemoveTwitterAPIKey = async () => {
+    if (!user?.id) return
+
+    if (!confirm('Are you sure you want to remove your TwitterAPI.io key? This will disable AI auto-replies.')) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/auth/twitterapi-setup', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setUser(prevUser => ({
+          ...prevUser,
+          hasTwitterAPI: false
+        }))
+        setSuccessMessage('TwitterAPI.io key removed. AI auto-replies are now disabled.')
+        setShowSuccessModal(true)
+      } else {
+        throw new Error(data.error || 'Failed to remove TwitterAPI.io key')
+      }
+    } catch (error) {
+      console.error('Error removing TwitterAPI.io key:', error)
+      alert(`Failed to remove TwitterAPI.io key: ${error.message}`)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0F1C2E]">
@@ -847,36 +940,90 @@ export default function Dashboard() {
               </div>
               
               <div className="space-y-4">
-                <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                  <div className="flex items-start space-x-3">
-                    <span className="text-yellow-400 text-xl">⚠️</span>
-                    <div>
-                      <p className="text-yellow-400 font-medium">TwitterAPI.io Access Required</p>
-                      <p className="text-yellow-400/80 text-sm mt-1">
-                        To post AI-generated replies, you need to provide your TwitterAPI.io API key. This allows our AI to reply to tweets on your behalf.
-                      </p>
+                {!user?.hasTwitterAPI ? (
+                  <>
+                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <span className="text-yellow-400 text-xl">⚠️</span>
+                        <div>
+                          <p className="text-yellow-400 font-medium">TwitterAPI.io Access Required</p>
+                          <p className="text-yellow-400/80 text-sm mt-1">
+                            To post AI-generated replies, you need to provide your TwitterAPI.io API key. This allows our AI to reply to tweets on your behalf.
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-white/5 rounded-lg">
-                  <p className="text-white/80 text-sm mb-3">
-                    <strong>How it works:</strong>
-                  </p>
-                  <ul className="text-white/60 text-sm space-y-1">
-                    <li>• Add your TwitterAPI.io API key securely</li>
-                    <li>• Our AI monitors for relevant tweets</li>
-                    <li>• Automatically posts helpful replies</li>
-                    <li>• You maintain full control over your account</li>
-                  </ul>
-                </div>
-                
-                <button
-                  onClick={() => alert('TwitterAPI.io integration coming soon!')}
-                  className="w-full px-4 py-3 bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] font-semibold rounded-lg transition-colors"
-                >
-                  Add TwitterAPI.io Key
-                </button>
+                    
+                    <div className="p-4 bg-white/5 rounded-lg">
+                      <p className="text-white/80 text-sm mb-3">
+                        <strong>How it works:</strong>
+                      </p>
+                      <ul className="text-white/60 text-sm space-y-1">
+                        <li>• Add your TwitterAPI.io API key securely</li>
+                        <li>• Our AI monitors for relevant tweets</li>
+                        <li>• Automatically posts helpful replies</li>
+                        <li>• You maintain full control over your account</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <input
+                        type="password"
+                        placeholder="Enter your TwitterAPI.io API key"
+                        value={twitterAPIKey}
+                        onChange={(e) => setTwitterAPIKey(e.target.value)}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
+                      />
+                      <button
+                        onClick={handleAddTwitterAPIKey}
+                        disabled={!twitterAPIKey.trim() || isAddingTwitterAPI}
+                        className="w-full px-4 py-3 bg-[#16D9E3] hover:bg-[#16D9E3]/90 disabled:bg-white/20 disabled:cursor-not-allowed text-[#0F1C2E] font-semibold rounded-lg transition-colors"
+                      >
+                        {isAddingTwitterAPI ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0F1C2E] mr-2 inline"></div>
+                            Verifying...
+                          </>
+                        ) : (
+                          'Add TwitterAPI.io Key'
+                        )}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <span className="text-green-400 text-xl">✅</span>
+                        <div>
+                          <p className="text-green-400 font-medium">TwitterAPI.io Connected</p>
+                          <p className="text-green-400/80 text-sm mt-1">
+                            Your TwitterAPI.io account is connected and ready for AI-powered auto-replies.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 bg-white/5 rounded-lg">
+                      <p className="text-white/80 text-sm mb-3">
+                        <strong>Status:</strong>
+                      </p>
+                      <ul className="text-white/60 text-sm space-y-1">
+                        <li>• ✅ API key verified and active</li>
+                        <li>• 🤖 AI monitoring enabled</li>
+                        <li>• 📝 Auto-replies will be posted</li>
+                        <li>• 🔄 Running every 5 minutes</li>
+                      </ul>
+                    </div>
+                    
+                    <button
+                      onClick={handleRemoveTwitterAPIKey}
+                      className="w-full px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold rounded-lg transition-colors border border-red-500/20"
+                    >
+                      Remove TwitterAPI.io Key
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
