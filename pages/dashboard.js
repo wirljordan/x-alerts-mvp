@@ -182,32 +182,29 @@ export default function Dashboard() {
                   console.log('Setting current plan to:', data.user.plan || 'free')
                   setCurrentPlan(data.user.plan || 'free')
                   
-                  // Update usage limits from database (handle both old SMS and new alerts fields)
-                  // Prioritize sms_used since alerts_used might be outdated during migration
-                  const alertsUsed = data.user.sms_used !== undefined ? data.user.sms_used : (data.user.alerts_used || 0)
-                  let alertsLimit = data.user.alerts_limit
+                  // Update usage limits from database (track AI replies instead of SMS)
+                  const aiRepliesUsed = data.user.ai_replies_used || 0
+                  let aiRepliesLimit = data.user.ai_replies_limit
                   
                   // Debug logging to see what values we're getting
-                  console.log('🔍 Debug SMS usage:', {
-                    alerts_used: data.user.alerts_used,
-                    sms_used: data.user.sms_used,
-                    final_alertsUsed: alertsUsed,
-                    alerts_limit: data.user.alerts_limit,
+                  console.log('🔍 Debug AI replies usage:', {
+                    ai_replies_used: data.user.ai_replies_used,
+                    ai_replies_limit: data.user.ai_replies_limit,
                     plan: data.user.plan
                   })
                   
-                  // If alerts_limit is not set (migration not run), calculate from plan
-                  if (alertsLimit === undefined || alertsLimit === null) {
+                  // If ai_replies_limit is not set, calculate from plan
+                  if (aiRepliesLimit === undefined || aiRepliesLimit === null) {
                     const planLimits = {
                       'free': 10,
                       'starter': 100,
                       'growth': 300,
                       'pro': 1000
                     }
-                    alertsLimit = planLimits[data.user.plan] || 10
+                    aiRepliesLimit = planLimits[data.user.plan] || 10
                   }
                   
-                  setUsage({ used: alertsUsed, limit: alertsLimit })
+                  setUsage({ used: aiRepliesUsed, limit: aiRepliesLimit })
                   
                   // Fetch user's alerts/keywords
                   await fetchUserAlerts(sessionData.user.id)
@@ -439,23 +436,22 @@ export default function Dashboard() {
               setCurrentPlan(data.user.plan || 'free')
               console.log('User data refreshed, plan updated to:', data.user.plan)
               
-              // Update usage limits from database (handle both old SMS and new alerts fields)
-              // Prioritize sms_used since alerts_used might be outdated during migration
-              const alertsUsed = data.user.sms_used !== undefined ? data.user.sms_used : (data.user.alerts_used || 0)
-              let alertsLimit = data.user.alerts_limit
+              // Update usage limits from database (track AI replies instead of SMS)
+              const aiRepliesUsed = data.user.ai_replies_used || 0
+              let aiRepliesLimit = data.user.ai_replies_limit
               
-              // If alerts_limit is not set (migration not run), calculate from plan
-              if (alertsLimit === undefined || alertsLimit === null) {
+              // If ai_replies_limit is not set, calculate from plan
+              if (aiRepliesLimit === undefined || aiRepliesLimit === null) {
                 const planLimits = {
                   'free': 10,
                   'starter': 100,
                   'growth': 300,
                   'pro': 1000
                 }
-                alertsLimit = planLimits[data.user.plan] || 10
+                aiRepliesLimit = planLimits[data.user.plan] || 10
               }
               
-              setUsage({ used: alertsUsed, limit: alertsLimit })
+              setUsage({ used: aiRepliesUsed, limit: aiRepliesLimit })
             }
           }
         }
@@ -815,6 +811,29 @@ export default function Dashboard() {
               </div>
               
               <div className="space-y-4">
+                {/* AI Reply Usage Progress */}
+                <div className="p-4 bg-white/5 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white font-medium">AI Replies Used</span>
+                    <span className="text-white/60 text-sm">{usage.used} / {usage.limit}</span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-2 mb-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-500 ${
+                        usage.used / usage.limit > 0.8 
+                          ? 'bg-red-500' 
+                          : usage.used / usage.limit > 0.6 
+                          ? 'bg-yellow-500' 
+                          : 'bg-[#16D9E3]'
+                      }`}
+                      style={{ width: `${Math.min((usage.used / usage.limit) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-white/60 text-xs">
+                    {usage.limit - usage.used} AI replies remaining this month
+                  </p>
+                </div>
+
                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                   <div>
                     <p className="text-white font-medium">AI-Powered Lead Generation</p>

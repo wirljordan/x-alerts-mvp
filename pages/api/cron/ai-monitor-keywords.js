@@ -98,6 +98,17 @@ async function processAndReplyToTweet(tweet, rule, user, businessProfile) {
 
     if (replyResult.success) {
       console.log(`✅ Reply posted successfully: ${replyResult.replyId}`)
+      
+      // Increment AI replies usage
+      try {
+        await supabaseAdmin.rpc('increment_ai_replies_used', {
+          user_uuid: user.id
+        })
+        console.log(`📊 Incremented AI replies usage for user ${user.id}`)
+      } catch (error) {
+        console.error(`❌ Error incrementing AI replies usage:`, error)
+      }
+      
       return { 
         processed: true, 
         replyId: replyResult.replyId,
