@@ -59,7 +59,7 @@ function AlertItem({ alert, onToggle, onDelete }) {
 function getKeywordLimit(plan) {
   const limits = {
     'free': 1,
-    'starter': 2,
+    'starter': 3,
     'growth': 10,
     'pro': 30
   }
@@ -875,6 +875,50 @@ export default function Dashboard() {
         <div className="max-w-4xl mx-auto">
           {/* Main Dashboard */}
           <div className="space-y-6 lg:space-y-8">
+                        {/* Keywords Section */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
+              <div className="flex items-center justify-between mb-4 lg:mb-6">
+                <h2 className="text-lg lg:text-2xl font-semibold text-white">Keywords</h2>
+                <button
+                  onClick={handleAddAlert}
+                  disabled={alerts.length >= getKeywordLimit(currentPlan)}
+                  className={`px-4 py-2 lg:px-6 lg:py-3 font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base ${
+                    alerts.length >= getKeywordLimit(currentPlan)
+                      ? 'bg-white/20 text-white/40 cursor-not-allowed' 
+                      : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
+                  }`}
+                >
+                  Add Keyword ({alerts.length}/{getKeywordLimit(currentPlan)})
+                </button>
+              </div>
+              
+              {alerts.length === 0 ? (
+                <div className="text-center py-8 lg:py-12">
+                  <div className="w-16 h-16 lg:w-20 lg:h-20 bg-[#16D9E3]/20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
+                    <span className="text-[#16D9E3] text-2xl lg:text-3xl">🔔</span>
+                  </div>
+                  <p className="text-white/60 mb-4 lg:mb-6 text-sm lg:text-base">Create your first keyword</p>
+                  <button
+                    onClick={handleAddAlert}
+                    className="px-6 py-3 lg:px-8 lg:py-4 bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base"
+                  >
+                    Create Your First Keyword
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3 lg:space-y-4">
+                  {alerts.map((alert) => (
+                    <AlertItem 
+                      key={alert.id} 
+                      alert={alert} 
+                      onToggle={handleToggleAlert}
+                      onDelete={showDeleteConfirmation}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* AI Lead Finder Section */}
             <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
               <div className="flex items-center justify-between mb-4 lg:mb-6">
@@ -920,7 +964,7 @@ export default function Dashboard() {
                   </p>
                 </div>
 
-
+                
                 
                 {user?.ai_lead_finder_enabled ? (
                   <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
@@ -1016,58 +1060,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Keywords Section */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
-              <div className="flex items-center justify-between mb-4 lg:mb-6">
-                <h2 className="text-lg lg:text-2xl font-semibold text-white">Keywords</h2>
-                <button
-                  onClick={handleAddAlert}
-                  disabled={alerts.length >= getKeywordLimit(currentPlan)}
-                  className={`px-4 py-2 lg:px-6 lg:py-3 font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base ${
-                    alerts.length >= getKeywordLimit(currentPlan)
-                      ? 'bg-white/20 text-white/40 cursor-not-allowed' 
-                      : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
-                  }`}
-                >
-                  Add Keyword ({alerts.length}/{getKeywordLimit(currentPlan)})
-                </button>
-              </div>
-              
-              {alerts.length === 0 ? (
-                <div className="text-center py-8 lg:py-12">
-                  <div className="w-16 h-16 lg:w-20 lg:h-20 bg-[#16D9E3]/20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
-                    <span className="text-[#16D9E3] text-2xl lg:text-3xl">🔔</span>
-                  </div>
-                  <p className="text-white/60 mb-4 lg:mb-6 text-sm lg:text-base">Create your first keyword</p>
-                  <button
-                    onClick={handleAddAlert}
-                    className="px-6 py-3 lg:px-8 lg:py-4 bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base"
-                  >
-                    Create Your First Keyword
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3 lg:space-y-4">
-                  {alerts.map((alert) => (
-                    <AlertItem 
-                      key={alert.id} 
-                      alert={alert} 
-                      onToggle={handleToggleAlert}
-                      onDelete={showDeleteConfirmation}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-
-
-
-
-
           </div>
-
-
         </div>
       </div>
 
@@ -1135,11 +1128,12 @@ export default function Dashboard() {
               }`}>
                 <div className="text-center">
                   <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">Starter</h3>
-                  <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$9<span className="text-sm font-normal text-white/60">/mo</span></p>
+                  <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$29<span className="text-sm font-normal text-white/60">/mo</span></p>
                   <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
-                    <p>3 keywords tracked</p>
-                    <p>100 SMS / mo</p>
-                    <p className="text-[#16D9E3] font-medium">Perfect for solopreneurs.</p>
+                    <p>100 auto-replies / month</p>
+                    <p>3 keyword sets</p>
+                    <p>Core relevance & safety filters</p>
+                    <p className="text-[#16D9E3] font-medium">Start landing replies without camping the feed.</p>
                   </div>
                   <button
                     onClick={() => handleUpgrade('starter')}
@@ -1166,11 +1160,12 @@ export default function Dashboard() {
                 <div className="text-center">
                   <div className="bg-[#FF6B4A] text-white text-xs font-medium px-2 py-1 rounded-full inline-block mb-2">Popular</div>
                   <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">Growth</h3>
-                  <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$19<span className="text-sm font-normal text-white/60">/mo</span></p>
+                  <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$79<span className="text-sm font-normal text-white/60">/mo</span></p>
                   <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
-                    <p>10 keywords tracked</p>
-                    <p>300 SMS / mo</p>
-                    <p className="text-[#16D9E3] font-medium">Get alerts fast, win more customers.</p>
+                    <p>300 auto-replies / month</p>
+                    <p>10 keyword sets</p>
+                    <p>Priority posting window (5-min freshness)</p>
+                    <p className="text-[#16D9E3] font-medium">Reply daily to high-intent prospects.</p>
                   </div>
                   <button
                     onClick={() => handleUpgrade('growth')}
@@ -1196,11 +1191,12 @@ export default function Dashboard() {
               }`}>
                 <div className="text-center">
                   <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">Pro</h3>
-                  <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$49<span className="text-sm font-normal text-white/60">/mo</span></p>
+                  <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$149<span className="text-sm font-normal text-white/60">/mo</span></p>
                   <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
-                    <p>30 keywords tracked</p>
-                    <p>1,000 SMS / mo</p>
-                    <p className="text-[#16D9E3] font-medium">For serious lead hunters.</p>
+                    <p>1,000 auto-replies / month</p>
+                    <p>30 keyword sets</p>
+                    <p>Advanced filters for safe, on-brand replies</p>
+                    <p className="text-[#16D9E3] font-medium">Scale your presence — never miss an opportunity.</p>
                   </div>
                   <button
                     onClick={() => handleUpgrade('pro')}

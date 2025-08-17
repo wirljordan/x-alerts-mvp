@@ -247,14 +247,17 @@ export default function Home() {
             {/* Starter Plan */}
             <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg hover:scale-[1.02] transition-all duration-300">
               <h3 className="text-2xl font-bold text-white mb-2">Starter</h3>
-              <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$9</div>
-              <div className="text-white mb-4 font-medium">Solo creators</div>
+              <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$29</div>
+              <div className="text-white mb-4 font-medium">Start landing replies without camping the feed</div>
               <div className="space-y-4 mb-6 w-full">
                 <div className="border-b border-white/10 pb-2">
-                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">3</span> keywords tracked</div>
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">100</span> auto-replies / month</div>
+                </div>
+                <div className="border-b border-white/10 pb-2">
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">3</span> keyword sets</div>
                 </div>
                 <div>
-                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">100</span> SMS / mo</div>
+                  <div className="text-white/90 text-base">Core relevance & safety filters</div>
                 </div>
               </div>
               <button 
@@ -268,14 +271,17 @@ export default function Home() {
             <div className="bg-[#0F1C2E] border-2 border-[#16D9E3] rounded-2xl p-8 flex flex-col items-center shadow-2xl relative hover:scale-[1.02] transition-all duration-300">
               <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-[#16D9E3] text-[#0F1C2E] text-xs font-bold px-4 py-1 rounded-full shadow-lg drop-shadow-md">★ Most Popular</div>
               <h3 className="text-2xl font-bold text-white mb-2">Growth</h3>
-              <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$19</div>
-              <div className="text-white mb-4 font-medium">Indie hackers & small shops</div>
+              <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$79</div>
+              <div className="text-white mb-4 font-medium">Reply daily to high-intent prospects</div>
               <div className="space-y-4 mb-6 w-full">
                 <div className="border-b border-white/10 pb-2">
-                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">10</span> keywords tracked</div>
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">300</span> auto-replies / month</div>
+                </div>
+                <div className="border-b border-white/10 pb-2">
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">10</span> keyword sets</div>
                 </div>
                 <div>
-                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">300</span> SMS / mo</div>
+                  <div className="text-white/90 text-base">Priority posting window (5-min freshness)</div>
                 </div>
               </div>
               <button 
@@ -288,14 +294,17 @@ export default function Home() {
             {/* Pro Plan */}
             <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-8 flex flex-col items-center shadow-lg hover:scale-[1.02] transition-all duration-300">
               <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
-              <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$49</div>
-              <div className="text-white mb-4 font-medium">Small teams & agencies</div>
+              <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$149</div>
+              <div className="text-white mb-4 font-medium">Scale your presence — never miss an opportunity</div>
               <div className="space-y-4 mb-6 w-full">
                 <div className="border-b border-white/10 pb-2">
-                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">30</span> keywords tracked</div>
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">1,000</span> auto-replies / month</div>
+                </div>
+                <div className="border-b border-white/10 pb-2">
+                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">30</span> keyword sets</div>
                 </div>
                 <div>
-                  <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">1,000</span> SMS / mo</div>
+                  <div className="text-white/90 text-base">Advanced filters for safe, on-brand replies</div>
                 </div>
               </div>
               <button 
@@ -305,6 +314,11 @@ export default function Home() {
                 Choose Pro
               </button>
             </div>
+          </div>
+          <div className="text-center mt-12">
+            <p className="text-white/80 text-lg">
+              ✨ 7-day free trial on all plans. Cancel anytime.
+            </p>
           </div>
         </div>
       </div>

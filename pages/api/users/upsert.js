@@ -22,15 +22,15 @@ export default async function handler(req, res) {
 
     const mappedPlan = planMapping[plan] || 'free'
 
-    // Calculate alerts limits based on plan
-    const alertsLimits = {
+    // Calculate AI replies limits based on plan
+    const aiRepliesLimits = {
       'free': 10,
       'starter': 100,
       'growth': 300,
       'pro': 1000
     }
 
-    const alertsLimit = alertsLimits[plan] || 10
+    const aiRepliesLimit = aiRepliesLimits[plan] || 10
 
     // Upsert user data
     const { data, error } = await supabaseAdmin
@@ -41,11 +41,9 @@ export default async function handler(req, res) {
         email: email || null,
         phone: phone || null,
         plan: mappedPlan,
-        alerts_limit: alertsLimit,
-        alerts_used: 0,
-        ai_lead_finder_enabled: true, // Default to enabled for new users
+        ai_replies_limit: aiRepliesLimit,
         ai_replies_used: 0,
-        ai_replies_limit: alertsLimit // Use same limit as alerts for AI replies
+        ai_lead_finder_enabled: true // Default to enabled for new users
       }, {
         onConflict: 'x_user_id',
         ignoreDuplicates: false

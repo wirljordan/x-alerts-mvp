@@ -6,19 +6,19 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 // Plan configurations
 const plans = {
   starter: {
-    price: 900, // $9.00 in cents
+    price: 2900, // $29.00 in cents
     name: 'Starter Plan',
-    description: '3 keywords tracked, 100 SMS/month'
+    description: '100 auto-replies/month, 3 keyword sets, Core relevance & safety filters'
   },
   growth: {
-    price: 1900, // $19.00 in cents
+    price: 7900, // $79.00 in cents
     name: 'Growth Plan',
-    description: '10 keywords tracked, 300 SMS/month'
+    description: '300 auto-replies/month, 10 keyword sets, Priority posting window (5-min freshness)'
   },
   pro: {
-    price: 4900, // $49.00 in cents
+    price: 14900, // $149.00 in cents
     name: 'Pro Plan',
-    description: '30 keywords tracked, 1,000 SMS/month'
+    description: '1,000 auto-replies/month, 30 keyword sets, Advanced filters for safe, on-brand replies'
   }
 }
 
