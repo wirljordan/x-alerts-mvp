@@ -637,26 +637,7 @@ export default function Dashboard() {
     }
   }
 
-  // Check if user is in quiet hours
-  const isInQuietHours = (user) => {
-    if (!user?.timezone || !user?.quiet_hours_start || !user?.quiet_hours_end) {
-      return false
-    }
-    
-    const now = new Date()
-    const userTime = new Date(now.toLocaleString('en-US', { timeZone: user.timezone }))
-    const currentTime = userTime.toTimeString().slice(0, 8)
-    
-    const start = user.quiet_hours_start
-    const end = user.quiet_hours_end
-    
-    if (start <= end) {
-      return currentTime >= start && currentTime <= end
-    } else {
-      // Handles overnight quiet hours (e.g., 22:00 to 08:00)
-      return currentTime >= start || currentTime <= end
-    }
-  }
+
 
   const handleUpdateUserSetting = async (key, value) => {
     if (!user?.id) return
@@ -689,6 +670,42 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error updating user setting:', error)
       alert(`Failed to update setting "${key}": ${error.message}`)
+    }
+  }
+
+  const handleToggleAILeadFinder = async () => {
+    if (!user?.id) return
+
+    const newValue = !user?.aiLeadFinderEnabled
+
+    try {
+      const response = await fetch('/api/users/update-setting', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          settingKey: 'aiLeadFinderEnabled',
+          settingValue: newValue
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setUser(prevUser => ({
+          ...prevUser,
+          aiLeadFinderEnabled: newValue
+        }))
+        setSuccessMessage(`AI Lead Finder ${newValue ? 'enabled' : 'disabled'} successfully!`)
+        setShowSuccessModal(true)
+      } else {
+        throw new Error(data.error || 'Failed to update AI Lead Finder setting')
+      }
+    } catch (error) {
+      console.error('Error toggling AI Lead Finder:', error)
+      alert(`Failed to ${newValue ? 'enable' : 'disable'} AI Lead Finder: ${error.message}`)
     }
   }
 
@@ -776,29 +793,61 @@ export default function Dashboard() {
         <div className="max-w-4xl mx-auto">
           {/* Main Dashboard */}
           <div className="space-y-6 lg:space-y-8">
-            {/* AI Replies Section */}
+            {/* AI Lead Finder Section */}
             <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
               <div className="flex items-center justify-between mb-4 lg:mb-6">
-                <h2 className="text-lg lg:text-2xl font-semibold text-white">AI Replies</h2>
+                <h2 className="text-lg lg:text-2xl font-semibold text-white">AI Lead Finder</h2>
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-white/60">Auto-replies</span>
+                  <button
+                    onClick={() => handleToggleAILeadFinder()}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#16D9E3] focus:ring-offset-2 focus:ring-offset-[#0F1C2E] ${
+                      user?.aiLeadFinderEnabled ? 'bg-[#16D9E3]' : 'bg-white/20'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        user?.aiLeadFinderEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
               
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                   <div>
-                    <p className="text-white font-medium">AI-Powered Auto-Replies</p>
-                    <p className="text-white/60 text-sm">Automatically reply to relevant tweets with helpful responses</p>
+                    <p className="text-white font-medium">AI-Powered Lead Generation</p>
+                    <p className="text-white/60 text-sm">
+                      {user?.aiLeadFinderEnabled 
+                        ? 'Automatically finding and engaging with potential leads'
+                        : 'AI lead finder is currently disabled'
+                      }
+                    </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[#16D9E3] font-semibold">Active</p>
-                    <p className="text-white/40 text-xs">Every 5 minutes</p>
+                    <p className={`font-semibold ${user?.aiLeadFinderEnabled ? 'text-[#16D9E3]' : 'text-white/40'}`}>
+                      {user?.aiLeadFinderEnabled ? 'Active' : 'Inactive'}
+                    </p>
+                    <p className="text-white/40 text-xs">
+                      {user?.aiLeadFinderEnabled ? 'Every 5 minutes' : 'Turn on to start'}
+                    </p>
                   </div>
                 </div>
                 
-                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-blue-400 text-sm">
-                    🤖 Our AI analyzes tweets for relevance and generates helpful, personalized replies that match your business tone and style.
-                  </p>
-                </div>
+                {user?.aiLeadFinderEnabled ? (
+                  <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <p className="text-green-400 text-sm">
+                      ✅ AI is actively monitoring your keywords and engaging with potential leads using personalized replies.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                    <p className="text-yellow-400 text-sm">
+                      ⚠️ AI lead finder is disabled. Turn it on to start automatically engaging with potential customers.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -846,235 +895,9 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* AI Auto-Replies Status Section */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
-              <div className="flex items-center justify-between mb-4 lg:mb-6">
-                <h2 className="text-lg lg:text-2xl font-semibold text-white">AI Auto-Replies</h2>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                  <div className="flex items-start space-x-3">
-                    <span className="text-green-400 text-xl">✅</span>
-                    <div>
-                      <p className="text-green-400 font-medium">AI Auto-Replies Active</p>
-                      <p className="text-green-400/80 text-sm mt-1">
-                        Your AI-powered auto-reply system is running and will automatically respond to relevant tweets.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-white/5 rounded-lg">
-                  <p className="text-white/80 text-sm mb-3">
-                    <strong>System Status:</strong>
-                  </p>
-                  <ul className="text-white/60 text-sm space-y-1">
-                    <li>• ✅ TwitterAPI.io integration active</li>
-                    <li>• 🤖 AI monitoring enabled</li>
-                    <li>• 📝 Auto-replies will be posted</li>
-                    <li>• 🔄 Running every 5 minutes</li>
-                    <li>• 🎯 Using your business profile for personalized replies</li>
-                  </ul>
-                </div>
-                
-                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-blue-400 text-sm">
-                    💡 Our AI analyzes tweets for relevance and generates helpful, personalized replies that match your business tone and style.
-                  </p>
-                </div>
-              </div>
-            </div>
 
-            {/* Quiet Hours Settings Section */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
-              <div className="flex items-center justify-between mb-4 lg:mb-6">
-                <h2 className="text-lg lg:text-2xl font-semibold text-white">Quiet Hours</h2>
-              </div>
-              
-              {/* Show migration notice if columns don't exist */}
-              {!user?.timezone && !user?.quiet_hours_start && (
-                <div className="text-center py-8 lg:py-12">
-                  <div className="w-16 h-16 lg:w-20 lg:h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
-                    <span className="text-yellow-400 text-2xl lg:text-3xl">⚠️</span>
-                  </div>
-                  <p className="text-white/60 mb-4 lg:mb-6 text-sm lg:text-base">
-                    Quiet hours feature requires database migration.
-                  </p>
-                  <p className="text-white/40 text-xs">
-                    This feature will be available after running the migration script in Supabase.
-                  </p>
-                </div>
-              )}
-              
-              {/* Show settings if columns exist */}
-              {user?.timezone && (
-                <div className="space-y-6">
-                  {/* Timezone Selection */}
-                  <div>
-                    <label className="block text-white font-medium mb-3">Timezone</label>
-                    <select
-                      value={user?.timezone || 'America/New_York'}
-                      onChange={(e) => handleUpdateUserSetting('timezone', e.target.value)}
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors"
-                    >
-                      <option value="America/New_York">Eastern Time (ET)</option>
-                      <option value="America/Chicago">Central Time (CT)</option>
-                      <option value="America/Denver">Mountain Time (MT)</option>
-                      <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                      <option value="UTC">UTC</option>
-                      <option value="Europe/London">London (GMT)</option>
-                      <option value="Europe/Paris">Paris (CET)</option>
-                      <option value="Asia/Tokyo">Tokyo (JST)</option>
-                      <option value="Australia/Sydney">Sydney (AEST)</option>
-                    </select>
-                  </div>
-                  
 
-                  
-                  {/* Custom Time Inputs */}
-                  <div>
-                    <label className="block text-white font-medium mb-3">Custom Times</label>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-white/80 text-sm mb-2">Start Time</label>
-                        <div className="relative">
-                          <input
-                            type="time"
-                            value={user?.quiet_hours_start || '20:00'}
-                            onChange={(e) => handleUpdateUserSetting('quiet_hours_start', e.target.value)}
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors [&::-webkit-calendar-picker-indicator]:bg-white/20 [&::-webkit-calendar-picker-indicator]:rounded [&::-webkit-calendar-picker-indicator]:p-1 [&::-webkit-calendar-picker-indicator]:hover:bg-white/30"
-                          />
-                        </div>
-                        {/* Quick Start Time Bubbles */}
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={() => handleUpdateUserSetting('quiet_hours_start', '16:00')}
-                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                              user?.quiet_hours_start === '16:00'
-                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            4 PM
-                          </button>
-                          <button
-                            onClick={() => handleUpdateUserSetting('quiet_hours_start', '18:00')}
-                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                              user?.quiet_hours_start === '18:00'
-                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            6 PM
-                          </button>
-                          <button
-                            onClick={() => handleUpdateUserSetting('quiet_hours_start', '20:00')}
-                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                              user?.quiet_hours_start === '20:00'
-                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            8 PM
-                          </button>
-                          <button
-                            onClick={() => handleUpdateUserSetting('quiet_hours_start', '22:00')}
-                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                              user?.quiet_hours_start === '22:00'
-                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            10 PM
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-white/80 text-sm mb-2">End Time</label>
-                        <div className="relative">
-                          <input
-                            type="time"
-                            value={user?.quiet_hours_end || '08:00'}
-                            onChange={(e) => handleUpdateUserSetting('quiet_hours_end', e.target.value)}
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-[#16D9E3] transition-colors [&::-webkit-calendar-picker-indicator]:bg-white/20 [&::-webkit-calendar-picker-indicator]:rounded [&::-webkit-calendar-picker-indicator]:p-1 [&::-webkit-calendar-picker-indicator]:hover:bg-white/30"
-                          />
-                        </div>
-                        {/* Quick End Time Bubbles */}
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={() => handleUpdateUserSetting('quiet_hours_end', '04:00')}
-                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                              user?.quiet_hours_end === '04:00'
-                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            4 AM
-                          </button>
-                          <button
-                            onClick={() => handleUpdateUserSetting('quiet_hours_end', '06:00')}
-                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                              user?.quiet_hours_end === '06:00'
-                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            6 AM
-                          </button>
-                          <button
-                            onClick={() => handleUpdateUserSetting('quiet_hours_end', '08:00')}
-                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                              user?.quiet_hours_end === '08:00'
-                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            8 AM
-                          </button>
-                          <button
-                            onClick={() => handleUpdateUserSetting('quiet_hours_end', '10:00')}
-                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                              user?.quiet_hours_end === '10:00'
-                                ? 'bg-[#16D9E3] text-[#0F1C2E]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            10 AM
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Current Status */}
-                  <div className="p-4 bg-white/5 border border-white/10 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-white font-medium">Current Quiet Hours</p>
-                        <p className="text-white/60 text-sm">
-                          {user?.quiet_hours_start || '22:00'} - {user?.quiet_hours_end || '08:00'} ({user?.timezone || 'UTC'})
-                        </p>
-                      </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        isInQuietHours(user) 
-                          ? 'bg-orange-500/20 text-orange-400' 
-                          : 'bg-green-500/20 text-green-400'
-                      }`}>
-                        {isInQuietHours(user) ? '🔕 Quiet Hours Active' : '🔔 Notifications Active'}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Information */}
-                  <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                    <p className="text-blue-400 text-sm">
-                      💡 During quiet hours, you'll still receive notifications but they won't be sent via SMS to avoid disturbing you.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+
 
 
           </div>
