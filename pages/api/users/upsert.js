@@ -42,7 +42,10 @@ export default async function handler(req, res) {
         phone: phone || null,
         plan: mappedPlan,
         alerts_limit: alertsLimit,
-        alerts_used: 0
+        alerts_used: 0,
+        ai_lead_finder_enabled: true, // Default to enabled for new users
+        ai_replies_used: 0,
+        ai_replies_limit: alertsLimit // Use same limit as alerts for AI replies
       }, {
         onConflict: 'x_user_id',
         ignoreDuplicates: false
