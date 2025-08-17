@@ -770,74 +770,28 @@ export default function Dashboard() {
         <div className="max-w-4xl mx-auto">
           {/* Main Dashboard */}
           <div className="space-y-6 lg:space-y-8">
-            {/* Usage Section */}
+            {/* AI Replies Section */}
             <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
               <div className="flex items-center justify-between mb-4 lg:mb-6">
-                <h2 className="text-lg lg:text-2xl font-semibold text-white">Usage</h2>
+                <h2 className="text-lg lg:text-2xl font-semibold text-white">AI Replies</h2>
               </div>
               
-              {/* Progress Bar */}
-              <div className="mb-4 lg:mb-6">
-                <div className={`w-full bg-white/10 rounded-full h-3 lg:h-4 overflow-hidden ${
-                  (usage.used / usage.limit) >= 0.8 ? 'ring-2 ring-orange-500/30' : ''
-                }`}>
-                  <div 
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      (usage.used / usage.limit) >= 0.8 
-                        ? 'bg-gradient-to-r from-orange-400 to-orange-500' 
-                        : 'bg-gradient-to-r from-[#16D9E3] to-[#16D9E3]/80'
-                    }`}
-                    style={{ width: `${(usage.used / usage.limit) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <span className="text-sm lg:text-base text-white/80">
-                    {usage.used} / {usage.limit} SMS sent
-                  </span>
-                  
-                  {/* Billing Cycle Information */}
-                  <div className="mt-2 space-y-1">
-                    {/* Next reset date - calculate days until next billing cycle */}
-                    <p className="text-xs lg:text-sm text-white/60">
-                      SMS limit resets in {(() => {
-                        if (!user?.created_at) return 'calculating...'
-                        
-                        const now = new Date()
-                        const signupDate = new Date(user.created_at)
-                        
-                        // Calculate next billing cycle (30 days from signup, recurring monthly)
-                        const daysSinceSignup = Math.floor((now - signupDate) / (1000 * 60 * 60 * 24))
-                        const cyclesSinceSignup = Math.floor(daysSinceSignup / 30)
-                        const nextResetDate = new Date(signupDate)
-                        nextResetDate.setDate(nextResetDate.getDate() + ((cyclesSinceSignup + 1) * 30))
-                        
-                        const diffTime = nextResetDate - now
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                        return Math.max(0, diffDays)
-                      })()} days
-                    </p>
-                    
-                    {/* Pending plan change */}
-                    {user?.subscription_status === 'canceling' && user?.subscription_cancel_at && (
-                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-2 mt-2">
-                        <p className="text-orange-400 text-xs lg:text-sm font-medium">
-                          {user?.pending_plan === 'free' 
-                            ? `Subscription ends ${new Date(user.subscription_cancel_at).toLocaleDateString()}`
-                            : `Downgrading to ${user.pending_plan} on ${new Date(user.subscription_cancel_at).toLocaleDateString()}`
-                          }
-                        </p>
-                      </div>
-                    )}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                  <div>
+                    <p className="text-white font-medium">AI-Powered Auto-Replies</p>
+                    <p className="text-white/60 text-sm">Automatically reply to relevant tweets with helpful responses</p>
                   </div>
-                  
-                  {(usage.used / usage.limit) >= 0.8 && (
-                    <div className="mt-2">
-                      <p className="text-orange-400 text-xs lg:text-sm font-medium">Upgrade for more SMS</p>
-                    </div>
-                  )}
+                  <div className="text-right">
+                    <p className="text-[#16D9E3] font-semibold">Active</p>
+                    <p className="text-white/40 text-xs">Every 5 minutes</p>
+                  </div>
+                </div>
+                
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-blue-400 text-sm">
+                    🤖 Our AI analyzes tweets for relevance and generates helpful, personalized replies that match your business tone and style.
+                  </p>
                 </div>
               </div>
             </div>
@@ -884,6 +838,46 @@ export default function Dashboard() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* TwitterAPI.io Setup Section */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
+              <div className="flex items-center justify-between mb-4 lg:mb-6">
+                <h2 className="text-lg lg:text-2xl font-semibold text-white">TwitterAPI.io Setup</h2>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <div className="flex items-start space-x-3">
+                    <span className="text-yellow-400 text-xl">⚠️</span>
+                    <div>
+                      <p className="text-yellow-400 font-medium">TwitterAPI.io Access Required</p>
+                      <p className="text-yellow-400/80 text-sm mt-1">
+                        To post AI-generated replies, you need to provide your TwitterAPI.io API key. This allows our AI to reply to tweets on your behalf.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 bg-white/5 rounded-lg">
+                  <p className="text-white/80 text-sm mb-3">
+                    <strong>How it works:</strong>
+                  </p>
+                  <ul className="text-white/60 text-sm space-y-1">
+                    <li>• Add your TwitterAPI.io API key securely</li>
+                    <li>• Our AI monitors for relevant tweets</li>
+                    <li>• Automatically posts helpful replies</li>
+                    <li>• You maintain full control over your account</li>
+                  </ul>
+                </div>
+                
+                <button
+                  onClick={() => alert('TwitterAPI.io integration coming soon!')}
+                  className="w-full px-4 py-3 bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] font-semibold rounded-lg transition-colors"
+                >
+                  Add TwitterAPI.io Key
+                </button>
+              </div>
             </div>
 
             {/* Quiet Hours Settings Section */}

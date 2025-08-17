@@ -19,11 +19,13 @@ export default function Onboarding() {
   const [isVerifying, setIsVerifying] = useState(false)
   const [isCompleting, setIsCompleting] = useState(false)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [isCreatingBusinessProfile, setIsCreatingBusinessProfile] = useState(false)
   const [formData, setFormData] = useState({
     goal: 'leads', // Pre-select first option
     phone: '',
     email: '',
-    plan: 'free'
+    plan: 'free',
+    businessDescription: ''
   })
   const [validationErrors, setValidationErrors] = useState({})
   const [touchedFields, setTouchedFields] = useState({})
@@ -78,7 +80,7 @@ export default function Onboarding() {
       }
     }
     
-    if (currentStep < 4) {
+    if (currentStep < 5) {
       setCurrentStep(currentStep + 1)
     } else {
       handleComplete()
@@ -187,6 +189,37 @@ export default function Onboarding() {
       }
 
       console.log('User data saved to Supabase:', data)
+
+      // Create business profile if description is provided
+      if (formData.businessDescription.trim()) {
+        setIsCreatingBusinessProfile(true)
+        try {
+          const businessResponse = await fetch('/api/business-profile/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: user?.id || 'unknown',
+              siteText: formData.businessDescription
+            })
+          })
+
+          const businessData = await businessResponse.json()
+          
+          if (!businessResponse.ok) {
+            console.error('Failed to create business profile:', businessData.error)
+            // Continue anyway - business profile is optional
+          } else {
+            console.log('Business profile created:', businessData.businessProfile)
+          }
+        } catch (error) {
+          console.error('Error creating business profile:', error)
+          // Continue anyway - business profile is optional
+        } finally {
+          setIsCreatingBusinessProfile(false)
+        }
+      }
 
       // Set onboarding completion cookie for all plans
       document.cookie = 'onboarding_completed=true; Path=/; Secure; SameSite=Strict; Max-Age=31536000'
@@ -351,6 +384,8 @@ export default function Onboarding() {
       case 3:
         return verificationCode.length === 6 && !validationErrors.verificationCode
       case 4:
+        return true // Business description is optional
+      case 5:
         return formData.plan !== ''
       default:
         return false
@@ -409,17 +444,17 @@ export default function Onboarding() {
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-white/60">Step {currentStep} of 4</span>
-            <span className="text-sm text-white/60">{Math.round((currentStep / 4) * 100)}%</span>
+            <span className="text-sm text-white/60">Step {currentStep} of 5</span>
+            <span className="text-sm text-white/60">{Math.round((currentStep / 5) * 100)}%</span>
           </div>
           <div className="w-full bg-white/10 rounded-full h-2">
             <div 
               className="bg-gradient-to-r from-[#16D9E3] to-[#16D9E3]/80 h-2 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${(currentStep / 4) * 100}%` }}
+              style={{ width: `${(currentStep / 5) * 100}%` }}
             ></div>
           </div>
           <div className="text-xs text-white/40 mt-2 text-center">
-            Goal → Contact → Verify → Plan
+            Goal → Contact → Verify → Business → Plan
           </div>
         </div>
 
@@ -572,6 +607,35 @@ export default function Onboarding() {
           )}
 
           {currentStep === 4 && (
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Tell us about your business</h2>
+              <p className="text-white/70 mb-8">Help us create personalized AI replies for your brand</p>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-white font-medium mb-2">Business Description</label>
+                  <textarea
+                    value={formData.businessDescription}
+                    onChange={(e) => updateFormData('businessDescription', e.target.value)}
+                    placeholder="Describe your business, products, services, or what you do. For example: 'We help small businesses automate their social media marketing with AI-powered tools that save time and increase engagement.'"
+                    rows={4}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors resize-none"
+                  />
+                  <p className="text-xs text-white/60 mt-1">
+                    This helps our AI understand your business and generate relevant, helpful replies to potential customers. Optional but recommended for better results.
+                  </p>
+                </div>
+                
+                <div className="pt-2">
+                  <p className="text-xs text-white/60 text-center">
+                    💡 The more specific you are, the better our AI can help you engage with potential customers.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 5 && (
             <div>
               <h2 className="text-2xl font-bold text-white mb-2">Choose your plan</h2>
               <p className="text-white/70 mb-8">Start free, upgrade when you need more</p>
