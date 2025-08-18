@@ -258,7 +258,7 @@ export default function Home() {
               <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-[#16D9E3] text-[#0F1C2E] text-xs font-bold px-4 py-1 rounded-full shadow-lg drop-shadow-md">★ Most Popular</div>
               <h3 className="text-2xl font-bold text-white mb-2">Growth</h3>
               <div className="text-3xl font-extrabold text-[#16D9E3] mb-2">$79</div>
-              <div className="text-white mb-4 font-medium">Reply daily to high-intent prospects</div>
+              <div className="text-white mb-4 font-medium">Stay on top of the conversation and win new leads daily</div>
               <div className="space-y-4 mb-6 w-full">
                 <div className="border-b border-white/10 pb-2">
                   <div className="text-white/90 text-base"><span className="font-semibold text-[#16D9E3]">300</span> auto-replies / month</div>
