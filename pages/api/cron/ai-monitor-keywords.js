@@ -45,6 +45,8 @@ async function updateScoutState(userId, sinceAt) {
     .upsert({
       user_id: userId,
       since_at: sinceAt
+    }, {
+      onConflict: 'user_id'
     })
   
   if (error) {
