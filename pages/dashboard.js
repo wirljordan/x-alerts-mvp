@@ -89,6 +89,9 @@ export default function Dashboard() {
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [isSavingWebsite, setIsSavingWebsite] = useState(false)
   const [isRefreshingWebsite, setIsRefreshingWebsite] = useState(false)
+  const [businessSummary, setBusinessSummary] = useState('')
+  const [isEditingSummary, setIsEditingSummary] = useState(false)
+  const [isSavingSummary, setIsSavingSummary] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -298,6 +301,7 @@ export default function Dashboard() {
         const data = await response.json()
         if (data.success && data.businessProfile) {
           setWebsiteUrl(data.businessProfile.website_url || '')
+          setBusinessSummary(data.businessProfile.summary || '')
         }
       }
     } catch (error) {
@@ -777,6 +781,39 @@ export default function Dashboard() {
     }
   }
 
+  const handleSaveSummary = async () => {
+    if (!user?.id || !businessSummary.trim()) return
+
+    setIsSavingSummary(true)
+    try {
+      const response = await fetch('/api/business-profile/update-summary', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          summary: businessSummary.trim()
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setIsEditingSummary(false)
+        setSuccessMessage('Business summary updated successfully!')
+        setShowSuccessModal(true)
+      } else {
+        throw new Error(data.error || 'Failed to update business summary')
+      }
+    } catch (error) {
+      console.error('Error saving business summary:', error)
+      alert(`Failed to save business summary: ${error.message}`)
+    } finally {
+      setIsSavingSummary(false)
+    }
+  }
+
 
 
   if (isLoading) {
@@ -1021,6 +1058,63 @@ export default function Dashboard() {
                     Update your website URL so AI can get the latest information for better replies. 
                     {websiteUrl && ' Click "Refresh Website" to fetch updated content.'}
                   </p>
+                </div>
+
+                {/* AI Business Summary */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-white font-medium">AI Business Summary</label>
+                    {!isEditingSummary && businessSummary && (
+                      <button
+                        onClick={() => setIsEditingSummary(true)}
+                        className="text-[#16D9E3] hover:text-[#16D9E3]/80 text-sm font-medium transition-colors"
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                  
+                  {isEditingSummary ? (
+                    <div className="space-y-3">
+                      <textarea
+                        value={businessSummary}
+                        onChange={(e) => setBusinessSummary(e.target.value)}
+                        placeholder="AI will analyze your website and create a business summary here..."
+                        rows={4}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors resize-none"
+                      />
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setIsEditingSummary(false)}
+                          className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveSummary}
+                          disabled={isSavingSummary || !businessSummary.trim()}
+                          className="px-4 py-2 bg-[#16D9E3] hover:bg-[#16D9E3]/90 disabled:bg-white/20 disabled:cursor-not-allowed text-[#0F1C2E] font-semibold rounded-lg transition-colors"
+                        >
+                          {isSavingSummary ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0F1C2E] mr-2 inline"></div>
+                              Saving...
+                            </>
+                          ) : (
+                            'Save Summary'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-white/5 rounded-lg">
+                      {businessSummary ? (
+                        <p className="text-white/80 text-sm leading-relaxed">{businessSummary}</p>
+                      ) : (
+                        <p className="text-white/40 text-sm italic">No business summary available. Add a website URL and refresh to generate one.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {websiteUrl && (
