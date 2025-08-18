@@ -213,10 +213,10 @@ export default function Dashboard() {
                   setUsage({ used: aiRepliesUsed, limit: aiRepliesLimit })
                   
                   // Fetch user's alerts/keywords
-                  await fetchUserAlerts(sessionData.user.id)
+                  await fetchUserAlerts(sessionData.user.x_user_id || sessionData.user.id)
                   
                   // Fetch business profile to get website URL
-                  await fetchBusinessProfile(sessionData.user.id)
+                  await fetchBusinessProfile(sessionData.user.x_user_id || sessionData.user.id)
                 } else {
                   // User doesn't exist in database, redirect to onboarding
                   console.log('User not found in database, redirecting to onboarding')

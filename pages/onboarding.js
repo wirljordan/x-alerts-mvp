@@ -88,7 +88,7 @@ export default function Onboarding() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user?.id || 'unknown',
+          userId: user?.x_user_id || user?.id || 'unknown',
           username: user?.username || 'unknown',
           goal: formData.goal,
           plan: formData.plan
@@ -114,7 +114,7 @@ export default function Onboarding() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              userId: user?.id || 'unknown',
+              userId: user?.x_user_id || user?.id || 'unknown',
               companyName: formData.companyName,
               websiteUrl: formData.websiteUrl,
               businessDescription: formData.businessDescription
@@ -163,7 +163,7 @@ export default function Onboarding() {
         },
         body: JSON.stringify({
           plan: formData.plan,
-          userId: user?.id || 'unknown',
+          userId: user?.x_user_id || user?.id || 'unknown',
           userEmail: user?.email || 'user@earlyreply.app'
         })
       })
