@@ -58,17 +58,23 @@ async function fetchWebsiteContent(url) {
       const h1Matches = html.match(/<h1[^>]*>([^<]+)<\/h1>/gi)
       const h1s = h1Matches ? h1Matches.map(h1 => h1.replace(/<[^>]+>/g, '').trim()) : []
       
+      // Extract more content from various tags for better coverage
+      const pMatches = html.match(/<p[^>]*>([^<]+)<\/p>/gi)
+      const ps = pMatches ? pMatches.map(p => p.replace(/<[^>]+>/g, '').trim()).slice(0, 5) : []
+      
+      const divMatches = html.match(/<div[^>]*>([^<]+)<\/div>/gi)
+      const divs = divMatches ? divMatches.map(div => div.replace(/<[^>]+>/g, '').trim()).slice(0, 10) : []
+      
       // Build fallback content
       const fallbackParts = []
       if (title) fallbackParts.push(`Title: ${title}`)
       if (description) fallbackParts.push(`Description: ${description}`)
       if (h1s.length > 0) fallbackParts.push(`Headings: ${h1s.join(', ')}`)
+      if (ps.length > 0) fallbackParts.push(`Content: ${ps.join('. ')}`)
+      if (divs.length > 0) fallbackParts.push(`Additional: ${divs.join('. ')}`)
       
       if (fallbackParts.length > 0) {
         textContent = fallbackParts.join('. ') + '. This appears to be a business website.'
-      } else if (url.includes('earlyreply.app')) {
-        // Special case for earlyreply.app
-        textContent = `EarlyReply is an AI-powered auto-reply system for X (Twitter) that helps businesses engage with potential customers automatically. We use AI to analyze tweets for relevance and generate personalized replies that sound human and helpful. Our target audience is small businesses, agencies, and indie founders who want to catch leads on X without spending all day on the platform. We offer different pricing tiers with varying reply limits and features.`
       } else {
         textContent = `Website: ${url}. This appears to be a business website. Please provide more details about your business, products, and services.`
       }
@@ -183,6 +189,7 @@ needs_more_input (boolean)
 Rules:
 - Use ONLY facts from the provided text. Do NOT invent features.
 - The summary should be comprehensive and detailed - it will be used as the main reference for AI replies.
+- Include specific details like pricing tiers, feature limits, target audience, and key benefits.
 - If the text is too thin to infer the items confidently, set needs_more_input=true and fill all arrays as [] and strings as "" (empty). Do NOT apologize. Do NOT add commentary.
 - Output MUST be a single JSON object. No markdown, no prose.`
               },
