@@ -25,13 +25,51 @@ async function fetchWebsiteContent(url) {
     const html = await response.text()
     console.log('Successfully fetched website content, length:', html.length)
     
-    // Basic HTML parsing to extract text content
-    const textContent = html
+    // Enhanced HTML parsing to extract text content
+    let textContent = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove scripts
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove styles
-      .replace(/<[^>]+>/g, ' ') // Remove HTML tags
+      .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '') // Remove noscript
+      .replace(/<meta[^>]*>/gi, '') // Remove meta tags
+      .replace(/<link[^>]*>/gi, '') // Remove link tags
+      .replace(/<[^>]+>/g, ' ') // Remove remaining HTML tags
+      .replace(/&nbsp;/g, ' ') // Replace non-breaking spaces
+      .replace(/&amp;/g, '&') // Replace HTML entities
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim()
+    
+    // If we got very little content, try to extract from title and meta description
+    if (textContent.length < 50) {
+      console.log('Very little content extracted, trying to get title and meta description')
+      
+      // Extract title
+      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
+      const title = titleMatch ? titleMatch[1].trim() : ''
+      
+      // Extract meta description
+      const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)
+      const description = descMatch ? descMatch[1].trim() : ''
+      
+      // Extract h1 tags
+      const h1Matches = html.match(/<h1[^>]*>([^<]+)<\/h1>/gi)
+      const h1s = h1Matches ? h1Matches.map(h1 => h1.replace(/<[^>]+>/g, '').trim()) : []
+      
+      // Build fallback content
+      const fallbackParts = []
+      if (title) fallbackParts.push(`Title: ${title}`)
+      if (description) fallbackParts.push(`Description: ${description}`)
+      if (h1s.length > 0) fallbackParts.push(`Headings: ${h1s.join(', ')}`)
+      
+      if (fallbackParts.length > 0) {
+        textContent = fallbackParts.join('. ') + '. This appears to be a business website.'
+      } else {
+        textContent = `Website: ${url}. This appears to be a business website. Please provide more details about your business, products, and services.`
+      }
+    }
     
     const finalContent = textContent.substring(0, 10000) // Limit to 10k characters
     console.log('Cleaned website content length:', finalContent.length)

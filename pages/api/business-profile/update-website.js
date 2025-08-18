@@ -1,5 +1,87 @@
 import { supabaseAdmin } from '../../../lib/supabase'
 
+// Helper function to extract website content with enhanced parsing
+async function extractWebsiteContent(websiteUrl) {
+  try {
+    console.log('Fetching website content from:', websiteUrl)
+    
+    const response = await fetch(websiteUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+      },
+      timeout: 15000
+    })
+    
+    if (!response.ok) {
+      console.error('Website fetch failed with status:', response.status)
+      return `Website: ${websiteUrl}. This appears to be a business website. Please provide more details about your business, products, and services.`
+    }
+    
+    const html = await response.text()
+    console.log('Successfully fetched website content, length:', html.length)
+    
+    // Enhanced HTML parsing to extract text content
+    let textContent = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove scripts
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove styles
+      .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '') // Remove noscript
+      .replace(/<meta[^>]*>/gi, '') // Remove meta tags
+      .replace(/<link[^>]*>/gi, '') // Remove link tags
+      .replace(/<[^>]+>/g, ' ') // Remove remaining HTML tags
+      .replace(/&nbsp;/g, ' ') // Replace non-breaking spaces
+      .replace(/&amp;/g, '&') // Replace HTML entities
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim()
+    
+    // If we got very little content, try to extract from title and meta description
+    if (textContent.length < 50) {
+      console.log('Very little content extracted, trying to get title and meta description')
+      
+      // Extract title
+      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
+      const title = titleMatch ? titleMatch[1].trim() : ''
+      
+      // Extract meta description
+      const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)
+      const description = descMatch ? descMatch[1].trim() : ''
+      
+      // Extract h1 tags
+      const h1Matches = html.match(/<h1[^>]*>([^<]+)<\/h1>/gi)
+      const h1s = h1Matches ? h1Matches.map(h1 => h1.replace(/<[^>]+>/g, '').trim()) : []
+      
+      // Build fallback content
+      const fallbackParts = []
+      if (title) fallbackParts.push(`Title: ${title}`)
+      if (description) fallbackParts.push(`Description: ${description}`)
+      if (h1s.length > 0) fallbackParts.push(`Headings: ${h1s.join(', ')}`)
+      
+      if (fallbackParts.length > 0) {
+        textContent = fallbackParts.join('. ') + '. This appears to be a business website.'
+      } else {
+        textContent = `Website: ${websiteUrl}. This appears to be a business website. Please provide more details about your business, products, and services.`
+      }
+    }
+    
+    const finalContent = textContent.substring(0, 5000)
+    console.log('Cleaned website content length:', finalContent.length)
+    console.log('First 200 chars of content:', finalContent.substring(0, 200))
+    
+    return finalContent
+  } catch (error) {
+    console.error('Error fetching website content:', error.message)
+    return `Website: ${websiteUrl}. This appears to be a business website. Please provide more details about your business, products, and services.`
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'PUT') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -36,46 +118,8 @@ export default async function handler(req, res) {
       // Business profile doesn't exist, create a new one with AI analysis
       console.log('Creating new business profile for user:', userData.id)
       
-      // Fetch website content for AI analysis
-      let websiteContent = null
-      try {
-        console.log('Fetching website content from:', websiteUrl)
-        
-        const response = await fetch(websiteUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1'
-          },
-          timeout: 15000
-        })
-        
-        if (response.ok) {
-          const html = await response.text()
-          console.log('Successfully fetched website content, length:', html.length)
-          
-          // Clean the HTML content
-          websiteContent = html
-            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-            .replace(/<[^>]+>/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .substring(0, 5000)
-          
-          console.log('Cleaned website content length:', websiteContent.length)
-          console.log('First 200 chars of content:', websiteContent.substring(0, 200))
-        } else {
-          console.error('Website fetch failed with status:', response.status)
-        }
-      } catch (error) {
-        console.error('Error fetching website content:', error.message)
-        // Fallback: use a basic description based on the URL
-        websiteContent = `Website: ${websiteUrl}. This appears to be a business website. Please provide more details about your business, products, and services.`
-      }
+      // Extract website content
+      const websiteContent = await extractWebsiteContent(websiteUrl)
 
       // Build site text for AI analysis
       let siteText = `Website: ${websiteUrl}\n\n`
@@ -189,46 +233,8 @@ export default async function handler(req, res) {
       // Business profile exists, update it with AI analysis
       console.log('Updating existing business profile with AI analysis for user:', userData.id)
       
-      // Fetch website content for AI analysis
-      let websiteContent = null
-      try {
-        console.log('Fetching website content from:', websiteUrl)
-        
-        const response = await fetch(websiteUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1'
-          },
-          timeout: 15000
-        })
-        
-        if (response.ok) {
-          const html = await response.text()
-          console.log('Successfully fetched website content, length:', html.length)
-          
-          // Clean the HTML content
-          websiteContent = html
-            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-            .replace(/<[^>]+>/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .substring(0, 5000)
-          
-          console.log('Cleaned website content length:', websiteContent.length)
-          console.log('First 200 chars of content:', websiteContent.substring(0, 200))
-        } else {
-          console.error('Website fetch failed with status:', response.status)
-        }
-      } catch (error) {
-        console.error('Error fetching website content:', error.message)
-        // Fallback: use a basic description based on the URL
-        websiteContent = `Website: ${websiteUrl}. This appears to be a business website. Please provide more details about your business, products, and services.`
-      }
+      // Extract website content
+      const websiteContent = await extractWebsiteContent(websiteUrl)
 
       // Build site text for AI analysis
       let siteText = `Website: ${websiteUrl}\n\n`
