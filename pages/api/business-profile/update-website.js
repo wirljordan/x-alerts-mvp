@@ -138,7 +138,7 @@ export default async function handler(req, res) {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'gpt-4o',
+              model: 'gpt-4o-mini',
               messages: [
                 {
                   role: 'system',
@@ -296,7 +296,7 @@ Please extract a comprehensive business profile from this information.\n\n`
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o',
+            model: 'gpt-4o-mini',
             messages: [
               {
                 role: 'system',

@@ -148,8 +148,8 @@ Please extract a comprehensive business profile from this information.\n\n`
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: 'gpt-4o',
+                    body: JSON.stringify({
+              model: 'gpt-4o-mini',
           messages: [
             {
               role: 'system',
