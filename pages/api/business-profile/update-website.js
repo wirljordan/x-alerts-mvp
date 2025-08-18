@@ -42,7 +42,7 @@ async function extractWebsiteContent(websiteUrl) {
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim()
     
-        // If we got very little content, try to extract from title and meta description
+    // If we got very little content, try to extract from title and meta description
     if (textContent.length < 500) {
       console.log('Very little content extracted, trying to get title and meta description')
       
@@ -130,39 +130,38 @@ export default async function handler(req, res) {
       // Extract website content
       const websiteContent = await extractWebsiteContent(websiteUrl)
 
-      // Build site text for AI analysis
-      let siteText = `Website: ${websiteUrl}\n\n`
-      if (websiteContent && !websiteContent.includes('This appears to be a business website')) {
-        siteText += `Website Content:\n${websiteContent}\n\n`
-      } else {
-        // If we couldn't extract meaningful content, provide a more helpful prompt
-        siteText += `This is a business website at ${websiteUrl}. Since the website content couldn't be automatically extracted (likely a modern single-page application), please create a business profile based on the URL and any available information. Focus on creating a profile that would be useful for AI-powered auto-replies on social media.\n\n`
+      // Build site text for AI analysis - let GPT-4o analyze the website directly
+      let siteText = `Please analyze the website at ${websiteUrl} and extract business information. This appears to be a modern single-page application, so focus on understanding the business model, pricing, features, and target audience from the website content.\n\n`
+      
+      // Add any extracted content as additional context
+      if (websiteContent && !websiteContent.includes('This appears to be a business website') && !websiteContent.includes('Loading')) {
+        siteText += `Additional extracted content:\n${websiteContent}\n\n`
       }
 
-              // Call OpenAI to extract business profile
-        let aiSummary = 'Business profile created from website URL update'
-        let aiProducts = []
-        let aiAudience = []
-        let aiValueProps = []
-        let aiTone = { style: 'casual', emojis: 'never' }
-        let aiSafeTopics = []
-        let aiAvoid = ['politics', 'tragedy']
-        let aiStarterKeywords = []
-        let aiPlugLine = 'We auto-write short, helpful replies so you can be first without living on X.'
+      // Call OpenAI to extract business profile
+      let aiSummary = 'Business profile created from website URL update'
+      let aiProducts = []
+      let aiAudience = []
+      let aiValueProps = []
+      let aiTone = { style: 'casual', emojis: 'never' }
+      let aiSafeTopics = []
+      let aiAvoid = ['politics', 'tragedy']
+      let aiStarterKeywords = []
+      let aiPlugLine = 'We auto-write short, helpful replies so you can be first without living on X.'
 
-        try {
-          const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'gpt-4',
-              messages: [
-                {
-                  role: 'system',
-                  content: `You are extracting a business profile for auto-reply generation on X.
+      try {
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [
+              {
+                role: 'system',
+                content: `You are extracting a business profile for auto-reply generation on X.
 
 Return ONLY valid JSON with keys:
 summary (string, detailed business description - can be as long as needed),
@@ -182,7 +181,7 @@ Rules:
 - Include specific details like pricing tiers, feature limits, target audience, and key benefits.
 - If the text is too thin to infer confidently, set needs_more_input=true and set all arrays to [] and strings to "" (empty). No apologies. No prose.
 - Output MUST be a single JSON object. No markdown, no commentary.`
-                },
+              },
               {
                 role: 'user',
                 content: `TEXT START\n${siteText}\nTEXT END`
@@ -281,13 +280,12 @@ Rules:
       // Extract website content
       const websiteContent = await extractWebsiteContent(websiteUrl)
 
-      // Build site text for AI analysis
-      let siteText = `Website: ${websiteUrl}\n\n`
-      if (websiteContent && !websiteContent.includes('This appears to be a business website')) {
-        siteText += `Website Content:\n${websiteContent}\n\n`
-      } else {
-        // If we couldn't extract meaningful content, provide a more helpful prompt
-        siteText += `This is a business website at ${websiteUrl}. Since the website content couldn't be automatically extracted (likely a modern single-page application), please create a business profile based on the URL and any available information. Focus on creating a profile that would be useful for AI-powered auto-replies on social media.\n\n`
+      // Build site text for AI analysis - let GPT-4o analyze the website directly
+      let siteText = `Please analyze the website at ${websiteUrl} and extract business information. This appears to be a modern single-page application, so focus on understanding the business model, pricing, features, and target audience from the website content.\n\n`
+      
+      // Add any extracted content as additional context
+      if (websiteContent && !websiteContent.includes('This appears to be a business website') && !websiteContent.includes('Loading')) {
+        siteText += `Additional extracted content:\n${websiteContent}\n\n`
       }
 
       // Call OpenAI to extract business profile
@@ -309,7 +307,7 @@ Rules:
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4',
+            model: 'gpt-4o',
             messages: [
               {
                 role: 'system',

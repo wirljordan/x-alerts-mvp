@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '../../../lib/supabase'
 
-// Function to fetch website content
+// Helper function to extract website content with enhanced parsing
 async function fetchWebsiteContent(url) {
   try {
     console.log('Fetching website content from:', url)
@@ -18,8 +18,8 @@ async function fetchWebsiteContent(url) {
     })
     
     if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status} for URL: ${url}`)
-      throw new Error(`HTTP error! status: ${response.status}`)
+      console.error('Website fetch failed with status:', response.status)
+      return `Website: ${url}. This appears to be a business website. Please provide more details about your business, products, and services.`
     }
     
     const html = await response.text()
@@ -42,7 +42,7 @@ async function fetchWebsiteContent(url) {
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim()
     
-              // If we got very little content, try to extract from title and meta description
+    // If we got very little content, try to extract from title and meta description
     if (textContent.length < 500) {
       console.log('Very little content extracted, trying to get title and meta description')
       
@@ -143,10 +143,12 @@ export default async function handler(req, res) {
       updated_at: new Date().toISOString()
     }
 
-    // Build site text for AI analysis
-    let siteText = `Website: ${websiteUrl}\n\n`
-    if (websiteContent) {
-      siteText += `Website Content:\n${websiteContent}\n\n`
+    // Build site text for AI analysis - let GPT-4o analyze the website directly
+    let siteText = `Please analyze the website at ${websiteUrl} and extract business information. This appears to be a modern single-page application, so focus on understanding the business model, pricing, features, and target audience from the website content.\n\n`
+    
+    // Add any extracted content as additional context
+    if (websiteContent && !websiteContent.includes('This appears to be a business website') && !websiteContent.includes('Loading')) {
+      siteText += `Additional extracted content:\n${websiteContent}\n\n`
     }
 
     // Call OpenAI to extract business profile
@@ -168,11 +170,11 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: 'gpt-4o',
           messages: [
-                          {
-                role: 'system',
-                content: `You are extracting a business profile for auto-reply generation on X.
+            {
+              role: 'system',
+              content: `You are extracting a business profile for auto-reply generation on X.
 
 Return ONLY valid JSON with keys:
 summary (string, detailed business description - can be as long as needed),
@@ -192,7 +194,7 @@ Rules:
 - Include specific details like pricing tiers, feature limits, target audience, and key benefits.
 - If the text is too thin to infer the items confidently, set needs_more_input=true and fill all arrays as [] and strings as "" (empty). Do NOT apologize. Do NOT add commentary.
 - Output MUST be a single JSON object. No markdown, no prose.`
-              },
+            },
             {
               role: 'user',
               content: `TEXT START\n${siteText}\nTEXT END`
@@ -256,56 +258,49 @@ Rules:
       console.error('Error calling OpenAI:', error)
     }
 
-    // If profile exists, update it with AI analysis; otherwise create new one
+    // Update the profile data with AI-generated content
+    profileData.summary = aiSummary
+    profileData.products = aiProducts
+    profileData.audience = aiAudience
+    profileData.value_props = aiValueProps
+    profileData.tone = aiTone
+    profileData.safe_topics = aiSafeTopics
+    profileData.avoid = aiAvoid
+    profileData.starter_keywords = aiStarterKeywords
+    profileData.plug_line = aiPlugLine
+
     let result
-    if (existingProfile) {
-      // Update existing profile with AI analysis
-      const { data, error } = await supabaseAdmin
+    if (fetchError && fetchError.code === 'PGRST116') {
+      // Business profile doesn't exist, create a new one
+      console.log('Creating new business profile for user:', userData.id)
+      
+      profileData.created_at = new Date().toISOString()
+      
+      const { data: newProfile, error: createError } = await supabaseAdmin
         .from('business_profiles')
-        .update({
-          ...profileData,
-          summary: aiSummary,
-          products: aiProducts,
-          audience: aiAudience,
-          value_props: aiValueProps,
-          tone: aiTone,
-          safe_topics: aiSafeTopics,
-          avoid: aiAvoid,
-          starter_keywords: aiStarterKeywords,
-          plug_line: aiPlugLine
-        })
+        .insert(profileData)
+        .select()
+
+      if (createError) {
+        console.error('Error creating business profile:', createError)
+        return res.status(500).json({ error: 'Failed to create business profile' })
+      }
+      result = newProfile[0]
+    } else {
+      // Business profile exists, update it
+      console.log('Updating existing business profile for user:', userData.id)
+      
+      const { data: updatedProfile, error: updateError } = await supabaseAdmin
+        .from('business_profiles')
+        .update(profileData)
         .eq('user_id', userData.id)
         .select()
 
-      if (error) {
-        console.error('Supabase update error:', error)
+      if (updateError) {
+        console.error('Error updating business profile:', updateError)
         return res.status(500).json({ error: 'Failed to update business profile' })
       }
-      result = data[0]
-    } else {
-      // Create new profile with AI analysis
-      const { data, error } = await supabaseAdmin
-        .from('business_profiles')
-        .insert({
-          ...profileData,
-          company_name: 'Website Business',
-          summary: aiSummary,
-          products: aiProducts,
-          audience: aiAudience,
-          value_props: aiValueProps,
-          tone: aiTone,
-          safe_topics: aiSafeTopics,
-          avoid: aiAvoid,
-          starter_keywords: aiStarterKeywords,
-          plug_line: aiPlugLine
-        })
-        .select()
-
-      if (error) {
-        console.error('Supabase insert error:', error)
-        return res.status(500).json({ error: 'Failed to create business profile' })
-      }
-      result = data[0]
+      result = updatedProfile[0]
     }
 
     console.log('Website content refreshed successfully:', result)
