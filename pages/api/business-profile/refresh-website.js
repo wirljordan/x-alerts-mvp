@@ -1,94 +1,87 @@
 import { supabaseAdmin } from '../../../lib/supabase'
+import puppeteer from 'puppeteer'
 
-// Helper function to extract website content with enhanced parsing
+// Helper function to extract website content using Puppeteer for JavaScript rendering
 async function fetchWebsiteContent(url) {
+  let browser = null
   try {
     console.log('Fetching website content from:', url)
     
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
-      },
-      timeout: 15000
+    // Launch browser
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     })
     
-    if (!response.ok) {
-      console.error('Website fetch failed with status:', response.status)
-      return `Website: ${url}. This appears to be a business website. Please provide more details about your business, products, and services.`
-    }
+    const page = await browser.newPage()
     
-    const html = await response.text()
-    console.log('Successfully fetched website content, length:', html.length)
+    // Set user agent
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
     
-    // Enhanced HTML parsing to extract text content
-    let textContent = html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove scripts
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove styles
-      .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '') // Remove noscript
-      .replace(/<meta[^>]*>/gi, '') // Remove meta tags
-      .replace(/<link[^>]*>/gi, '') // Remove link tags
-      .replace(/<[^>]+>/g, ' ') // Remove remaining HTML tags
-      .replace(/&nbsp;/g, ' ') // Replace non-breaking spaces
-      .replace(/&amp;/g, '&') // Replace HTML entities
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .trim()
+    // Navigate to the page and wait for content to load
+    await page.goto(url, { 
+      waitUntil: 'networkidle2',
+      timeout: 30000 
+    })
     
-    // If we got very little content, try to extract from title and meta description
-    if (textContent.length < 500) {
-      console.log('Very little content extracted, trying to get title and meta description')
+    // Wait a bit more for any dynamic content
+    await page.waitForTimeout(3000)
+    
+    // Extract the rendered content
+    const textContent = await page.evaluate(() => {
+      // Remove script and style elements
+      const scripts = document.querySelectorAll('script, style, noscript')
+      scripts.forEach(el => el.remove())
       
-      // Extract title
-      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
-      const title = titleMatch ? titleMatch[1].trim() : ''
+      // Get all text content
+      const bodyText = document.body.innerText || document.body.textContent || ''
       
-      // Extract meta description
-      const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)
-      const description = descMatch ? descMatch[1].trim() : ''
+      // Get specific elements for better content extraction
+      const title = document.title || ''
+      const metaDesc = document.querySelector('meta[name="description"]')?.content || ''
+      const h1s = Array.from(document.querySelectorAll('h1')).map(h => h.textContent.trim()).join(', ')
+      const h2s = Array.from(document.querySelectorAll('h2')).map(h => h.textContent.trim()).join(', ')
+      const ps = Array.from(document.querySelectorAll('p')).map(p => p.textContent.trim()).slice(0, 10).join('. ')
       
-      // Extract h1 tags
-      const h1Matches = html.match(/<h1[^>]*>([^<]+)<\/h1>/gi)
-      const h1s = h1Matches ? h1Matches.map(h1 => h1.replace(/<[^>]+>/g, '').trim()) : []
-      
-      // Extract more content from various tags for better coverage
-      const pMatches = html.match(/<p[^>]*>([^<]+)<\/p>/gi)
-      const ps = pMatches ? pMatches.map(p => p.replace(/<[^>]+>/g, '').trim()).slice(0, 5) : []
-      
-      const divMatches = html.match(/<div[^>]*>([^<]+)<\/div>/gi)
-      const divs = divMatches ? divMatches.map(div => div.replace(/<[^>]+>/g, '').trim()).slice(0, 10) : []
-      
-      // Build fallback content
-      const fallbackParts = []
-      if (title) fallbackParts.push(`Title: ${title}`)
-      if (description) fallbackParts.push(`Description: ${description}`)
-      if (h1s.length > 0) fallbackParts.push(`Headings: ${h1s.join(', ')}`)
-      if (ps.length > 0) fallbackParts.push(`Content: ${ps.join('. ')}`)
-      if (divs.length > 0) fallbackParts.push(`Additional: ${divs.join('. ')}`)
-      
-      if (fallbackParts.length > 0) {
-        textContent = fallbackParts.join('. ') + '. This appears to be a business website.'
-      } else {
-        textContent = `Website: ${url}. This appears to be a business website. Please provide more details about your business, products, and services.`
+      return {
+        title,
+        metaDesc,
+        h1s,
+        h2s,
+        ps,
+        bodyText: bodyText.substring(0, 10000) // Limit body text
       }
+    })
+    
+    console.log('Successfully extracted content using Puppeteer')
+    
+    // Build comprehensive content
+    const contentParts = []
+    if (textContent.title) contentParts.push(`Title: ${textContent.title}`)
+    if (textContent.metaDesc) contentParts.push(`Description: ${textContent.metaDesc}`)
+    if (textContent.h1s) contentParts.push(`Main Headings: ${textContent.h1s}`)
+    if (textContent.h2s) contentParts.push(`Sub Headings: ${textContent.h2s}`)
+    if (textContent.ps) contentParts.push(`Content: ${textContent.ps}`)
+    
+    let finalContent = contentParts.join('. ')
+    
+    // If we still don't have much content, add some body text
+    if (finalContent.length < 500 && textContent.bodyText.length > 200) {
+      finalContent += `. Additional content: ${textContent.bodyText.substring(0, 2000)}`
     }
     
-    const finalContent = textContent.substring(0, 10000) // Limit to 10k characters
-    console.log('Cleaned website content length:', finalContent.length)
+    console.log('Final content length:', finalContent.length)
     console.log('First 200 chars of content:', finalContent.substring(0, 200))
     
-    return finalContent
+    return finalContent || `Website: ${url}. This appears to be a business website. Please provide more details about your business, products, and services.`
+    
   } catch (error) {
-    console.error('Error fetching website content:', error.message)
-    // Return a fallback description instead of null
+    console.error('Error fetching website content with Puppeteer:', error.message)
     return `Website: ${url}. This appears to be a business website. Please provide more details about your business, products, and services.`
+  } finally {
+    if (browser) {
+      await browser.close()
+    }
   }
 }
 
