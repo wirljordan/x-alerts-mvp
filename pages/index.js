@@ -122,10 +122,10 @@ export default function Home() {
             {/* Left Column - Content */}
             <div className="text-center lg:text-left">
               <h1 className="text-5xl lg:text-7xl xl:text-8xl font-bold text-white mb-6 lg:mb-8 leading-tight">
-                Be First to Reply
+                AI-Powered Auto-Replies
               </h1>
               <p className="text-xl lg:text-2xl xl:text-3xl text-white/90 mb-8 lg:mb-12 max-w-2xl lg:max-w-none">
-                Get SMS notifications within seconds of important posts. Never miss an opportunity to engage early.
+                Automatically engage with potential customers using personalized AI replies. Never miss an opportunity to connect.
               </p>
 
         {error && (
@@ -182,17 +182,17 @@ export default function Home() {
           <div className="text-center mb-16 lg:mb-24">
             <h2 className="text-4xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 lg:mb-6">Why EarlyReply?</h2>
             <p className="text-xl lg:text-2xl xl:text-3xl text-white/80 max-w-4xl mx-auto">
-              Stay ahead of the conversation with instant notifications and smart monitoring
+              Automatically engage with leads using AI-powered personalized replies
             </p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
             <div className="text-center p-6 lg:p-8 rounded-lg lg:rounded-xl bg-[#0F1C2E]/80 backdrop-blur-sm border border-white/20 hover:bg-[#0F1C2E] transition-all duration-300 hover:scale-105 shadow-lg">
               <div className="w-16 h-16 lg:w-20 lg:h-20 bg-[#16D9E3]/20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
-                <span className="text-[#16D9E3] text-2xl lg:text-3xl">⚡</span>
+                <span className="text-[#16D9E3] text-2xl lg:text-3xl">🤖</span>
               </div>
-              <h3 className="text-xl lg:text-2xl font-semibold text-white mb-3 lg:mb-4">Instant Alerts</h3>
-              <p className="text-white text-sm lg:text-base lg:text-lg font-medium">Get SMS notifications within seconds of important posts</p>
+              <h3 className="text-xl lg:text-2xl font-semibold text-white mb-3 lg:mb-4">AI Auto-Replies</h3>
+              <p className="text-white text-sm lg:text-base lg:text-lg font-medium">Automatically reply to relevant tweets with personalized responses</p>
             </div>
             
             <div className="text-center p-6 lg:p-8 rounded-lg lg:rounded-xl bg-[#0F1C2E]/80 backdrop-blur-sm border border-white/20 hover:bg-[#0F1C2E] transition-all duration-300 hover:scale-105 shadow-lg">
@@ -200,15 +200,15 @@ export default function Home() {
                 <span className="text-[#FF6B4A] text-2xl lg:text-3xl">🎯</span>
               </div>
               <h3 className="text-xl lg:text-2xl font-semibold text-white mb-3 lg:mb-4">Smart Monitoring</h3>
-              <p className="text-white text-sm lg:text-base lg:text-lg font-medium">Monitor specific accounts and keywords that matter to you</p>
+              <p className="text-white text-sm lg:text-base lg:text-lg font-medium">Monitor keywords and find high-intent prospects automatically</p>
             </div>
             
             <div className="text-center p-6 lg:p-8 rounded-lg lg:rounded-xl bg-[#0F1C2E]/80 backdrop-blur-sm border border-white/20 hover:bg-[#0F1C2E] transition-all duration-300 hover:scale-105 shadow-lg">
               <div className="w-16 h-16 lg:w-20 lg:h-20 bg-[#16D9E3]/20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
-                <span className="text-[#16D9E3] text-2xl lg:text-3xl">📱</span>
+                <span className="text-[#16D9E3] text-2xl lg:text-3xl">⚡</span>
               </div>
-              <h3 className="text-xl lg:text-2xl font-semibold text-white mb-3 lg:mb-4">Mobile First</h3>
-              <p className="text-white text-sm lg:text-base lg:text-lg font-medium">Optimized for mobile engagement and quick replies</p>
+              <h3 className="text-xl lg:text-2xl font-semibold text-white mb-3 lg:mb-4">Lightning Fast</h3>
+              <p className="text-white text-sm lg:text-base lg:text-lg font-medium">Reply within 5 minutes of relevant posts for maximum impact</p>
             </div>
           </div>
         </div>
