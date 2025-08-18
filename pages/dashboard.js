@@ -728,7 +728,7 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.id,
+          userId: user.x_user_id || user.id,
           websiteUrl: websiteUrl.trim()
         })
       })
@@ -760,7 +760,7 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.id,
+          userId: user.x_user_id || user.id,
           websiteUrl: websiteUrl.trim()
         })
       })
@@ -792,7 +792,7 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.id,
+          userId: user.x_user_id || user.id,
           summary: businessSummary.trim()
         })
       })
