@@ -217,12 +217,23 @@ async function scoutPhase(user, rules, userId, businessProfile, creditsTotal) {
       
       if (matchingRule) {
         console.log(`🎯 Tweet ${tweet.id} matches rule: ${matchingRule.query}`)
+        console.log(`📝 Tweet text: "${tweet.text.substring(0, 100)}${tweet.text.length > 100 ? '...' : ''}"`)
         
+        // Check if already processed
+        const alreadyProcessed = await isTweetProcessed(tweet.id, userId)
+        if (alreadyProcessed) {
+          console.log(`⏭️ Tweet ${tweet.id} already processed for user ${userId}`)
+          continue
+        }
+
         // Process tweet with AI and post reply
         const result = await processAndReplyToTweet(tweet, matchingRule, user, businessProfile)
         
         if (result.processed) {
+          console.log(`✅ Tweet ${tweet.id} processed successfully: ${result.reply}`)
           totalRepliesPosted++
+        } else {
+          console.log(`❌ Tweet ${tweet.id} not relevant: ${result.reason}`)
         }
       }
       
