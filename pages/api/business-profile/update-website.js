@@ -19,7 +19,7 @@ export default async function handler(req, res) {
         website_url: websiteUrl,
         updated_at: new Date().toISOString()
       })
-      .eq('user_id', userId)
+      .eq('x_user_id', userId)
       .select()
 
     if (error) {

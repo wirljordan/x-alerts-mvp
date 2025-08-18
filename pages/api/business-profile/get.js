@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     const { data, error } = await supabaseAdmin
       .from('business_profiles')
       .select('*')
-      .eq('user_id', userId)
+      .eq('x_user_id', userId)
       .single()
 
     if (error) {

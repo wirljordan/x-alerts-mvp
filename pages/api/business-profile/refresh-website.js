@@ -53,7 +53,7 @@ export default async function handler(req, res) {
     const { data: existingProfile, error: fetchError } = await supabaseAdmin
       .from('business_profiles')
       .select('*')
-      .eq('user_id', userId)
+      .eq('x_user_id', userId)
       .single()
 
     if (fetchError && fetchError.code !== 'PGRST116') {
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
 
     // Prepare data for update/insert
     const profileData = {
-      user_id: userId,
+      x_user_id: userId,
       website_url: websiteUrl,
       website_content: websiteContent,
       updated_at: new Date().toISOString()
@@ -76,7 +76,7 @@ export default async function handler(req, res) {
       const { data, error } = await supabaseAdmin
         .from('business_profiles')
         .update(profileData)
-        .eq('user_id', userId)
+        .eq('x_user_id', userId)
         .select()
 
       if (error) {

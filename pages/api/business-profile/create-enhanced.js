@@ -105,7 +105,7 @@ export default async function handler(req, res) {
     const { data, error } = await supabase
       .from('business_profiles')
       .upsert({
-        user_id: userId,
+        x_user_id: userId,
         company_name: companyName,
         website_url: websiteUrl || null,
         summary: businessProfile.summary,
@@ -119,7 +119,7 @@ export default async function handler(req, res) {
         plug_line: businessProfile.plug_line,
         created_at: new Date().toISOString()
       }, {
-        onConflict: 'user_id'
+        onConflict: 'x_user_id'
       })
 
     if (error) {
