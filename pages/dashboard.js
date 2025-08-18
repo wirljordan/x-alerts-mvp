@@ -861,50 +861,6 @@ export default function Dashboard() {
         <div className="max-w-4xl mx-auto">
           {/* Main Dashboard */}
           <div className="space-y-6 lg:space-y-8">
-                        {/* Keywords Section */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
-              <div className="flex items-center justify-between mb-4 lg:mb-6">
-                <h2 className="text-lg lg:text-2xl font-semibold text-white">Keywords</h2>
-                <button
-                  onClick={handleAddAlert}
-                  disabled={alerts.length >= getKeywordLimit(currentPlan)}
-                  className={`px-4 py-2 lg:px-6 lg:py-3 font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base ${
-                    alerts.length >= getKeywordLimit(currentPlan)
-                      ? 'bg-white/20 text-white/40 cursor-not-allowed' 
-                      : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
-                  }`}
-                >
-                  Add Keyword ({alerts.length}/{getKeywordLimit(currentPlan)})
-                </button>
-              </div>
-              
-              {alerts.length === 0 ? (
-                <div className="text-center py-8 lg:py-12">
-                  <div className="w-16 h-16 lg:w-20 lg:h-20 bg-[#16D9E3]/20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
-                    <span className="text-[#16D9E3] text-2xl lg:text-3xl">🔔</span>
-                  </div>
-                  <p className="text-white/60 mb-4 lg:mb-6 text-sm lg:text-base">Create your first keyword</p>
-                  <button
-                    onClick={handleAddAlert}
-                    className="px-6 py-3 lg:px-8 lg:py-4 bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base"
-                  >
-                    Create Your First Keyword
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3 lg:space-y-4">
-                  {alerts.map((alert) => (
-                    <AlertItem 
-                      key={alert.id} 
-                      alert={alert} 
-                      onToggle={handleToggleAlert}
-                      onDelete={showDeleteConfirmation}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* AI Lead Finder Section */}
             <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
               <div className="flex items-center justify-between mb-4 lg:mb-6">
@@ -966,6 +922,50 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Keywords Section */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl lg:rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
+              <div className="flex items-center justify-between mb-4 lg:mb-6">
+                <h2 className="text-lg lg:text-2xl font-semibold text-white">Keywords</h2>
+                <button
+                  onClick={handleAddAlert}
+                  disabled={alerts.length >= getKeywordLimit(currentPlan)}
+                  className={`px-4 py-2 lg:px-6 lg:py-3 font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base ${
+                    alerts.length >= getKeywordLimit(currentPlan)
+                      ? 'bg-white/20 text-white/40 cursor-not-allowed' 
+                      : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
+                  }`}
+                >
+                  Add Keyword ({alerts.length}/{getKeywordLimit(currentPlan)})
+                </button>
+              </div>
+              
+              {alerts.length === 0 ? (
+                <div className="text-center py-8 lg:py-12">
+                  <div className="w-16 h-16 lg:w-20 lg:h-20 bg-[#16D9E3]/20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
+                    <span className="text-[#16D9E3] text-2xl lg:text-3xl">🔔</span>
+                  </div>
+                  <p className="text-white/60 mb-4 lg:mb-6 text-sm lg:text-base">Create your first keyword</p>
+                  <button
+                    onClick={handleAddAlert}
+                    className="px-6 py-3 lg:px-8 lg:py-4 bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E] font-semibold rounded-lg lg:rounded-xl transition-colors duration-200 text-sm lg:text-base"
+                  >
+                    Create Your First Keyword
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3 lg:space-y-4">
+                  {alerts.map((alert) => (
+                    <AlertItem 
+                      key={alert.id} 
+                      alert={alert} 
+                      onToggle={handleToggleAlert}
+                      onDelete={showDeleteConfirmation}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Website Management Section */}
