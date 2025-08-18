@@ -152,7 +152,7 @@ export default async function handler(req, res) {
     let aiSafeTopics = []
     let aiAvoid = ['politics', 'tragedy']
     let aiStarterKeywords = []
-    let aiPlugLine = 'Check out our solution!'
+    let aiPlugLine = 'We auto-write short, helpful replies so you can be first without living on X.'
 
     try {
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -166,10 +166,10 @@ export default async function handler(req, res) {
           messages: [
                           {
                 role: 'system',
-                content: `You are extracting a tiny business profile for auto-reply generation on X.
+                content: `You are extracting a business profile for auto-reply generation on X.
 
 Return ONLY valid JSON with keys:
-summary (string, ≤140 chars),
+summary (string, detailed business description - can be as long as needed),
 products (array, max 3 strings),
 audience (array, 2–3 short strings),
 value_props (array, exactly 3 short strings),
@@ -182,6 +182,7 @@ needs_more_input (boolean)
 
 Rules:
 - Use ONLY facts from the provided text. Do NOT invent features.
+- The summary should be comprehensive and detailed - it will be used as the main reference for AI replies.
 - If the text is too thin to infer the items confidently, set needs_more_input=true and fill all arrays as [] and strings as "" (empty). Do NOT apologize. Do NOT add commentary.
 - Output MUST be a single JSON object. No markdown, no prose.`
               },
