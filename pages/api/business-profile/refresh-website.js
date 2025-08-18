@@ -103,7 +103,15 @@ export default async function handler(req, res) {
         .insert({
           ...profileData,
           company_name: 'Website Business',
-          summary: 'Business profile created from website content'
+          summary: 'Business profile created from website content',
+          products: [],
+          audience: [],
+          value_props: [],
+          tone: { style: 'casual', emojis: 'never' },
+          safe_topics: [],
+          avoid: ['politics', 'tragedy'],
+          starter_keywords: [],
+          plug_line: 'Check out our solution!'
         })
         .select()
 

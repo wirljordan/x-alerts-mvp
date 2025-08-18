@@ -736,6 +736,11 @@ export default function Dashboard() {
       const data = await response.json()
 
       if (response.ok && data.success) {
+        // Update the local state with the returned business profile data
+        if (data.businessProfile) {
+          setWebsiteUrl(data.businessProfile.website_url || '')
+          setBusinessSummary(data.businessProfile.summary || '')
+        }
         setSuccessMessage('Website URL saved successfully!')
         setShowSuccessModal(true)
       } else {
@@ -768,6 +773,11 @@ export default function Dashboard() {
       const data = await response.json()
 
       if (response.ok && data.success) {
+        // Update the local state with the returned business profile data
+        if (data.businessProfile) {
+          setWebsiteUrl(data.businessProfile.website_url || '')
+          setBusinessSummary(data.businessProfile.summary || '')
+        }
         setSuccessMessage('Website content refreshed successfully! AI will now use the updated information.')
         setShowSuccessModal(true)
       } else {
