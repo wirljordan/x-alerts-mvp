@@ -824,6 +824,39 @@ export default function Dashboard() {
     }
   }
 
+  const handleGenerateAISummary = async () => {
+    if (!user?.id || !businessSummary.trim()) return
+
+    setIsSavingSummary(true)
+    try {
+      const response = await fetch('/api/business-profile/generate-ai-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.x_user_id || user.id,
+          businessDescription: businessSummary.trim()
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setBusinessSummary(data.businessProfile.summary || businessSummary)
+        setSuccessMessage('AI summary generated successfully!')
+        setShowSuccessModal(true)
+      } else {
+        throw new Error(data.error || 'Failed to generate AI summary')
+      }
+    } catch (error) {
+      console.error('Error generating AI summary:', error)
+      alert(`Failed to generate AI summary: ${error.message}`)
+    } finally {
+      setIsSavingSummary(false)
+    }
+  }
+
 
 
   if (isLoading) {
@@ -1070,18 +1103,42 @@ export default function Dashboard() {
                   </p>
                 </div>
 
+                {/* Business Description Input */}
+                <div>
+                  <label className="block text-white font-medium mb-2">Business Description</label>
+                  <textarea
+                    value={businessSummary}
+                    onChange={(e) => setBusinessSummary(e.target.value)}
+                    placeholder="Describe your business, products, services, and target audience. This helps AI generate better, more personalized replies."
+                    rows={4}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors resize-none"
+                  />
+                  <p className="text-xs text-white/60 mt-2">
+                    Provide details about what you do, who you serve, and what makes you unique. This information will be used to generate AI-powered replies.
+                  </p>
+                </div>
+
                 {/* AI Business Summary */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-white font-medium">AI Business Summary</label>
-                    {!isEditingSummary && businessSummary && (
+                    <div className="flex space-x-2">
                       <button
-                        onClick={() => setIsEditingSummary(true)}
-                        className="text-[#16D9E3] hover:text-[#16D9E3]/80 text-sm font-medium transition-colors"
+                        onClick={() => handleGenerateAISummary()}
+                        disabled={!businessSummary.trim()}
+                        className="px-3 py-1 bg-[#16D9E3] hover:bg-[#16D9E3]/90 disabled:bg-white/20 disabled:cursor-not-allowed text-[#0F1C2E] text-sm font-medium rounded transition-colors"
                       >
-                        Edit
+                        Generate AI Summary
                       </button>
-                    )}
+                      {!isEditingSummary && businessSummary && (
+                        <button
+                          onClick={() => setIsEditingSummary(true)}
+                          className="text-[#16D9E3] hover:text-[#16D9E3]/80 text-sm font-medium transition-colors"
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
                   </div>
                   
                   {isEditingSummary ? (
