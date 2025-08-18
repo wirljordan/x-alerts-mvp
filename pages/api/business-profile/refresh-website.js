@@ -42,37 +42,37 @@ async function fetchWebsiteContent(url) {
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim()
     
-          // If we got very little content, try to extract from title and meta description
-      if (textContent.length < 50) {
-        console.log('Very little content extracted, trying to get title and meta description')
-        
-        // Extract title
-        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
-        const title = titleMatch ? titleMatch[1].trim() : ''
-        
-        // Extract meta description
-        const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)
-        const description = descMatch ? descMatch[1].trim() : ''
-        
-        // Extract h1 tags
-        const h1Matches = html.match(/<h1[^>]*>([^<]+)<\/h1>/gi)
-        const h1s = h1Matches ? h1Matches.map(h1 => h1.replace(/<[^>]+>/g, '').trim()) : []
-        
-        // Build fallback content
-        const fallbackParts = []
-        if (title) fallbackParts.push(`Title: ${title}`)
-        if (description) fallbackParts.push(`Description: ${description}`)
-        if (h1s.length > 0) fallbackParts.push(`Headings: ${h1s.join(', ')}`)
-        
-        if (fallbackParts.length > 0) {
-          textContent = fallbackParts.join('. ') + '. This appears to be a business website.'
-        } else if (url.includes('earlyreply.app')) {
-          // Special case for earlyreply.app
-          textContent = `EarlyReply is an AI-powered auto-reply system for X (Twitter) that helps businesses engage with potential customers automatically. We use AI to analyze tweets for relevance and generate personalized replies that sound human and helpful. Our target audience is small businesses, agencies, and indie founders who want to catch leads on X without spending all day on the platform. We offer different pricing tiers with varying reply limits and features.`
-        } else {
-          textContent = `Website: ${url}. This appears to be a business website. Please provide more details about your business, products, and services.`
-        }
+              // If we got very little content, try to extract from title and meta description
+    if (textContent.length < 500) {
+      console.log('Very little content extracted, trying to get title and meta description')
+      
+      // Extract title
+      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
+      const title = titleMatch ? titleMatch[1].trim() : ''
+      
+      // Extract meta description
+      const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)
+      const description = descMatch ? descMatch[1].trim() : ''
+      
+      // Extract h1 tags
+      const h1Matches = html.match(/<h1[^>]*>([^<]+)<\/h1>/gi)
+      const h1s = h1Matches ? h1Matches.map(h1 => h1.replace(/<[^>]+>/g, '').trim()) : []
+      
+      // Build fallback content
+      const fallbackParts = []
+      if (title) fallbackParts.push(`Title: ${title}`)
+      if (description) fallbackParts.push(`Description: ${description}`)
+      if (h1s.length > 0) fallbackParts.push(`Headings: ${h1s.join(', ')}`)
+      
+      if (fallbackParts.length > 0) {
+        textContent = fallbackParts.join('. ') + '. This appears to be a business website.'
+      } else if (url.includes('earlyreply.app')) {
+        // Special case for earlyreply.app
+        textContent = `EarlyReply is an AI-powered auto-reply system for X (Twitter) that helps businesses engage with potential customers automatically. We use AI to analyze tweets for relevance and generate personalized replies that sound human and helpful. Our target audience is small businesses, agencies, and indie founders who want to catch leads on X without spending all day on the platform. We offer different pricing tiers with varying reply limits and features.`
+      } else {
+        textContent = `Website: ${url}. This appears to be a business website. Please provide more details about your business, products, and services.`
       }
+    }
     
     const finalContent = textContent.substring(0, 10000) // Limit to 10k characters
     console.log('Cleaned website content length:', finalContent.length)
@@ -166,7 +166,24 @@ export default async function handler(req, res) {
           messages: [
                           {
                 role: 'system',
-                content: `You are extracting a tiny business profile for auto-reply generation on X. Return strict JSON with keys: summary (1 sentence), products (max 3), audience (2–3 words each), value_props (3 bullets), tone: {style: one of [casual, neutral, pro], emojis: one of [never, mirror]}, safe_topics (5–10 topic nouns/phrases), avoid (list; must include politics, tragedy; add competitor names only if explicit in text), starter_keywords (8–15 short buyer-intent tweet phrases), plug_line (1 gentle sentence, no hype). Rules: - Keep it short and concrete. - Infer tone from the text; default casual if unclear. - Keywords must sound like tweets ("any tools for…?", "recommend ___?", "how do I ___?"), not SEO terms. - If limited information is provided, make reasonable assumptions based on the URL and context to create a useful business profile. - Always return valid JSON, never apologize or say you can't generate a profile.`
+                content: `You are extracting a tiny business profile for auto-reply generation on X.
+
+Return ONLY valid JSON with keys:
+summary (string, ≤140 chars),
+products (array, max 3 strings),
+audience (array, 2–3 short strings),
+value_props (array, exactly 3 short strings),
+tone: { style: one of ["casual","neutral","pro"], emojis: one of ["never","mirror"] },
+safe_topics (array, 5–10 strings),
+avoid (array, must include "politics" and "tragedy"),
+starter_keywords (array, 8–15 short tweet-like phrases),
+plug_line (string, ≤120 chars),
+needs_more_input (boolean)
+
+Rules:
+- Use ONLY facts from the provided text. Do NOT invent features.
+- If the text is too thin to infer the items confidently, set needs_more_input=true and fill all arrays as [] and strings as "" (empty). Do NOT apologize. Do NOT add commentary.
+- Output MUST be a single JSON object. No markdown, no prose.`
               },
             {
               role: 'user',
@@ -185,9 +202,21 @@ export default async function handler(req, res) {
           // Try to parse the response as JSON
           const businessProfile = JSON.parse(openaiData.choices[0].message.content)
           
-          // Validate that we got the expected fields
-          if (businessProfile.summary && typeof businessProfile.summary === 'string') {
-            aiSummary = businessProfile.summary
+          // Check if AI needs more input
+          if (businessProfile.needs_more_input === true) {
+            console.log('AI indicates more input is needed, skipping profile update')
+            aiSummary = 'Please provide more details about your business to generate a complete profile.'
+            aiProducts = []
+            aiAudience = []
+            aiValueProps = []
+            aiTone = { style: 'casual', emojis: 'never' }
+            aiSafeTopics = []
+            aiAvoid = ['politics', 'tragedy']
+            aiStarterKeywords = []
+            aiPlugLine = 'We auto-write short, helpful replies so you can be first without living on X.'
+          } else {
+            // Valid profile generated
+            aiSummary = businessProfile.summary || ''
             aiProducts = businessProfile.products || []
             aiAudience = businessProfile.audience || []
             aiValueProps = businessProfile.value_props || []
@@ -195,20 +224,22 @@ export default async function handler(req, res) {
             aiSafeTopics = businessProfile.safe_topics || []
             aiAvoid = businessProfile.avoid || ['politics', 'tragedy']
             aiStarterKeywords = businessProfile.starter_keywords || []
-            aiPlugLine = businessProfile.plug_line || 'Check out our solution!'
-          } else {
-            console.error('Invalid business profile structure from OpenAI:', businessProfile)
+            aiPlugLine = businessProfile.plug_line || 'We auto-write short, helpful replies so you can be first without living on X.'
           }
         } catch (parseError) {
           console.error('Error parsing OpenAI response:', parseError)
           console.error('OpenAI response content:', openaiData.choices[0].message.content)
           
-          // Try to extract summary from error response
-          const content = openaiData.choices[0].message.content
-          if (content.includes('summary') || content.includes('business')) {
-            // Extract a simple summary from the error response
-            aiSummary = content.substring(0, 200) + '...'
-          }
+          // Don't save to DB if parsing failed
+          aiSummary = 'Error generating business profile. Please try again.'
+          aiProducts = []
+          aiAudience = []
+          aiValueProps = []
+          aiTone = { style: 'casual', emojis: 'never' }
+          aiSafeTopics = []
+          aiAvoid = ['politics', 'tragedy']
+          aiStarterKeywords = []
+          aiPlugLine = 'We auto-write short, helpful replies so you can be first without living on X.'
         }
       } else {
         console.error('OpenAI API error:', openaiResponse.status, openaiResponse.statusText)
