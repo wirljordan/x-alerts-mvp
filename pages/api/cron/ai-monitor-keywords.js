@@ -317,8 +317,7 @@ export default async function handler(req, res) {
           plan,
           timezone,
           quiet_hours_start,
-          quiet_hours_end,
-          business_profiles(*)
+          quiet_hours_end
         )
       `)
       .eq('status', 'active')
@@ -351,11 +350,35 @@ export default async function handler(req, res) {
       if (!userRules[userId]) {
         userRules[userId] = {
           user: rule.users,
-          businessProfile: rule.users.business_profiles?.[0] || null,
+          businessProfile: null, // Will be fetched separately
           rules: []
         }
       }
       userRules[userId].rules.push(rule)
+    }
+
+    // Fetch business profiles for all users
+    const userIds = Object.keys(userRules)
+    if (userIds.length > 0) {
+      const { data: businessProfiles, error: profilesError } = await supabaseAdmin
+        .from('business_profiles')
+        .select('*')
+        .in('user_id', userIds)
+      
+      if (profilesError) {
+        console.error('❌ Error fetching business profiles:', profilesError)
+      } else {
+        // Map business profiles to users
+        const profileMap = {}
+        businessProfiles?.forEach(profile => {
+          profileMap[profile.user_id] = profile
+        })
+        
+        // Assign business profiles to users
+        Object.keys(userRules).forEach(userId => {
+          userRules[userId].businessProfile = profileMap[userId] || null
+        })
+      }
     }
 
     let totalCallsMade = 0
