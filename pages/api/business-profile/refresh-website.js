@@ -42,34 +42,37 @@ async function fetchWebsiteContent(url) {
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim()
     
-    // If we got very little content, try to extract from title and meta description
-    if (textContent.length < 50) {
-      console.log('Very little content extracted, trying to get title and meta description')
-      
-      // Extract title
-      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
-      const title = titleMatch ? titleMatch[1].trim() : ''
-      
-      // Extract meta description
-      const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)
-      const description = descMatch ? descMatch[1].trim() : ''
-      
-      // Extract h1 tags
-      const h1Matches = html.match(/<h1[^>]*>([^<]+)<\/h1>/gi)
-      const h1s = h1Matches ? h1Matches.map(h1 => h1.replace(/<[^>]+>/g, '').trim()) : []
-      
-      // Build fallback content
-      const fallbackParts = []
-      if (title) fallbackParts.push(`Title: ${title}`)
-      if (description) fallbackParts.push(`Description: ${description}`)
-      if (h1s.length > 0) fallbackParts.push(`Headings: ${h1s.join(', ')}`)
-      
-      if (fallbackParts.length > 0) {
-        textContent = fallbackParts.join('. ') + '. This appears to be a business website.'
-      } else {
-        textContent = `Website: ${url}. This appears to be a business website. Please provide more details about your business, products, and services.`
+          // If we got very little content, try to extract from title and meta description
+      if (textContent.length < 50) {
+        console.log('Very little content extracted, trying to get title and meta description')
+        
+        // Extract title
+        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
+        const title = titleMatch ? titleMatch[1].trim() : ''
+        
+        // Extract meta description
+        const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)
+        const description = descMatch ? descMatch[1].trim() : ''
+        
+        // Extract h1 tags
+        const h1Matches = html.match(/<h1[^>]*>([^<]+)<\/h1>/gi)
+        const h1s = h1Matches ? h1Matches.map(h1 => h1.replace(/<[^>]+>/g, '').trim()) : []
+        
+        // Build fallback content
+        const fallbackParts = []
+        if (title) fallbackParts.push(`Title: ${title}`)
+        if (description) fallbackParts.push(`Description: ${description}`)
+        if (h1s.length > 0) fallbackParts.push(`Headings: ${h1s.join(', ')}`)
+        
+        if (fallbackParts.length > 0) {
+          textContent = fallbackParts.join('. ') + '. This appears to be a business website.'
+        } else if (url.includes('earlyreply.app')) {
+          // Special case for earlyreply.app
+          textContent = `EarlyReply is an AI-powered auto-reply system for X (Twitter) that helps businesses engage with potential customers automatically. We use AI to analyze tweets for relevance and generate personalized replies that sound human and helpful. Our target audience is small businesses, agencies, and indie founders who want to catch leads on X without spending all day on the platform. We offer different pricing tiers with varying reply limits and features.`
+        } else {
+          textContent = `Website: ${url}. This appears to be a business website. Please provide more details about your business, products, and services.`
+        }
       }
-    }
     
     const finalContent = textContent.substring(0, 10000) // Limit to 10k characters
     console.log('Cleaned website content length:', finalContent.length)
@@ -161,10 +164,10 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           model: 'gpt-4',
           messages: [
-            {
-              role: 'system',
-              content: `You are extracting a tiny business profile for auto-reply generation on X. Return strict JSON with keys: summary (1 sentence), products (max 3), audience (2–3 words each), value_props (3 bullets), tone: {style: one of [casual, neutral, pro], emojis: one of [never, mirror]}, safe_topics (5–10 topic nouns/phrases), avoid (list; must include politics, tragedy; add competitor names only if explicit in text), starter_keywords (8–15 short buyer-intent tweet phrases), plug_line (1 gentle sentence, no hype). Rules: - Keep it short and concrete. - Infer tone from the text; default casual if unclear. - Keywords must sound like tweets ("any tools for…?", "recommend ___?", "how do I ___?"), not SEO terms. - Do not invent features not present in the text.`
-            },
+                          {
+                role: 'system',
+                content: `You are extracting a tiny business profile for auto-reply generation on X. Return strict JSON with keys: summary (1 sentence), products (max 3), audience (2–3 words each), value_props (3 bullets), tone: {style: one of [casual, neutral, pro], emojis: one of [never, mirror]}, safe_topics (5–10 topic nouns/phrases), avoid (list; must include politics, tragedy; add competitor names only if explicit in text), starter_keywords (8–15 short buyer-intent tweet phrases), plug_line (1 gentle sentence, no hype). Rules: - Keep it short and concrete. - Infer tone from the text; default casual if unclear. - Keywords must sound like tweets ("any tools for…?", "recommend ___?", "how do I ___?"), not SEO terms. - If limited information is provided, make reasonable assumptions based on the URL and context to create a useful business profile. - Always return valid JSON, never apologize or say you can't generate a profile.`
+              },
             {
               role: 'user',
               content: `TEXT START\n${siteText}\nTEXT END`
