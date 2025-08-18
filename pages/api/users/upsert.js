@@ -14,23 +14,21 @@ export default async function handler(req, res) {
 
     // Map plan names to match our schema
     const planMapping = {
-      'free': 'free',
       'starter': 'starter', 
       'growth': 'growth',
       'pro': 'pro'
     }
 
-    const mappedPlan = planMapping[plan] || 'free'
+    const mappedPlan = planMapping[plan] || 'starter'
 
     // Calculate AI replies limits based on plan
     const aiRepliesLimits = {
-      'free': 10,
       'starter': 100,
       'growth': 300,
       'pro': 1000
     }
 
-    const aiRepliesLimit = aiRepliesLimits[plan] || 10
+    const aiRepliesLimit = aiRepliesLimits[plan] || 100
 
     // Upsert user data
     const { data, error } = await supabaseAdmin

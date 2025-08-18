@@ -21,7 +21,7 @@ export default function Onboarding() {
   const [isCreatingBusinessProfile, setIsCreatingBusinessProfile] = useState(false)
   const [formData, setFormData] = useState({
     goal: 'leads', // Pre-select first option
-    plan: 'free',
+    plan: 'starter',
     companyName: '',
     businessDescription: '',
     websiteUrl: ''
@@ -142,15 +142,8 @@ export default function Onboarding() {
       
 
 
-      if (formData.plan === 'free') {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        
-        router.push('/dashboard')
-      } else {
-        // For paid plans, redirect to Stripe checkout
-        await handleStripeCheckout()
-      }
+      // All plans now go through Stripe checkout
+      await handleStripeCheckout()
     } catch (error) {
       console.error('Error saving user data:', error)
       alert('Failed to save your information. Please try again.')
@@ -410,43 +403,35 @@ export default function Onboarding() {
           {currentStep === 3 && (
             <div>
               <h2 className="text-2xl font-bold text-white mb-2">Choose your plan</h2>
-              <p className="text-white/70 mb-8">Start free, upgrade when you need more</p>
+              <p className="text-white/70 mb-8">Choose the plan that fits your needs</p>
               <p className="text-xs text-white/60 mb-6 text-center">Change or cancel anytime. You'll only be charged after your 7-day trial.</p>
               
               <div className="space-y-4">
                 {[
                   { 
-                    value: 'free', 
-                    label: 'Free', 
-                    price: 'Free',
-                    texts: '10 AI replies / mo',
-                    keywords: '1 keyword tracked',
-                    features: ['AI-powered auto-replies', 'Basic monitoring', 'Email support']
-                  },
-                  { 
                     value: 'starter', 
                     label: 'Starter', 
-                    price: '$9 / mo',
-                    texts: '100 AI replies / mo',
-                    keywords: '3 keywords tracked',
-                    features: ['AI-powered auto-replies', 'Advanced monitoring', 'Email support']
+                    price: '$29 / mo',
+                    texts: '100 auto-replies / month',
+                    keywords: '3 keyword sets',
+                    features: ['AI-powered auto-replies', 'Core relevance & safety filters', 'Email support']
                   },
                   { 
                     value: 'growth', 
                     label: 'Growth', 
-                    price: '$19 / mo',
-                    texts: '300 AI replies / mo',
-                    keywords: '10 keywords tracked',
-                    features: ['AI-powered auto-replies', 'Priority monitoring', 'Priority support'],
+                    price: '$79 / mo',
+                    texts: '300 auto-replies / month',
+                    keywords: '10 keyword sets',
+                    features: ['AI-powered auto-replies', 'Priority posting window (5-min freshness)', 'Priority support'],
                     popular: true
                   },
                   { 
                     value: 'pro', 
                     label: 'Pro', 
-                    price: '$49 / mo',
-                    texts: '1,000 AI replies / mo',
-                    keywords: '30 keywords tracked',
-                    features: ['AI-powered auto-replies', 'Team collaboration', 'Dedicated support']
+                    price: '$149 / mo',
+                    texts: '1,000 auto-replies / month',
+                    keywords: '30 keyword sets',
+                    features: ['AI-powered auto-replies', 'Advanced filters for safe, on-brand replies', 'Dedicated support']
                   }
                 ].map((plan) => (
                   <button
@@ -523,7 +508,7 @@ export default function Onboarding() {
                   <>
                     <span>
                       {currentStep === 3 
-                        ? (formData.plan === 'free' ? 'Complete Setup' : `Start ${formData.plan.charAt(0).toUpperCase() + formData.plan.slice(1)} Plan`)
+                        ? `Start ${formData.plan.charAt(0).toUpperCase() + formData.plan.slice(1)} Plan`
                         : 'Continue'
                       }
                     </span>

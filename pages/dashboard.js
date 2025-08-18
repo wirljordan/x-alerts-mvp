@@ -58,12 +58,11 @@ function AlertItem({ alert, onToggle, onDelete }) {
 // Helper function to get keyword limits based on plan
 function getKeywordLimit(plan) {
   const limits = {
-    'free': 1,
     'starter': 3,
     'growth': 10,
     'pro': 30
   }
-  return limits[plan] || 1
+  return limits[plan] || 3
 }
 
 export default function Dashboard() {
@@ -201,12 +200,11 @@ export default function Dashboard() {
                   // If ai_replies_limit is not set, calculate from plan
                   if (aiRepliesLimit === undefined || aiRepliesLimit === null) {
                     const planLimits = {
-                      'free': 10,
                       'starter': 100,
                       'growth': 300,
                       'pro': 1000
                     }
-                    aiRepliesLimit = planLimits[data.user.plan] || 10
+                    aiRepliesLimit = planLimits[data.user.plan] || 100
                   }
                   
                   setUsage({ used: aiRepliesUsed, limit: aiRepliesLimit })
@@ -465,12 +463,11 @@ export default function Dashboard() {
               // If ai_replies_limit is not set, calculate from plan
               if (aiRepliesLimit === undefined || aiRepliesLimit === null) {
                 const planLimits = {
-                  'free': 10,
                   'starter': 100,
                   'growth': 300,
                   'pro': 1000
                 }
-                aiRepliesLimit = planLimits[data.user.plan] || 10
+                aiRepliesLimit = planLimits[data.user.plan] || 100
               }
               
               setUsage({ used: aiRepliesUsed, limit: aiRepliesLimit })
@@ -510,12 +507,7 @@ export default function Dashboard() {
       }
 
       // Show success message with keyword overflow info
-      let message = ''
-      if (plan === 'free') {
-        message = 'Your subscription will be canceled at the end of your current billing period. You can continue using your current plan until then.'
-      } else {
-        message = `Your subscription will be downgraded to ${plan} at the end of your current billing period. You can continue using your current plan until then.`
-      }
+      let message = `Your subscription will be downgraded to ${plan} at the end of your current billing period. You can continue using your current plan until then.`
       
       // Add keyword overflow information if any keywords were removed
       if (data.keywordOverflow && data.keywordOverflow.removedCount > 0) {
@@ -550,7 +542,6 @@ export default function Dashboard() {
     
     // Define plan hierarchy for upgrade/downgrade logic
     const planHierarchy = {
-      'free': 0,
       'starter': 1,
       'growth': 2,
       'pro': 3
@@ -563,7 +554,6 @@ export default function Dashboard() {
     if (targetPlanLevel < currentPlanLevel) {
       // Show confirmation dialog for downgrades
       const planNames = {
-        'free': 'Free',
         'starter': 'Starter', 
         'growth': 'Growth',
         'pro': 'Pro'
@@ -577,14 +567,10 @@ export default function Dashboard() {
         plan: plan,
         currentPlan: currentPlanName,
         targetPlan: targetPlanName,
-        message: plan === 'free' 
-          ? `Are you sure you want to cancel your ${currentPlanName} subscription? Your subscription will remain active until the end of your current billing period.`
-          : `Are you sure you want to downgrade from ${currentPlanName} to ${targetPlanName}? Your current plan will remain active until the end of your billing period, then you'll be moved to ${targetPlanName}.`
+        message: `Are you sure you want to downgrade from ${currentPlanName} to ${targetPlanName}? Your current plan will remain active until the end of your billing period, then you'll be moved to ${targetPlanName}.`
       })
       setShowDowngradeModal(true)
       return // Wait for user confirmation in modal
-      
-
     }
     
     // For paid plans, redirect to Stripe checkout
@@ -1091,34 +1077,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="grid md:grid-cols-4 gap-4 lg:gap-6">
-              {/* Free Plan */}
-              <div className={`p-4 lg:p-6 rounded-xl border transition-all duration-200 ${
-                currentPlan === 'free' 
-                  ? 'bg-[#16D9E3]/10 border-[#16D9E3]' 
-                  : 'bg-white/5 border-white/10 hover:border-white/20'
-              }`}>
-                <div className="text-center">
-                  <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">Free</h3>
-                  <p className="text-2xl lg:text-3xl font-bold text-white mb-4">$0</p>
-                  <div className="text-sm lg:text-base text-white/80 space-y-1 mb-6">
-                    <p>1 keyword tracked</p>
-                    <p>10 SMS / mo</p>
-                    <p className="text-[#16D9E3] font-medium">Try it out, risk-free.</p>
-                  </div>
-                  <button
-                    onClick={() => handleUpgrade('free')}
-                    disabled={currentPlan === 'free'}
-                    className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 ${
-                      currentPlan === 'free'
-                        ? 'bg-white/20 text-white/40 cursor-not-allowed'
-                        : 'bg-white/10 text-white hover:bg-white/20'
-                    }`}
-                  >
-                    {currentPlan === 'free' ? 'Current Plan' : 'Downgrade'}
-                  </button>
-                </div>
-              </div>
+            <div className="grid md:grid-cols-3 gap-4 lg:gap-6">
 
               {/* Starter Plan */}
               <div className={`p-4 lg:p-6 rounded-xl border transition-all duration-200 ${
@@ -1141,12 +1100,10 @@ export default function Dashboard() {
                     className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 ${
                       currentPlan === 'starter'
                         ? 'bg-white/20 text-white/40 cursor-not-allowed'
-                        : currentPlan === 'free'
-                        ? 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
-                        : 'bg-white/10 text-white hover:bg-white/20'
+                        : 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
                     }`}
                   >
-                    {currentPlan === 'starter' ? 'Current Plan' : currentPlan === 'free' ? 'Upgrade' : 'Downgrade'}
+                    {currentPlan === 'starter' ? 'Current Plan' : 'Upgrade'}
                   </button>
                 </div>
               </div>
@@ -1173,12 +1130,12 @@ export default function Dashboard() {
                     className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 ${
                       currentPlan === 'growth'
                         ? 'bg-white/20 text-white/40 cursor-not-allowed'
-                        : (currentPlan === 'free' || currentPlan === 'starter')
+                        : currentPlan === 'starter'
                         ? 'bg-[#16D9E3] hover:bg-[#16D9E3]/90 text-[#0F1C2E]'
                         : 'bg-white/10 text-white hover:bg-white/20'
                     }`}
                   >
-                    {currentPlan === 'growth' ? 'Current Plan' : (currentPlan === 'free' || currentPlan === 'starter') ? 'Upgrade' : 'Downgrade'}
+                    {currentPlan === 'growth' ? 'Current Plan' : currentPlan === 'starter' ? 'Upgrade' : 'Downgrade'}
                   </button>
                 </div>
               </div>
@@ -1378,7 +1335,7 @@ export default function Dashboard() {
                 <span className="text-orange-400 text-2xl">⚠️</span>
               </div>
               <h2 className="text-xl lg:text-2xl font-bold text-white mb-2">
-                {downgradeInfo.plan === 'free' ? 'Cancel Subscription?' : 'Downgrade Plan?'}
+                Downgrade Plan?
               </h2>
               <p className="text-white/60 mb-6">{downgradeInfo.message}</p>
               
@@ -1393,7 +1350,7 @@ export default function Dashboard() {
                   onClick={handleDowngradeConfirm}
                   className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors"
                 >
-                  {downgradeInfo.plan === 'free' ? 'Cancel Subscription' : 'Downgrade'}
+                  Downgrade
                 </button>
               </div>
             </div>
