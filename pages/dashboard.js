@@ -92,6 +92,13 @@ export default function Dashboard() {
   const [businessSummary, setBusinessSummary] = useState('')
   const [isEditingSummary, setIsEditingSummary] = useState(false)
   const [isSavingSummary, setIsSavingSummary] = useState(false)
+  
+  // Business profile form state
+  const [companyName, setCompanyName] = useState('')
+  const [businessDescription, setBusinessDescription] = useState('')
+  const [targetAudience, setTargetAudience] = useState('')
+  const [uniqueValue, setUniqueValue] = useState('')
+  const [isGeneratingProfile, setIsGeneratingProfile] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -302,6 +309,7 @@ export default function Dashboard() {
         if (data.success && data.businessProfile) {
           setWebsiteUrl(data.businessProfile.website_url || '')
           setBusinessSummary(data.businessProfile.summary || '')
+          setCompanyName(data.businessProfile.company_name || '')
         }
       }
     } catch (error) {
@@ -857,6 +865,47 @@ export default function Dashboard() {
     }
   }
 
+  const handleGenerateBusinessProfile = async () => {
+    if (!user?.id || !businessDescription?.trim()) return
+
+    setIsGeneratingProfile(true)
+    try {
+      // Build a comprehensive business description from the form fields
+      const fullDescription = [
+        companyName && `Company: ${companyName}`,
+        businessDescription && `What we do: ${businessDescription}`,
+        targetAudience && `Target audience: ${targetAudience}`,
+        uniqueValue && `What makes us unique: ${uniqueValue}`
+      ].filter(Boolean).join('\n\n')
+
+      const response = await fetch('/api/business-profile/generate-ai-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.x_user_id || user.id,
+          businessDescription: fullDescription
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setBusinessSummary(data.businessProfile.summary || '')
+        setSuccessMessage('Business profile generated successfully!')
+        setShowSuccessModal(true)
+      } else {
+        throw new Error(data.error || 'Failed to generate business profile')
+      }
+    } catch (error) {
+      console.error('Error generating business profile:', error)
+      alert(`Failed to generate business profile: ${error.message}`)
+    } finally {
+      setIsGeneratingProfile(false)
+    }
+  }
+
 
 
   if (isLoading) {
@@ -1103,19 +1152,66 @@ export default function Dashboard() {
                   </p>
                 </div>
 
-                {/* Business Description Input */}
-                <div>
-                  <label className="block text-white font-medium mb-2">Business Description</label>
-                  <textarea
-                    value={businessSummary}
-                    onChange={(e) => setBusinessSummary(e.target.value)}
-                    placeholder="Describe your business, products, services, and target audience. This helps AI generate better, more personalized replies."
-                    rows={4}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors resize-none"
-                  />
-                  <p className="text-xs text-white/60 mt-2">
-                    Provide details about what you do, who you serve, and what makes you unique. This information will be used to generate AI-powered replies.
-                  </p>
+                {/* Business Information Form */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-white font-medium mb-2">Company Name</label>
+                    <input
+                      type="text"
+                      value={companyName || ''}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="Your company name"
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white font-medium mb-2">What does your business do?</label>
+                    <textarea
+                      value={businessDescription || ''}
+                      onChange={(e) => setBusinessDescription(e.target.value)}
+                      placeholder="Describe your main products, services, or what you help people with..."
+                      rows={3}
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors resize-none"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white font-medium mb-2">Who is your target audience?</label>
+                    <textarea
+                      value={targetAudience || ''}
+                      onChange={(e) => setTargetAudience(e.target.value)}
+                      placeholder="Who do you serve? (e.g., small businesses, freelancers, agencies, etc.)"
+                      rows={2}
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors resize-none"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white font-medium mb-2">What makes you unique?</label>
+                    <textarea
+                      value={uniqueValue || ''}
+                      onChange={(e) => setUniqueValue(e.target.value)}
+                      placeholder="What's your main value proposition or what sets you apart?"
+                      rows={2}
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors resize-none"
+                    />
+                  </div>
+                  
+                  <button
+                    onClick={() => handleGenerateBusinessProfile()}
+                    disabled={!businessDescription?.trim() || isGeneratingProfile}
+                    className="w-full px-4 py-3 bg-[#16D9E3] hover:bg-[#16D9E3]/90 disabled:bg-white/20 disabled:cursor-not-allowed text-[#0F1C2E] font-semibold rounded-lg transition-colors"
+                  >
+                    {isGeneratingProfile ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0F1C2E] mr-2 inline"></div>
+                        Generating Profile...
+                      </>
+                    ) : (
+                      'Generate AI Business Profile'
+                    )}
+                  </button>
                 </div>
 
                 {/* AI Business Summary */}
