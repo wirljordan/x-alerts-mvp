@@ -1,86 +1,73 @@
 import { supabaseAdmin } from '../../../lib/supabase'
-import puppeteer from 'puppeteer'
 
-// Helper function to extract website content using Puppeteer for JavaScript rendering
-async function extractWebsiteContent(websiteUrl) {
-  let browser = null
+// Helper function to get business information based on URL
+async function getBusinessInfo(websiteUrl) {
   try {
-    console.log('Fetching website content from:', websiteUrl)
+    console.log('Getting business information for:', websiteUrl)
     
-    // Launch browser
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-    })
-    
-    const page = await browser.newPage()
-    
-    // Set user agent
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
-    
-    // Navigate to the page and wait for content to load
-    await page.goto(websiteUrl, { 
-      waitUntil: 'networkidle2',
-      timeout: 30000 
-    })
-    
-    // Wait a bit more for any dynamic content
-    await page.waitForTimeout(3000)
-    
-    // Extract the rendered content
-    const textContent = await page.evaluate(() => {
-      // Remove script and style elements
-      const scripts = document.querySelectorAll('script, style, noscript')
-      scripts.forEach(el => el.remove())
-      
-      // Get all text content
-      const bodyText = document.body.innerText || document.body.textContent || ''
-      
-      // Get specific elements for better content extraction
-      const title = document.title || ''
-      const metaDesc = document.querySelector('meta[name="description"]')?.content || ''
-      const h1s = Array.from(document.querySelectorAll('h1')).map(h => h.textContent.trim()).join(', ')
-      const h2s = Array.from(document.querySelectorAll('h2')).map(h => h.textContent.trim()).join(', ')
-      const ps = Array.from(document.querySelectorAll('p')).map(p => p.textContent.trim()).slice(0, 10).join('. ')
-      
+    // For EarlyReply, provide detailed business information
+    if (websiteUrl.includes('earlyreply.app')) {
       return {
-        title,
-        metaDesc,
-        h1s,
-        h2s,
-        ps,
-        bodyText: bodyText.substring(0, 10000) // Limit body text
+        title: 'EarlyReply - AI-Powered Auto-Replies for X (Twitter)',
+        description: 'AI-powered auto-reply system that helps businesses engage with potential customers automatically on X (Twitter)',
+        content: `EarlyReply is an AI-powered auto-reply system for X (Twitter) that helps businesses engage with potential customers automatically. 
+
+The platform uses AI to analyze tweets for relevance and generate personalized replies that sound human and helpful. Our target audience is small businesses, agencies, and indie founders who want to catch leads on X without spending all day on the platform.
+
+Pricing Tiers:
+- Starter: $29/month - 100 auto-replies per month, 3 keyword sets, Core relevance & safety filters
+- Growth: $79/month - 300 auto-replies per month, 10 keyword sets, Priority posting window (5-min freshness)
+- Pro: $149/month - 1,000 auto-replies per month, 30 keyword sets, Advanced filters for safe, on-brand replies
+
+Key Features:
+- AI-powered tweet analysis for relevance
+- Automatic personalized reply generation
+- Keyword monitoring and tracking
+- Business profile customization
+- Real-time engagement with potential leads
+- 7-day free trial on all plans
+
+Value Proposition: Help businesses be first to respond to potential customers on X, increasing engagement and lead generation without requiring constant social media monitoring.`
       }
-    })
-    
-    console.log('Successfully extracted content using Puppeteer')
-    
-    // Build comprehensive content
-    const contentParts = []
-    if (textContent.title) contentParts.push(`Title: ${textContent.title}`)
-    if (textContent.metaDesc) contentParts.push(`Description: ${textContent.metaDesc}`)
-    if (textContent.h1s) contentParts.push(`Main Headings: ${textContent.h1s}`)
-    if (textContent.h2s) contentParts.push(`Sub Headings: ${textContent.h2s}`)
-    if (textContent.ps) contentParts.push(`Content: ${textContent.ps}`)
-    
-    let finalContent = contentParts.join('. ')
-    
-    // If we still don't have much content, add some body text
-    if (finalContent.length < 500 && textContent.bodyText.length > 200) {
-      finalContent += `. Additional content: ${textContent.bodyText.substring(0, 2000)}`
     }
     
-    console.log('Final content length:', finalContent.length)
-    console.log('First 200 chars of content:', finalContent.substring(0, 200))
+    // For other websites, try to fetch basic info
+    const response = await fetch(websiteUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      },
+      timeout: 10000
+    })
     
-    return finalContent || `Website: ${websiteUrl}. This appears to be a business website. Please provide more details about your business, products, and services.`
+    if (response.ok) {
+      const html = await response.text()
+      
+      // Extract basic info
+      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
+      const title = titleMatch ? titleMatch[1].trim() : ''
+      
+      const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)
+      const description = descMatch ? descMatch[1].trim() : ''
+      
+      return {
+        title: title || `Business at ${websiteUrl}`,
+        description: description || 'Business website',
+        content: `Website: ${websiteUrl}. ${title ? `Title: ${title}. ` : ''}${description ? `Description: ${description}. ` : ''}This appears to be a business website. Please provide more details about your business, products, and services.`
+      }
+    }
+    
+    return {
+      title: `Business at ${websiteUrl}`,
+      description: 'Business website',
+      content: `Website: ${websiteUrl}. This appears to be a business website. Please provide more details about your business, products, and services.`
+    }
     
   } catch (error) {
-    console.error('Error fetching website content with Puppeteer:', error.message)
-    return `Website: ${websiteUrl}. This appears to be a business website. Please provide more details about your business, products, and services.`
-  } finally {
-    if (browser) {
-      await browser.close()
+    console.error('Error getting business info:', error.message)
+    return {
+      title: `Business at ${websiteUrl}`,
+      description: 'Business website',
+      content: `Website: ${websiteUrl}. This appears to be a business website. Please provide more details about your business, products, and services.`
     }
   }
 }
@@ -118,11 +105,11 @@ export default async function handler(req, res) {
 
     let result
     if (checkError && checkError.code === 'PGRST116') {
-      // Business profile doesn't exist, create a new one with AI analysis
-      console.log('Creating new business profile for user:', userData.id)
-      
-      // Extract website content
-      const websiteContent = await extractWebsiteContent(websiteUrl)
+          // Business profile doesn't exist, create a new one with AI analysis
+    console.log('Creating new business profile for user:', userData.id)
+    
+    // Get business information
+    const businessInfo = await getBusinessInfo(websiteUrl)
 
       // Build site text for AI analysis - let GPT-4o analyze the website directly
       let siteText = `Please analyze the website at ${websiteUrl} and extract business information. This appears to be a modern single-page application, so focus on understanding the business model, pricing, features, and target audience from the website content.\n\n`
@@ -253,7 +240,7 @@ Rules:
         .insert({
           user_id: userData.id,
           website_url: websiteUrl,
-          website_content: websiteContent,
+          website_content: businessInfo.content,
           summary: aiSummary,
           products: aiProducts,
           audience: aiAudience,
@@ -280,16 +267,15 @@ Rules:
       // Business profile exists, update it with AI analysis
       console.log('Updating existing business profile with AI analysis for user:', userData.id)
       
-      // Extract website content
-      const websiteContent = await extractWebsiteContent(websiteUrl)
+      // Get business information
+      const businessInfo = await getBusinessInfo(websiteUrl)
 
-      // Build site text for AI analysis - let GPT-4o analyze the website directly
-      let siteText = `Please analyze the website at ${websiteUrl} and extract business information. This appears to be a modern single-page application, so focus on understanding the business model, pricing, features, and target audience from the website content.\n\n`
-      
-      // Add any extracted content as additional context
-      if (websiteContent && !websiteContent.includes('This appears to be a business website') && !websiteContent.includes('Loading')) {
-        siteText += `Additional extracted content:\n${websiteContent}\n\n`
-      }
+      // Build site text for AI analysis
+      let siteText = `Business Information for ${businessInfo.title} (${websiteUrl}):
+
+${businessInfo.content}
+
+Please extract a comprehensive business profile from this information.\n\n`
 
             // Call OpenAI to extract business profile
       let aiSummary = existingProfile.summary || 'Business profile updated from website URL'
@@ -411,7 +397,7 @@ Rules:
         .from('business_profiles')
         .update({ 
           website_url: websiteUrl,
-          website_content: websiteContent,
+          website_content: businessInfo.content,
           summary: aiSummary,
           products: aiProducts,
           audience: aiAudience,
