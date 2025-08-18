@@ -33,22 +33,106 @@ export default async function handler(req, res) {
 
     let result
     if (checkError && checkError.code === 'PGRST116') {
-      // Business profile doesn't exist, create a new one
+      // Business profile doesn't exist, create a new one with AI analysis
       console.log('Creating new business profile for user:', userData.id)
+      
+      // Fetch website content for AI analysis
+      let websiteContent = null
+      try {
+        const response = await fetch(websiteUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; EarlyReply-Bot/1.0)'
+          }
+        })
+        
+        if (response.ok) {
+          const html = await response.text()
+          websiteContent = html
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .substring(0, 5000)
+        }
+      } catch (error) {
+        console.error('Error fetching website content:', error)
+      }
+
+      // Build site text for AI analysis
+      let siteText = `Website: ${websiteUrl}\n\n`
+      if (websiteContent) {
+        siteText += `Website Content:\n${websiteContent}\n\n`
+      }
+
+      // Call OpenAI to extract business profile
+      let aiSummary = 'Business profile created from website URL update'
+      let aiProducts = []
+      let aiAudience = []
+      let aiValueProps = []
+      let aiTone = { style: 'casual', emojis: 'never' }
+      let aiSafeTopics = []
+      let aiAvoid = ['politics', 'tragedy']
+      let aiStarterKeywords = []
+      let aiPlugLine = 'Check out our solution!'
+
+      try {
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'system',
+                content: `You are extracting a tiny business profile for auto-reply generation on X. Return strict JSON with keys: summary (1 sentence), products (max 3), audience (2–3 words each), value_props (3 bullets), tone: {style: one of [casual, neutral, pro], emojis: one of [never, mirror]}, safe_topics (5–10 topic nouns/phrases), avoid (list; must include politics, tragedy; add competitor names only if explicit in text), starter_keywords (8–15 short buyer-intent tweet phrases), plug_line (1 gentle sentence, no hype). Rules: - Keep it short and concrete. - Infer tone from the text; default casual if unclear. - Keywords must sound like tweets ("any tools for…?", "recommend ___?", "how do I ___?"), not SEO terms. - Do not invent features not present in the text.`
+              },
+              {
+                role: 'user',
+                content: `TEXT START\n${siteText}\nTEXT END`
+              }
+            ],
+            temperature: 0.3,
+            max_tokens: 1000
+          })
+        })
+
+        if (openaiResponse.ok) {
+          const openaiData = await openaiResponse.json()
+          const businessProfile = JSON.parse(openaiData.choices[0].message.content)
+          
+          aiSummary = businessProfile.summary
+          aiProducts = businessProfile.products
+          aiAudience = businessProfile.audience
+          aiValueProps = businessProfile.value_props
+          aiTone = businessProfile.tone
+          aiSafeTopics = businessProfile.safe_topics
+          aiAvoid = businessProfile.avoid
+          aiStarterKeywords = businessProfile.starter_keywords
+          aiPlugLine = businessProfile.plug_line
+        }
+      } catch (error) {
+        console.error('Error calling OpenAI:', error)
+      }
+
       const { data: newProfile, error: createError } = await supabaseAdmin
         .from('business_profiles')
         .insert({
           user_id: userData.id,
           website_url: websiteUrl,
-          summary: 'Business profile created from website URL update',
-          products: [],
-          audience: [],
-          value_props: [],
-          tone: { style: 'casual', emojis: 'never' },
-          safe_topics: [],
-          avoid: ['politics', 'tragedy'],
-          starter_keywords: [],
-          plug_line: 'Check out our solution!',
+          website_content: websiteContent,
+          summary: aiSummary,
+          products: aiProducts,
+          audience: aiAudience,
+          value_props: aiValueProps,
+          tone: aiTone,
+          safe_topics: aiSafeTopics,
+          avoid: aiAvoid,
+          starter_keywords: aiStarterKeywords,
+          plug_line: aiPlugLine,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })

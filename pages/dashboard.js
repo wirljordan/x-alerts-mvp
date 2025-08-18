@@ -1127,7 +1127,7 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                {websiteUrl && (
+                {websiteUrl && websiteUrl.trim() !== '' && websiteUrl !== 'https://yourwebsite.com' && (
                   <div className="p-4 bg-white/5 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white font-medium">Website Status</span>
@@ -1140,7 +1140,7 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {!websiteUrl && (
+                {(!websiteUrl || websiteUrl.trim() === '' || websiteUrl === 'https://yourwebsite.com') && (
                   <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                     <p className="text-yellow-400 text-sm">
                       ⚠️ No website URL set. Add your website URL to help AI generate better, more personalized replies.
