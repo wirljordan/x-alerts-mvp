@@ -134,34 +134,25 @@ export default function Home() {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-6 lg:mb-8">
-          <button
-            onClick={handleSignIn}
-            disabled={isLoading}
-            className="inline-flex items-center px-8 lg:px-12 py-4 lg:py-6 bg-[#FF6B4A] hover:bg-[#FF6B4A]/90 text-white font-semibold rounded-lg lg:rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:transform-none text-lg lg:text-xl"
-          >
-            {isLoading ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 lg:h-6 lg:w-6 border-b-2 border-white mr-3"></div>
-                Signing in...
-              </>
-            ) : (
-              <>
-                <svg className="w-6 h-6 lg:w-8 lg:h-8 mr-3" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                </svg>
-                Log In with X
-              </>
-            )}
-          </button>
-          
-          <a
-            href="#pricing"
-            className="inline-flex items-center justify-center px-8 lg:px-12 py-4 lg:py-6 border-2 border-white/30 hover:border-white/50 text-white font-semibold rounded-lg lg:rounded-xl transition-all duration-300 transform hover:scale-105 hover:bg-white/10 disabled:opacity-50 disabled:transform-none text-lg lg:text-xl"
-          >
-            👀 View Pricing
-          </a>
-        </div>
+        <button
+          onClick={handleSignIn}
+          disabled={isLoading}
+          className="inline-flex items-center px-8 lg:px-12 py-4 lg:py-6 bg-[#FF6B4A] hover:bg-[#FF6B4A]/90 text-white font-semibold rounded-lg lg:rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:transform-none text-lg lg:text-xl mb-6 lg:mb-8"
+        >
+          {isLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 lg:h-6 lg:w-6 border-b-2 border-white mr-3"></div>
+              Signing in...
+            </>
+          ) : (
+            <>
+              <svg className="w-6 h-6 lg:w-8 lg:h-8 mr-3" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+              Log In with X
+            </>
+          )}
+        </button>
         
         <p className="text-white/70 text-sm lg:text-base mb-6 lg:mb-8">
           Secure OAuth 2.0 authentication • No password required
