@@ -102,17 +102,38 @@ export default async function handler(req, res) {
 
         if (openaiResponse.ok) {
           const openaiData = await openaiResponse.json()
-          const businessProfile = JSON.parse(openaiData.choices[0].message.content)
           
-          aiSummary = businessProfile.summary
-          aiProducts = businessProfile.products
-          aiAudience = businessProfile.audience
-          aiValueProps = businessProfile.value_props
-          aiTone = businessProfile.tone
-          aiSafeTopics = businessProfile.safe_topics
-          aiAvoid = businessProfile.avoid
-          aiStarterKeywords = businessProfile.starter_keywords
-          aiPlugLine = businessProfile.plug_line
+          try {
+            // Try to parse the response as JSON
+            const businessProfile = JSON.parse(openaiData.choices[0].message.content)
+            
+            // Validate that we got the expected fields
+            if (businessProfile.summary && typeof businessProfile.summary === 'string') {
+              aiSummary = businessProfile.summary
+              aiProducts = businessProfile.products || []
+              aiAudience = businessProfile.audience || []
+              aiValueProps = businessProfile.value_props || []
+              aiTone = businessProfile.tone || { style: 'casual', emojis: 'never' }
+              aiSafeTopics = businessProfile.safe_topics || []
+              aiAvoid = businessProfile.avoid || ['politics', 'tragedy']
+              aiStarterKeywords = businessProfile.starter_keywords || []
+              aiPlugLine = businessProfile.plug_line || 'Check out our solution!'
+            } else {
+              console.error('Invalid business profile structure from OpenAI:', businessProfile)
+            }
+          } catch (parseError) {
+            console.error('Error parsing OpenAI response:', parseError)
+            console.error('OpenAI response content:', openaiData.choices[0].message.content)
+            
+            // Try to extract summary from error response
+            const content = openaiData.choices[0].message.content
+            if (content.includes('summary') || content.includes('business')) {
+              // Extract a simple summary from the error response
+              aiSummary = content.substring(0, 200) + '...'
+            }
+          }
+        } else {
+          console.error('OpenAI API error:', openaiResponse.status, openaiResponse.statusText)
         }
       } catch (error) {
         console.error('Error calling OpenAI:', error)
