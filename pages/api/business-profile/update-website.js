@@ -39,14 +39,25 @@ export default async function handler(req, res) {
       // Fetch website content for AI analysis
       let websiteContent = null
       try {
+        console.log('Fetching website content from:', websiteUrl)
+        
         const response = await fetch(websiteUrl, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; EarlyReply-Bot/1.0)'
-          }
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
+          },
+          timeout: 15000
         })
         
         if (response.ok) {
           const html = await response.text()
+          console.log('Successfully fetched website content, length:', html.length)
+          
+          // Clean the HTML content
           websiteContent = html
             .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
             .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
@@ -54,9 +65,16 @@ export default async function handler(req, res) {
             .replace(/\s+/g, ' ')
             .trim()
             .substring(0, 5000)
+          
+          console.log('Cleaned website content length:', websiteContent.length)
+          console.log('First 200 chars of content:', websiteContent.substring(0, 200))
+        } else {
+          console.error('Website fetch failed with status:', response.status)
         }
       } catch (error) {
-        console.error('Error fetching website content:', error)
+        console.error('Error fetching website content:', error.message)
+        // Fallback: use a basic description based on the URL
+        websiteContent = `Website: ${websiteUrl}. This appears to be a business website. Please provide more details about your business, products, and services.`
       }
 
       // Build site text for AI analysis
@@ -168,11 +186,144 @@ export default async function handler(req, res) {
       console.error('Error checking business profile:', checkError)
       return res.status(500).json({ error: 'Failed to check business profile' })
     } else {
-      // Business profile exists, update it
+      // Business profile exists, update it with AI analysis
+      console.log('Updating existing business profile with AI analysis for user:', userData.id)
+      
+      // Fetch website content for AI analysis
+      let websiteContent = null
+      try {
+        console.log('Fetching website content from:', websiteUrl)
+        
+        const response = await fetch(websiteUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
+          },
+          timeout: 15000
+        })
+        
+        if (response.ok) {
+          const html = await response.text()
+          console.log('Successfully fetched website content, length:', html.length)
+          
+          // Clean the HTML content
+          websiteContent = html
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .substring(0, 5000)
+          
+          console.log('Cleaned website content length:', websiteContent.length)
+          console.log('First 200 chars of content:', websiteContent.substring(0, 200))
+        } else {
+          console.error('Website fetch failed with status:', response.status)
+        }
+      } catch (error) {
+        console.error('Error fetching website content:', error.message)
+        // Fallback: use a basic description based on the URL
+        websiteContent = `Website: ${websiteUrl}. This appears to be a business website. Please provide more details about your business, products, and services.`
+      }
+
+      // Build site text for AI analysis
+      let siteText = `Website: ${websiteUrl}\n\n`
+      if (websiteContent) {
+        siteText += `Website Content:\n${websiteContent}\n\n`
+      }
+
+      // Call OpenAI to extract business profile
+      let aiSummary = existingProfile.summary || 'Business profile updated from website URL'
+      let aiProducts = existingProfile.products || []
+      let aiAudience = existingProfile.audience || []
+      let aiValueProps = existingProfile.value_props || []
+      let aiTone = existingProfile.tone || { style: 'casual', emojis: 'never' }
+      let aiSafeTopics = existingProfile.safe_topics || []
+      let aiAvoid = existingProfile.avoid || ['politics', 'tragedy']
+      let aiStarterKeywords = existingProfile.starter_keywords || []
+      let aiPlugLine = existingProfile.plug_line || 'Check out our solution!'
+
+      try {
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'system',
+                content: `You are extracting a tiny business profile for auto-reply generation on X. Return strict JSON with keys: summary (1 sentence), products (max 3), audience (2–3 words each), value_props (3 bullets), tone: {style: one of [casual, neutral, pro], emojis: one of [never, mirror]}, safe_topics (5–10 topic nouns/phrases), avoid (list; must include politics, tragedy; add competitor names only if explicit in text), starter_keywords (8–15 short buyer-intent tweet phrases), plug_line (1 gentle sentence, no hype). Rules: - Keep it short and concrete. - Infer tone from the text; default casual if unclear. - Keywords must sound like tweets ("any tools for…?", "recommend ___?", "how do I ___?"), not SEO terms. - Do not invent features not present in the text.`
+              },
+              {
+                role: 'user',
+                content: `TEXT START\n${siteText}\nTEXT END`
+              }
+            ],
+            temperature: 0.3,
+            max_tokens: 1000
+          })
+        })
+
+        if (openaiResponse.ok) {
+          const openaiData = await openaiResponse.json()
+          
+          try {
+            // Try to parse the response as JSON
+            const businessProfile = JSON.parse(openaiData.choices[0].message.content)
+            
+            // Validate that we got the expected fields
+            if (businessProfile.summary && typeof businessProfile.summary === 'string') {
+              aiSummary = businessProfile.summary
+              aiProducts = businessProfile.products || []
+              aiAudience = businessProfile.audience || []
+              aiValueProps = businessProfile.value_props || []
+              aiTone = businessProfile.tone || { style: 'casual', emojis: 'never' }
+              aiSafeTopics = businessProfile.safe_topics || []
+              aiAvoid = businessProfile.avoid || ['politics', 'tragedy']
+              aiStarterKeywords = businessProfile.starter_keywords || []
+              aiPlugLine = businessProfile.plug_line || 'Check out our solution!'
+            } else {
+              console.error('Invalid business profile structure from OpenAI:', businessProfile)
+            }
+          } catch (parseError) {
+            console.error('Error parsing OpenAI response:', parseError)
+            console.error('OpenAI response content:', openaiData.choices[0].message.content)
+            
+            // Try to extract summary from error response
+            const content = openaiData.choices[0].message.content
+            if (content.includes('summary') || content.includes('business')) {
+              // Extract a simple summary from the error response
+              aiSummary = content.substring(0, 200) + '...'
+            }
+          }
+        } else {
+          console.error('OpenAI API error:', openaiResponse.status, openaiResponse.statusText)
+        }
+      } catch (error) {
+        console.error('Error calling OpenAI:', error)
+      }
+
       const { data: updatedProfile, error: updateError } = await supabaseAdmin
         .from('business_profiles')
         .update({ 
           website_url: websiteUrl,
+          website_content: websiteContent,
+          summary: aiSummary,
+          products: aiProducts,
+          audience: aiAudience,
+          value_props: aiValueProps,
+          tone: aiTone,
+          safe_topics: aiSafeTopics,
+          avoid: aiAvoid,
+          starter_keywords: aiStarterKeywords,
+          plug_line: aiPlugLine,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', userData.id)

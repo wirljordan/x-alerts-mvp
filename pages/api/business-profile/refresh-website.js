@@ -3,17 +3,27 @@ import { supabaseAdmin } from '../../../lib/supabase'
 // Function to fetch website content
 async function fetchWebsiteContent(url) {
   try {
+    console.log('Fetching website content from:', url)
+    
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; EarlyReply/1.0; +https://earlyreply.app)'
-      }
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+      },
+      timeout: 15000
     })
     
     if (!response.ok) {
+      console.error(`HTTP error! status: ${response.status} for URL: ${url}`)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     
     const html = await response.text()
+    console.log('Successfully fetched website content, length:', html.length)
     
     // Basic HTML parsing to extract text content
     const textContent = html
@@ -23,10 +33,15 @@ async function fetchWebsiteContent(url) {
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim()
     
-    return textContent.substring(0, 10000) // Limit to 10k characters
+    const finalContent = textContent.substring(0, 10000) // Limit to 10k characters
+    console.log('Cleaned website content length:', finalContent.length)
+    console.log('First 200 chars of content:', finalContent.substring(0, 200))
+    
+    return finalContent
   } catch (error) {
-    console.error('Error fetching website content:', error)
-    return null
+    console.error('Error fetching website content:', error.message)
+    // Return a fallback description instead of null
+    return `Website: ${url}. This appears to be a business website. Please provide more details about your business, products, and services.`
   }
 }
 
