@@ -38,6 +38,7 @@ export default async function handler(req, res) {
         handle: username,
         email: email || null,
         phone: phone || null,
+        goal: goal || null,
         plan: mappedPlan,
         ai_replies_limit: aiRepliesLimit,
         ai_replies_used: 0,
