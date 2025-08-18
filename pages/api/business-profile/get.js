@@ -12,11 +12,23 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing userId parameter' })
     }
 
+    // First, get the user's UUID from x_user_id
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('x_user_id', userId)
+      .single()
+
+    if (userError) {
+      console.error('Error finding user:', userError)
+      return res.status(404).json({ error: 'User not found' })
+    }
+
     // Get the business profile for the user
     const { data, error } = await supabaseAdmin
       .from('business_profiles')
       .select('*')
-      .eq('x_user_id', userId)
+      .eq('user_id', userData.id)
       .single()
 
     if (error) {

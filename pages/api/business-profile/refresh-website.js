@@ -49,11 +49,23 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Failed to fetch website content' })
     }
 
+    // First, get the user's UUID from x_user_id
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('x_user_id', userId)
+      .single()
+
+    if (userError) {
+      console.error('Error finding user:', userError)
+      return res.status(404).json({ error: 'User not found' })
+    }
+
     // Get existing business profile
     const { data: existingProfile, error: fetchError } = await supabaseAdmin
       .from('business_profiles')
       .select('*')
-      .eq('x_user_id', userId)
+      .eq('user_id', userData.id)
       .single()
 
     if (fetchError && fetchError.code !== 'PGRST116') {
@@ -63,7 +75,7 @@ export default async function handler(req, res) {
 
     // Prepare data for update/insert
     const profileData = {
-      x_user_id: userId,
+      user_id: userData.id,
       website_url: websiteUrl,
       website_content: websiteContent,
       updated_at: new Date().toISOString()
@@ -76,7 +88,7 @@ export default async function handler(req, res) {
       const { data, error } = await supabaseAdmin
         .from('business_profiles')
         .update(profileData)
-        .eq('x_user_id', userId)
+        .eq('user_id', userData.id)
         .select()
 
       if (error) {

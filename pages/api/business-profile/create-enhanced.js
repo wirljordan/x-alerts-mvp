@@ -101,11 +101,23 @@ export default async function handler(req, res) {
     const openaiData = await openaiResponse.json()
     const businessProfile = JSON.parse(openaiData.choices[0].message.content)
 
-    // Save to Supabase
+    // First, get the user's UUID from x_user_id
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('x_user_id', userId)
+      .single()
+
+    if (userError) {
+      console.error('Error finding user:', userError)
+      throw new Error('User not found')
+    }
+
+    // Save to Supabase using the user's UUID
     const { data, error } = await supabase
       .from('business_profiles')
       .upsert({
-        x_user_id: userId,
+        user_id: userData.id,
         company_name: companyName,
         website_url: websiteUrl || null,
         summary: businessProfile.summary,
@@ -119,7 +131,7 @@ export default async function handler(req, res) {
         plug_line: businessProfile.plug_line,
         created_at: new Date().toISOString()
       }, {
-        onConflict: 'x_user_id'
+        onConflict: 'user_id'
       })
 
     if (error) {

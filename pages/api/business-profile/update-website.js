@@ -12,6 +12,18 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
+    // First, get the user's UUID from x_user_id
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('x_user_id', userId)
+      .single()
+
+    if (userError) {
+      console.error('Error finding user:', userError)
+      return res.status(404).json({ error: 'User not found' })
+    }
+
     // Update the business profile with the new website URL
     const { data, error } = await supabaseAdmin
       .from('business_profiles')
@@ -19,7 +31,7 @@ export default async function handler(req, res) {
         website_url: websiteUrl,
         updated_at: new Date().toISOString()
       })
-      .eq('x_user_id', userId)
+      .eq('user_id', userData.id)
       .select()
 
     if (error) {
