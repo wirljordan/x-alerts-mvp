@@ -138,30 +138,30 @@ export default async function handler(req, res) {
         siteText += `Additional extracted content:\n${websiteContent}\n\n`
       }
 
-      // Call OpenAI to extract business profile
-      let aiSummary = 'Business profile created from website URL update'
-      let aiProducts = []
-      let aiAudience = []
-      let aiValueProps = []
-      let aiTone = { style: 'casual', emojis: 'never' }
-      let aiSafeTopics = []
-      let aiAvoid = ['politics', 'tragedy']
-      let aiStarterKeywords = []
-      let aiPlugLine = 'We auto-write short, helpful replies so you can be first without living on X.'
+              // Call OpenAI to extract business profile
+        let aiSummary = 'Business profile created from website URL update'
+        let aiProducts = []
+        let aiAudience = []
+        let aiValueProps = []
+        let aiTone = { style: 'casual', emojis: 'never' }
+        let aiSafeTopics = []
+        let aiAvoid = ['politics', 'tragedy']
+        let aiStarterKeywords = []
+        let aiPlugLine = 'We auto-write short, helpful replies so you can be first without living on X.'
 
-      try {
-        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o',
-            messages: [
-              {
-                role: 'system',
-                content: `You are extracting a business profile for auto-reply generation on X.
+        try {
+          const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o',
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are extracting a business profile for auto-reply generation on X.
 
 Return ONLY valid JSON with keys:
 summary (string, detailed business description - can be as long as needed),
@@ -181,7 +181,7 @@ Rules:
 - Include specific details like pricing tiers, feature limits, target audience, and key benefits.
 - If the text is too thin to infer confidently, set needs_more_input=true and set all arrays to [] and strings to "" (empty). No apologies. No prose.
 - Output MUST be a single JSON object. No markdown, no commentary.`
-              },
+                },
               {
                 role: 'user',
                 content: `TEXT START\n${siteText}\nTEXT END`
@@ -197,7 +197,16 @@ Rules:
           
           try {
             // Try to parse the response as JSON
-            const businessProfile = JSON.parse(openaiData.choices[0].message.content)
+            let content = openaiData.choices[0].message.content.trim()
+            
+            // Handle markdown code blocks if present
+            if (content.startsWith('```json')) {
+              content = content.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+            } else if (content.startsWith('```')) {
+              content = content.replace(/^```\s*/, '').replace(/\s*```$/, '')
+            }
+            
+            const businessProfile = JSON.parse(content)
             
             // Check if AI needs more input
             if (businessProfile.needs_more_input === true) {
@@ -288,7 +297,7 @@ Rules:
         siteText += `Additional extracted content:\n${websiteContent}\n\n`
       }
 
-      // Call OpenAI to extract business profile
+            // Call OpenAI to extract business profile
       let aiSummary = existingProfile.summary || 'Business profile updated from website URL'
       let aiProducts = existingProfile.products || []
       let aiAudience = existingProfile.audience || []
@@ -332,22 +341,31 @@ Rules:
 - If the text is too thin to infer confidently, set needs_more_input=true and set all arrays to [] and strings to "" (empty). No apologies. No prose.
 - Output MUST be a single JSON object. No markdown, no commentary.`
               },
-              {
-                role: 'user',
-                content: `TEXT START\n${siteText}\nTEXT END`
-              }
-            ],
-            temperature: 0.3,
-            max_tokens: 1000
-          })
+            {
+              role: 'user',
+              content: `TEXT START\n${siteText}\nTEXT END`
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 1000
         })
+      })
 
-        if (openaiResponse.ok) {
-          const openaiData = await openaiResponse.json()
+      if (openaiResponse.ok) {
+        const openaiData = await openaiResponse.json()
+        
+        try {
+          // Try to parse the response as JSON
+          let content = openaiData.choices[0].message.content.trim()
           
-          try {
-            // Try to parse the response as JSON
-            const businessProfile = JSON.parse(openaiData.choices[0].message.content)
+          // Handle markdown code blocks if present
+          if (content.startsWith('```json')) {
+            content = content.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+          } else if (content.startsWith('```')) {
+            content = content.replace(/^```\s*/, '').replace(/\s*```$/, '')
+          }
+          
+          const businessProfile = JSON.parse(content)
             
             // Check if AI needs more input
             if (businessProfile.needs_more_input === true) {

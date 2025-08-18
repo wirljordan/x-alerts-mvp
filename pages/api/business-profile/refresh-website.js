@@ -210,7 +210,16 @@ Rules:
         
         try {
           // Try to parse the response as JSON
-          const businessProfile = JSON.parse(openaiData.choices[0].message.content)
+          let content = openaiData.choices[0].message.content.trim()
+          
+          // Handle markdown code blocks if present
+          if (content.startsWith('```json')) {
+            content = content.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+          } else if (content.startsWith('```')) {
+            content = content.replace(/^```\s*/, '').replace(/\s*```$/, '')
+          }
+          
+          const businessProfile = JSON.parse(content)
           
           // Check if AI needs more input
           if (businessProfile.needs_more_input === true) {
