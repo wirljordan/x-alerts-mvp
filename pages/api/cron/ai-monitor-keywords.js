@@ -212,6 +212,18 @@ async function scoutPhase(user, rules, userId, businessProfile, creditsTotal) {
     
     // Process each tweet and find matching rules
     for (const tweet of tweets) {
+      // Skip non-English tweets (they won't be relevant for business)
+      if (!tweet.text.match(/[a-zA-Z]/)) {
+        console.log(`🌍 Skipping non-English tweet: "${tweet.text.substring(0, 50)}..."`)
+        continue
+      }
+      
+      // Skip tweets that are just links
+      if (tweet.text.trim().startsWith('http') || tweet.text.trim().length < 20) {
+        console.log(`🔗 Skipping link-only tweet: "${tweet.text.substring(0, 50)}..."`)
+        continue
+      }
+      
       // Find which rule matches this tweet
       const matchingRule = findMatchingRule(tweet.text, rules)
       
