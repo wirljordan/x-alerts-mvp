@@ -210,6 +210,52 @@ export default async function handler(req, res) {
         console.error('Database error:', dbError)
       }
 
+      // Automatically login to TwitterAPI.io for posting capabilities
+      try {
+        console.log('🔐 Automatically logging into TwitterAPI.io...')
+        
+        // For now, we'll use environment variables for TwitterAPI.io credentials
+        // In the future, we could store these securely in the database
+        const twitterAPIUsername = process.env.TWITTERAPI_USERNAME
+        const twitterAPIPassword = process.env.TWITTERAPI_PASSWORD
+        
+        if (twitterAPIUsername && twitterAPIPassword) {
+          const twitterAPILoginResponse = await fetch('https://api.twitterapi.io/twitter/user_login_v2', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': process.env.TWITTER_API_KEY
+            },
+            body: JSON.stringify({
+              user_name: twitterAPIUsername,
+              email: process.env.TWITTERAPI_EMAIL || '',
+              password: twitterAPIPassword,
+              totp_secret: process.env.TWITTERAPI_TOTP_SECRET || ''
+            })
+          })
+
+          if (twitterAPILoginResponse.ok) {
+            const twitterAPILoginData = await twitterAPILoginResponse.json()
+            console.log('✅ TwitterAPI.io login successful')
+            
+            // Store the login cookie in environment or database
+            // For now, we'll update the environment variable
+            // In production, you might want to store this in the database
+            process.env.TWITTERAPI_LOGIN_COOKIES = twitterAPILoginData.login_cookie
+            
+            console.log('🔑 TwitterAPI.io login cookie stored')
+          } else {
+            const errorText = await twitterAPILoginResponse.text()
+            console.error('❌ TwitterAPI.io login failed:', errorText)
+          }
+        } else {
+          console.log('⚠️ TwitterAPI.io credentials not configured, skipping automatic login')
+        }
+      } catch (twitterAPIError) {
+        console.error('❌ Error with TwitterAPI.io login:', twitterAPIError)
+        // Don't fail the entire auth process if TwitterAPI.io login fails
+      }
+
       // Set session cookies and clear OAuth cookies
       const secureFlag = protocol === 'https' ? '; Secure' : ''
       res.setHeader('Set-Cookie', [
