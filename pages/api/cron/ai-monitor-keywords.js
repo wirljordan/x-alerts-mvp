@@ -220,9 +220,9 @@ async function scoutPhase(user, rules, userId, businessProfile, creditsTotal) {
         console.log(`📝 Tweet text: "${tweet.text.substring(0, 100)}${tweet.text.length > 100 ? '...' : ''}"`)
         
         // Check if already processed
-        const alreadyProcessed = await isTweetProcessed(tweet.id, userId)
+        const alreadyProcessed = await isTweetProcessed(tweet.id, user.id)
         if (alreadyProcessed) {
-          console.log(`⏭️ Tweet ${tweet.id} already processed for user ${userId}`)
+          console.log(`⏭️ Tweet ${tweet.id} already processed for user ${user.x_user_id}`)
           continue
         }
 
