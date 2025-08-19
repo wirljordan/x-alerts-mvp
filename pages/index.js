@@ -7,13 +7,7 @@ export default function Home() {
   const [error, setError] = useState('')
   const [user, setUser] = useState(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
-  const [showLoginForm, setShowLoginForm] = useState(false)
-  const [loginForm, setLoginForm] = useState({
-    username: '',
-    password: '',
-    email: '',
-    totp_secret: ''
-  })
+
   const router = useRouter()
 
   useEffect(() => {
@@ -67,37 +61,11 @@ export default function Home() {
   }, [router.query.error, router])
 
   const handleSignIn = () => {
-    setShowLoginForm(true)
-  }
-
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault()
     setIsLoading(true)
     setError('')
     
-    try {
-      const response = await fetch('/api/auth/twitterapi-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(loginForm)
-      })
-
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        // Redirect to dashboard
-        router.push('/dashboard')
-      } else {
-        setError(data.error || 'Login failed. Please try again.')
-      }
-    } catch (error) {
-      console.error('Login error:', error)
-      setError('Login failed. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
+    // Use the original X OAuth approach
+    window.location.href = '/api/auth/x-oauth'
   }
 
   // Show loading while checking session
@@ -342,99 +310,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Login Form Modal */}
-      {showLoginForm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0F1C2E] border border-white/10 rounded-2xl p-6 lg:p-8 max-w-md w-full">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl lg:text-2xl font-bold text-white">Sign In with X</h2>
-              <button
-                onClick={() => setShowLoginForm(false)}
-                className="text-white/60 hover:text-white transition-colors duration-200"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
 
-            {error && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <p className="text-red-400 text-sm">{error}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <div>
-                <label className="block text-white font-medium mb-2">X Username</label>
-                <input
-                  type="text"
-                  value={loginForm.username}
-                  onChange={(e) => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
-                  placeholder="your_username"
-                  required
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-white font-medium mb-2">X Password</label>
-                <input
-                  type="password"
-                  value={loginForm.password}
-                  onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
-                  placeholder="your_password"
-                  required
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-white font-medium mb-2">X Email (optional)</label>
-                <input
-                  type="email"
-                  value={loginForm.email}
-                  onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="your_email@example.com"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-white font-medium mb-2">2FA Secret (if enabled)</label>
-                <input
-                  type="text"
-                  value={loginForm.totp_secret}
-                  onChange={(e) => setLoginForm(prev => ({ ...prev, totp_secret: e.target.value }))}
-                  placeholder="your_2fa_secret"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#16D9E3] transition-colors"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 bg-[#16D9E3] hover:bg-[#16D9E3]/90 disabled:bg-white/20 disabled:cursor-not-allowed text-[#0F1C2E] font-semibold rounded-lg transition-colors"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#0F1C2E] mr-2 inline"></div>
-                    Signing In...
-                  </>
-                ) : (
-                  'Sign In with X'
-                )}
-              </button>
-            </form>
-
-            <div className="mt-4 text-center">
-              <p className="text-white/60 text-sm">
-                Your credentials are used to authenticate with X via TwitterAPI.io
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
