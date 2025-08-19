@@ -235,6 +235,10 @@ async function scoutPhase(user, rules, userId, businessProfile, creditsTotal) {
         } else {
           console.log(`❌ Tweet ${tweet.id} not relevant: ${result.reason}`)
         }
+      } else {
+        // Debug: show why tweet didn't match any rules
+        console.log(`🔍 Tweet ${tweet.id} found but no rule match: "${tweet.text.substring(0, 80)}..."`)
+        console.log(`🔍 Available rules: ${rules.map(r => r.query).join(', ')}`)
       }
       
       // Update newest timestamp
@@ -271,27 +275,31 @@ function findMatchingRule(tweetText, rules) {
         return rule
       }
     } else {
-      // Check for exact keyword match
+      // More flexible matching for regular keywords
       const keywordWords = keyword.split(/\s+/).filter(word => word.length > 0)
       
       if (keywordWords.length === 1) {
-        // Single word - check for exact match
-        if (lowerTweetText.includes(keyword)) {
+        // Single word - check for partial match
+        if (lowerTweetText.includes(keyword) || 
+            lowerTweetText.includes(keyword.replace(/[^\w]/g, ''))) {
           return rule
         }
       } else {
-        // Multiple words - check if ALL words are present in order
+        // Multiple words - check if ANY word is present (more flexible)
         const tweetWords = lowerTweetText.split(/\s+/)
-        let allWordsFound = true
+        let anyWordFound = false
         
         for (const word of keywordWords) {
-          if (!tweetWords.some(tweetWord => tweetWord.includes(word))) {
-            allWordsFound = false
+          const cleanWord = word.replace(/[^\w]/g, '')
+          if (tweetWords.some(tweetWord => 
+              tweetWord.includes(word) || 
+              tweetWord.includes(cleanWord))) {
+            anyWordFound = true
             break
           }
         }
         
-        if (allWordsFound) {
+        if (anyWordFound) {
           return rule
         }
       }
