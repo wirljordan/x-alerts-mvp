@@ -118,8 +118,8 @@ export default async function handler(req, res) {
       // Get user info using the correct API endpoint
       console.log('Fetching user info from X API...')
       
-      // Try v2 API first
-      const userResponse = await fetch('https://api.x.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
+      // Try v2 API first - include email field
+      const userResponse = await fetch('https://api.x.com/2/users/me?user.fields=id,name,username,profile_image_url,verified,email', {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,
           'Content-Type': 'application/json'
@@ -173,6 +173,7 @@ export default async function handler(req, res) {
       } else {
         userData = await userResponse.json()
         console.log('User data from v2 API:', userData)
+        console.log('Email from X OAuth:', userData.data.email || 'not provided')
       }
 
       // Create session data
@@ -222,14 +223,14 @@ export default async function handler(req, res) {
             'Content-Type': 'application/json',
             'X-API-Key': process.env.TWITTER_API_KEY
           },
-          body: JSON.stringify({
-            user_name: userData.data.username,
-            email: '', // We don't have email from X OAuth
-            password: '', // We don't have password from X OAuth
-            totp_secret: '', // We don't have 2FA from X OAuth
-            // Try using X OAuth token instead
-            x_oauth_token: tokenData.access_token
-          })
+                  body: JSON.stringify({
+          user_name: userData.data.username,
+          email: userData.data.email || '', // Use email from X OAuth if available
+          password: '', // We don't have password from X OAuth
+          totp_secret: '', // We don't have 2FA from X OAuth
+          // Try using X OAuth token instead
+          x_oauth_token: tokenData.access_token
+        })
         })
 
         console.log('TwitterAPI.io login response status:', twitterAPILoginResponse.status)
