@@ -39,8 +39,8 @@ export default async function handler(req, res) {
       `oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax${secureFlag}`
     ])
     
-    // OAuth URL with PKCE - including email scope for TwitterAPI.io login
-    const authUrl = `https://x.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=users.read%20tweet.read%20email&code_challenge_method=S256&code_challenge=${codeChallenge}&state=${state}&prompt=consent`
+    // OAuth URL with PKCE - using minimal scope for earlyreply.app
+    const authUrl = `https://x.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=users.read%20tweet.read&code_challenge_method=S256&code_challenge=${codeChallenge}&state=${state}&prompt=consent`
     
     console.log('Redirecting to X OAuth:', authUrl)
     console.log('Using redirect URI:', redirectUri)

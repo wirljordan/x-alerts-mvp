@@ -118,8 +118,8 @@ export default async function handler(req, res) {
       // Get user info using the correct API endpoint
       console.log('Fetching user info from X API...')
       
-      // Try v2 API first - include email field
-      const userResponse = await fetch('https://api.x.com/2/users/me?user.fields=id,name,username,profile_image_url,verified,email', {
+      // Try v2 API first
+      const userResponse = await fetch('https://api.x.com/2/users/me?user.fields=id,name,username,profile_image_url,verified', {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,
           'Content-Type': 'application/json'
@@ -173,7 +173,6 @@ export default async function handler(req, res) {
       } else {
         userData = await userResponse.json()
         console.log('User data from v2 API:', userData)
-        console.log('Email from X OAuth:', userData.data.email || 'not provided')
       }
 
       // Create session data
@@ -211,64 +210,29 @@ export default async function handler(req, res) {
         console.error('Database error:', dbError)
       }
 
-      // Automatically login to TwitterAPI.io for posting capabilities
+            // Automatically assign a Twitter account to the user
       try {
-        console.log('🔐 Automatically logging into TwitterAPI.io...')
+        console.log('🔐 Assigning Twitter account to new user...')
         
-        // Use the user's X OAuth token to authenticate with TwitterAPI.io
-        // This is a more secure approach than asking for passwords
-        const twitterAPILoginResponse = await fetch('https://api.twitterapi.io/twitter/user_login_v2', {
+        const assignResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://earlyreply.app'}/api/assign-twitter-account`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': process.env.TWITTER_API_KEY
           },
-                  body: JSON.stringify({
-          user_name: userData.data.username,
-          email: userData.data.email || '', // Use email from X OAuth if available
-          password: '', // We don't have password from X OAuth
-          totp_secret: '', // We don't have 2FA from X OAuth
-          // Try using X OAuth token instead
-          x_oauth_token: tokenData.access_token
-        })
+          body: JSON.stringify({
+            userId: userData.data.id
+          })
         })
 
-        console.log('TwitterAPI.io login response status:', twitterAPILoginResponse.status)
-
-        if (twitterAPILoginResponse.ok) {
-          const twitterAPILoginData = await twitterAPILoginResponse.json()
-          console.log('✅ TwitterAPI.io login successful')
-          
-          // Save the login cookie to the database
-          const { error: cookieUpdateError } = await supabaseAdmin
-            .from('users')
-            .update({
-              twitterapi_login_cookie: twitterAPILoginData.login_cookie,
-              updated_at: new Date().toISOString()
-            })
-            .eq('x_user_id', userData.data.id)
-
-          if (cookieUpdateError) {
-            console.error('Error saving TwitterAPI.io login cookie:', cookieUpdateError)
-          } else {
-            console.log('✅ TwitterAPI.io login cookie saved to database')
-          }
+        if (assignResponse.ok) {
+          const assignData = await assignResponse.json()
+          console.log('✅ Twitter account assigned:', assignData.accountUsername)
         } else {
-          const errorText = await twitterAPILoginResponse.text()
-          console.error('❌ TwitterAPI.io login failed:', errorText)
-          
-          // Try alternative approach - use system credentials
-          console.log('🔄 Trying system TwitterAPI.io credentials...')
-          
-          // For now, we'll use the system's TwitterAPI.io credentials
-          // This means all replies will come from your business account
-          console.log('✅ Using system TwitterAPI.io credentials for posting')
+          console.log('⚠️ Failed to assign Twitter account, will use system credentials')
         }
-        
-      } catch (twitterAPIError) {
-        console.error('❌ Error with TwitterAPI.io login:', twitterAPIError)
-        // Don't fail the entire auth process if TwitterAPI.io login fails
-        console.log('🔄 Falling back to system TwitterAPI.io credentials')
+      } catch (assignError) {
+        console.error('❌ Error assigning Twitter account:', assignError)
+        console.log('🔄 Will use system credentials as fallback')
       }
 
       // Set session cookies and clear OAuth cookies
