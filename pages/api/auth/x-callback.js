@@ -1,3 +1,5 @@
+import { supabaseAdmin } from '../../../lib/supabase'
+
 export default async function handler(req, res) {
   console.log('=== X CALLBACK DEBUG ===')
   console.log('Method:', req.method)
@@ -184,6 +186,28 @@ export default async function handler(req, res) {
           handle: userData.data.username
         },
         accessToken: tokenData.access_token
+      }
+
+      // Save or update user in database with access token
+      try {
+        const { error: upsertError } = await supabaseAdmin
+          .from('users')
+          .upsert({
+            x_user_id: userData.data.id,
+            handle: userData.data.username,
+            x_oauth_access_token: tokenData.access_token,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'x_user_id'
+          })
+
+        if (upsertError) {
+          console.error('Error saving user to database:', upsertError)
+        } else {
+          console.log('User saved to database with access token')
+        }
+      } catch (dbError) {
+        console.error('Database error:', dbError)
       }
 
       // Set session cookies and clear OAuth cookies
